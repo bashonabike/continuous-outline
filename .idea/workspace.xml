@@ -4,13 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/continuous-outline.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Initial create">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/debug/continuous-outline.debug" beforeDir="false" afterPath="$PROJECT_DIR$/debug/continuous-outline.debug" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/debug/continuous-outline.sh" beforeDir="false" afterPath="$PROJECT_DIR$/debug/continuous-outline.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/debug/continuous-outline_run.py" beforeDir="false" afterPath="$PROJECT_DIR$/debug/continuous-outline_run.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/debug/input_file.svg" beforeDir="false" afterPath="$PROJECT_DIR$/debug/input_file.svg" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -20,6 +20,18 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "bashonabike"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/bashonabike/continuous-outline",
+    "accountId": "5bb13a72-640e-4370-a31b-398c259cc1b1"
+  }
+}]]></component>
   <component name="ProjectColorInfo"><![CDATA[{
   "associatedIndex": 6
 }]]></component>
@@ -54,6 +66,19 @@
       <option name="presentableId" value="Default" />
       <updated>1736210770875</updated>
     </task>
+    <task id="LOCAL-00001" summary="Initial create">
+      <option name="closed" value="true" />
+      <created>1736285602633</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1736285602633</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Initial create" />
+    <option name="LAST_COMMIT_MESSAGE" value="Initial create" />
   </component>
 </project>

@@ -1,5 +1,5 @@
 #!C:\Program Files\Inkscape\bin\pythonw.exe
-# 2025-01-07 13:29:59.589029
+# 2025-01-07 14:31:39.742836
 import sys
 import os
 sys.path.append('C:\Users\Dell 5290\AppData\Roaming\inkscape\extensions\continuous-outline')
@@ -12,6 +12,11 @@ sys.path.append('C:\Program Files\Inkscape\lib\python3.11\lib-dynload')
 sys.path.append('C:\Program Files\Inkscape\lib\python3.11\site-packages')
 sys.path.append('C:\Program Files\Inkscape\share\inkscape\extensions\inkex\deprecated-simple')
 args = [
+    "--id=path4",
+    "--id=rect4",
+    "--id=image1",
+    "--id=rect3",
+    "--id=rect2",
     "--id=rect1",
     "--tab=tab_general",
     "--keeporiginal=false",

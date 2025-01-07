@@ -1,5 +1,5 @@
 ####################
-# 2025-01-07 13:29:59.586272
+# 2025-01-07 14:31:39.740666
 ####################
 Executable: 
 	C:\Program Files\Inkscape\bin\pythonw.exe
@@ -18,6 +18,11 @@ Paths:
 
 Args:
 	continuous-outline.py
+	--id=path4
+	--id=rect4
+	--id=image1
+	--id=rect3
+	--id=rect2
 	--id=rect1
 	--tab=tab_general
 	--keeporiginal=false
@@ -37,4 +42,4 @@ Args:
 	--desc=false
 	--blurradius=1
 	--blurdelta=20.0
-	C:\Users\DELL52~1\AppData\Local\Temp\ink_ext_XXXXXX.svgUXLTZ2
+	C:\Users\DELL52~1\AppData\Local\Temp\ink_ext_XXXXXX.svg4AOPZ2

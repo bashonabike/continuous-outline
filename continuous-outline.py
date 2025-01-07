@@ -4,9 +4,11 @@ import os
 import base64
 import urllib.parse as urllib_parse
 import urllib.request as urllib_request
-from PIL import Image
+from PIL import Image, ImageDraw
 from io import BytesIO
+import io
 from lxml import etree
+import base64
 
 """
 Extension for InkScape 1.X
@@ -71,39 +73,166 @@ class Continuous_outline(inkex.EffectExtension):
         pars.add_argument("--blurradius", type=int, default=0, help="Selective Gaussian blur preprocessing")
         pars.add_argument("--blurdelta", type=float, default=20.0, help="RGBA delta treshold for selective Gaussian blur preprocessing")
   
+
+    def image_prep(self, image):
+        self.path = self.checkImagePath(image)  # This also ensures the file exists
+        if self.path is None:  # check if image is embedded or linked
+            image_string = image.get('{http://www.w3.org/1999/xlink}href')
+            # find comma position
+            i = 0
+            while i < 40:
+                if image_string[i] == ',':
+                    break
+                i = i + 1
+            img = Image.open(BytesIO(base64.b64decode(image_string[i + 1:len(image_string)])))
+        else:
+            img = Image.open(self.path)
+
+        # Write the embedded or linked image to temporary directory
+        if os.name == "nt":
+            exportfile = "continuous-outline.png"
+        else:
+            exportfile = "/tmp/continuous-outline.png"
+
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        img.save(exportfile, "png")
+
+        return exportfile
+    def fit_svg(self, exportfile, image):
+        # Delete the temporary png file again because we do not need it anymore
+        if os.path.exists(exportfile):
+            os.remove(exportfile)
+
+        # new parse the SVG file and insert it as new group into the current document tree
+        doc = etree.parse(exportfile + ".svg").getroot()
+        newGroup = self.document.getroot().add(inkex.Group())
+        trace_width = None
+        trace_height = None
+        if doc.get('width') is not None and doc.get('height') is not None:
+            trace_width = doc.get('width')
+            trace_height = doc.get('height')
+        else:
+            viewBox = doc.get('viewBox')  # eg "0 0 700 600"
+            trace_width = viewBox.split(' ')[2]
+            trace_height = viewBox.split(' ')[3]
+
+        # add transformation to fit previous XY coordinates and width/height
+        # image might also be influenced by other transformations from parent:
+        parent = image.getparent()
+        if parent is not None and parent != self.document.getroot():
+            tpc = parent.composed_transform()
+            x_offset = tpc.e
+            y_offset = tpc.f
+        else:
+            x_offset = 0.0
+            y_offset = 0.0
+        img_w = image.get('width')
+        img_h = image.get('height')
+        img_x = image.get('x')
+        img_y = image.get('y')
+        if img_w is not None and img_h is not None and img_x is not None and img_y is not None:
+            # if width/height are not unitless but end with px, mm, in etc. we have to convert to a float number
+            if img_w[-1].isdigit() is False:
+                img_w = self.svg.uutounit(img_w)
+            if img_h[-1].isdigit() is False:
+                img_h = self.svg.uutounit(img_h)
+
+            transform = "matrix({:1.6f}, 0, 0, {:1.6f}, {:1.6f}, {:1.6f})" \
+                .format(float(img_w) / float(trace_width), float(img_h) / float(trace_height), float(img_x) + x_offset,
+                        float(img_y) + y_offset)
+            newGroup.attrib['transform'] = transform
+        else:
+            t = image.composed_transform()
+            img_w = t.a
+            img_h = t.d
+            img_x = t.e
+            img_y = t.f
+            transform = "matrix({:1.6f}, 0, 0, {:1.6f}, {:1.6f}, {:1.6f})" \
+                .format(float(img_w) / float(trace_width), float(img_h) / float(trace_height), float(img_x) + x_offset,
+                        float(img_y) + y_offset)
+            newGroup.attrib['transform'] = transform
+
+        for child in doc.getchildren():
+            newGroup.append(child)
+
+        # Delete the temporary svg file
+        if os.path.exists(exportfile + ".svg"):
+            os.remove(exportfile + ".svg")
+
+        return newGroup
+
+    def isolate_sub_images(self, detail_bounds, exportfile):
+        #Start with ellipses
+        sub_image_counter = 0
+        cropped_images = []
+
+        for bounds in detail_bounds:
+            image = Image.open(exportfile)
+
+            # Check if ellipse or rect
+            if bounds.tag == inkex.addNS('rect', 'svg'):
+                # Get rectangle properties
+                #TODO: figure out way to crop by float
+                x = int(float(bounds.attrib.get('x', 0)))
+                y = int(float(bounds.attrib.get('y', 0)))
+                width = int(float(bounds.attrib.get('width', 0)))
+                height = int(float(bounds.attrib.get('height', 0)))
+
+                # Crop the image to the rectangle
+                bbox = (x, y, x + width, y + height)
+
+                cropped_image = image
+
+            elif bounds.tag == inkex.addNS('ellipse', 'svg'):
+                # Get ellipse properties
+                cx = int(float(bounds.attrib.get('cx', 0)))
+                cy = int(float(bounds.attrib.get('cy', 0)))
+                rx = int(float(bounds.attrib.get('rx', 0)))
+                ry = int(float(bounds.attrib.get('ry', 0)))
+
+                # Create a mask for the ellipse
+                mask = Image.new('L', image.size, 0)
+                draw = ImageDraw.Draw(mask)
+                bbox = (cx - rx, cy - ry, cx + rx, cy + ry)
+                draw.ellipse(bbox, fill=255)
+
+                # Apply the mask to the image
+                cropped_image = Image.new('RGBA', image.size)
+                cropped_image.paste(image, (0, 0), mask)
+            else:
+                raise inkex.AbortExtension("Only ellipses and rectangles are supported as bounds.")
+
+            # Crop the bounding box of the rect or ellipse
+            cropped_image = cropped_image.crop(bbox)
+
+            # Save the resulting image
+            cropped_images.append(cropped_image)
+            #TODO: need to save temp sub images?
+            output_path = "sub_image_" + str(sub_image_counter) + ".png"
+            sub_image_counter += 1
+            cropped_image.save(output_path)
+            inkex.utils.debug(f"Saved cropped image to {output_path}")
+
+        return cropped_images
+
     def effect(self):
         # internal overwrite for scale:
         self.options.scale = 1.0
     
         if len(self.svg.selected) > 0:
             images = self.svg.selection.filter(inkex.Image).values()
-            detail_regions = self.svg.selection.filter(inkex.Ellipse, inkex.Rectangle).values()
+            detail_bounds = self.svg.selection.filter(inkex.Rectangle, inkex.Ellipse).values()
 
             if len(images) > 0:
                 for image in images:
-                    self.path = self.checkImagePath(image)  # This also ensures the file exists
-                    if self.path is None:  # check if image is embedded or linked
-                        image_string = image.get('{http://www.w3.org/1999/xlink}href')
-                        # find comma position
-                        i = 0
-                        while i < 40:
-                            if image_string[i] == ',':
-                                break
-                            i = i + 1
-                        img = Image.open(BytesIO(base64.b64decode(image_string[i + 1:len(image_string)])))
-                    else:
-                        img = Image.open(self.path)
-                    
-                    # Write the embedded or linked image to temporary directory
-                    if os.name == "nt":
-                         exportfile = "imagetracerjs.png"
-                    else:
-                         exportfile ="/tmp/imagetracerjs.png"
-                         
-                    if img.mode != 'RGB':
-                        img = img.convert('RGB')
-                    img.save(exportfile, "png")
-           
+                    exportfile = self.image_prep(image)
+                    detail_sub_images = self.isolate_sub_images(detail_bounds, exportfile)
+                    self.msg(str(len(detail_sub_images)))
+
+
+
+
                     nodeclipath = os.path.join("imagetracerjs-master", "nodecli", "nodecli.js")
                     
                     ## Build up imagetracerjs command according to your settings from extension GUI
@@ -144,67 +273,14 @@ class Continuous_outline(inkex.EffectExtension):
     
                     # proceed if traced SVG file was successfully created
                     if os.path.exists(exportfile + ".svg"):
-                        # Delete the temporary png file again because we do not need it anymore
-                        if os.path.exists(exportfile):
-                            os.remove(exportfile)
-                        
-                        # new parse the SVG file and insert it as new group into the current document tree
-                        doc = etree.parse(exportfile + ".svg").getroot()
-                        newGroup = self.document.getroot().add(inkex.Group())
-                        trace_width = None
-                        trace_height = None
-                        if doc.get('width') is not None and doc.get('height') is not None:
-                            trace_width = doc.get('width')
-                            trace_height = doc.get('height')
-                        else:
-                            viewBox = doc.get('viewBox') #eg "0 0 700 600"
-                            trace_width = viewBox.split(' ')[2]
-                            trace_height = viewBox.split(' ')[3]
-                        
-                        # add transformation to fit previous XY coordinates and width/height
-                        # image might also be influenced by other transformations from parent:
-                        parent = image.getparent()
-                        if parent is not None and parent != self.document.getroot():
-                            tpc = parent.composed_transform()
-                            x_offset = tpc.e
-                            y_offset = tpc.f
-                        else:
-                            x_offset = 0.0
-                            y_offset = 0.0              
-                        img_w = image.get('width')
-                        img_h = image.get('height')
-                        img_x = image.get('x')
-                        img_y = image.get('y')                                        
-                        if img_w is not None and img_h is not None and img_x is not None and img_y is not None:
-                            #if width/height are not unitless but end with px, mm, in etc. we have to convert to a float number
-                            if img_w[-1].isdigit() is False:
-                                img_w = self.svg.uutounit(img_w)
-                            if img_h[-1].isdigit() is False:
-                                img_h = self.svg.uutounit(img_h)
-                            
-                            transform = "matrix({:1.6f}, 0, 0, {:1.6f}, {:1.6f}, {:1.6f})"\
-                            .format(float(img_w) / float(trace_width), float(img_h) / float(trace_height), float(img_x) + x_offset, float(img_y) + y_offset)
-                            newGroup.attrib['transform'] = transform
-                        else:
-                            t = image.composed_transform()
-                            img_w = t.a
-                            img_h = t.d 
-                            img_x = t.e
-                            img_y = t.f
-                            transform = "matrix({:1.6f}, 0, 0, {:1.6f}, {:1.6f}, {:1.6f})"\
-                            .format(float(img_w) / float(trace_width), float(img_h) / float(trace_height), float(img_x) + x_offset, float(img_y) + y_offset)
-                            newGroup.attrib['transform'] = transform
-           
-                        for child in doc.getchildren():
-                            newGroup.append(child)
-    
-                        # Delete the temporary svg file
-                        if os.path.exists(exportfile + ".svg"):
-                            os.remove(exportfile + ".svg")
+                        self.fit_svg(exportfile, image)
                     
                     #remove the old image or not                    
-                    if self.options.keeporiginal is not True:
-                        image.delete()
+                    #TODO: re-enable this?
+                    # if self.options.keeporiginal is not True:
+                        # image.delete()
+                        # for sub_image in detail_sub_images:
+                        #     sub_image.delete()
             else:
                 self.msg("No images found in selection! Check if you selected a group instead.")      
         else:
