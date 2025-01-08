@@ -29,6 +29,8 @@ Used version of imagetracerjs: https://github.com/jankovicsandras/imagetracerjs/
 
 class Continuous_outline(inkex.EffectExtension):
 
+
+
     def checkImagePath(self, element):
         xlink = element.get('xlink:href')
         if xlink and xlink[:5] == 'data:':
@@ -162,57 +164,74 @@ class Continuous_outline(inkex.EffectExtension):
 
         return newGroup
 
-    def isolate_sub_images(self, detail_bounds, exportfile):
-        #Start with ellipses
-        sub_image_counter = 0
-        cropped_images = []
+    def isolate_sub_images(self, detail_bounds, export_file, image_in_svg):
+        #Determine image offsets
+        parent = image_in_svg.getparent()
+        if parent is not None and parent != self.document.getroot():
+            tpc = parent.composed_transform()
+            x_offset = tpc.e + float(image_in_svg.get('x'))
+            y_offset = tpc.f + float(image_in_svg.get('y'))
+        else:
+            x_offset = float(image_in_svg.get('x'))
+            y_offset = float(image_in_svg.get('y'))
 
-        for bounds in detail_bounds:
-            image = Image.open(exportfile)
+        with Image.open(export_file) as image:
+            image_size = image.size
 
-            # Check if ellipse or rect
-            if bounds.tag == inkex.addNS('rect', 'svg'):
-                # Get rectangle properties
-                #TODO: figure out way to crop by float
-                x = int(float(bounds.attrib.get('x', 0)))
-                y = int(float(bounds.attrib.get('y', 0)))
-                width = int(float(bounds.attrib.get('width', 0)))
-                height = int(float(bounds.attrib.get('height', 0)))
+            x_scale = image_size[0]/float(image_in_svg.get('width'))
+            y_scale = image_size[1]/float(image_in_svg.get('height'))
 
-                # Crop the image to the rectangle
-                bbox = (x, y, x + width, y + height)
+            #Start with ellipses
+            sub_image_counter = 0
+            cropped_images = []
 
-                cropped_image = image
+            for bounds in detail_bounds:
 
-            elif bounds.tag == inkex.addNS('ellipse', 'svg'):
-                # Get ellipse properties
-                cx = int(float(bounds.attrib.get('cx', 0)))
-                cy = int(float(bounds.attrib.get('cy', 0)))
-                rx = int(float(bounds.attrib.get('rx', 0)))
-                ry = int(float(bounds.attrib.get('ry', 0)))
+                # Check if ellipse or rect
+                if bounds.tag == inkex.addNS('rect', 'svg'):
+                    # Get rectangle properties
+                    #TODO: figure out way to crop by float
+                    x = int((float(bounds.attrib.get('x', 0)) - x_offset)*x_scale)
+                    y = int((float(bounds.attrib.get('y', 0)) - y_offset)*y_scale)
+                    width = int(float(bounds.attrib.get('width', 0))*x_scale)
+                    height = int(float(bounds.attrib.get('height', 0))*y_scale)
 
-                # Create a mask for the ellipse
-                mask = Image.new('L', image.size, 0)
-                draw = ImageDraw.Draw(mask)
-                bbox = (cx - rx, cy - ry, cx + rx, cy + ry)
-                draw.ellipse(bbox, fill=255)
+                    # Crop the image to the rectangle
+                    bbox = (x, y, x + width, y + height)
 
-                # Apply the mask to the image
-                cropped_image = Image.new('RGBA', image.size)
-                cropped_image.paste(image, (0, 0), mask)
-            else:
-                raise inkex.AbortExtension("Only ellipses and rectangles are supported as bounds.")
+                    cropped_image = image
 
-            # Crop the bounding box of the rect or ellipse
-            cropped_image = cropped_image.crop(bbox)
+                elif bounds.tag == inkex.addNS('ellipse', 'svg'):
+                    # Get ellipse properties
+                    cx = int((float(bounds.attrib.get('cx', 0)) - x_offset)*x_scale)
+                    cy = int((float(bounds.attrib.get('cy', 0)) - y_offset)*y_scale)
+                    rx = int(float(bounds.attrib.get('rx', 0))*x_scale)
+                    ry = int(float(bounds.attrib.get('ry', 0))*y_scale)
 
-            # Save the resulting image
-            cropped_images.append(cropped_image)
-            #TODO: need to save temp sub images?
-            output_path = "sub_image_" + str(sub_image_counter) + ".png"
-            sub_image_counter += 1
-            cropped_image.save(output_path)
-            inkex.utils.debug(f"Saved cropped image to {output_path}")
+                    # Create a mask for the ellipse
+                    mask = Image.new('L', image.size, 0)
+                    draw = ImageDraw.Draw(mask)
+                    bbox = (cx - rx, cy - ry,
+                            cx + rx, cy + ry)
+                    draw.ellipse(bbox, fill=255)
+
+                    # Apply the mask to the image
+                    cropped_image = Image.new('RGBA', image.size)
+                    self.msg(str(image.size[0]))
+                    cropped_image.paste(image, (0, 0), mask)
+                else:
+                    raise inkex.AbortExtension("Only ellipses and rectangles are supported as bounds.")
+
+                # Crop the bounding box of the rect or ellipse
+                cropped_image = cropped_image.crop(bbox)
+
+                # Save the resulting image
+                cropped_images.append(cropped_image)
+                #TODO: need to save temp sub images?
+                output_path = "sub_image_" + str(sub_image_counter) + ".png"
+                sub_image_counter += 1
+                cropped_image.save(output_path)
+                inkex.utils.debug(f"Saved cropped image to {output_path}")
 
         return cropped_images
 
@@ -227,7 +246,7 @@ class Continuous_outline(inkex.EffectExtension):
             if len(images) > 0:
                 for image in images:
                     exportfile = self.image_prep(image)
-                    detail_sub_images = self.isolate_sub_images(detail_bounds, exportfile)
+                    detail_sub_images = self.isolate_sub_images(detail_bounds, exportfile, image)
                     self.msg(str(len(detail_sub_images)))
 
 
