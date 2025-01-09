@@ -9,6 +9,9 @@ from io import BytesIO
 import io
 from lxml import etree
 import base64
+import helpers.edge_detection as edge
+import copy as cp
+import numpy as np
 
 """
 Extension for InkScape 1.X
@@ -92,9 +95,9 @@ class Continuous_outline(inkex.EffectExtension):
 
         # Write the embedded or linked image to temporary directory
         if os.name == "nt":
-            exportfile = "continuous-outline.png"
+            exportfile = "helpers.png"
         else:
-            exportfile = "/tmp/continuous-outline.png"
+            exportfile = "/tmp/helpers.png"
 
         if img.mode != 'RGB':
             img = img.convert('RGB')
@@ -181,9 +184,8 @@ class Continuous_outline(inkex.EffectExtension):
             x_scale = image_size[0]/float(image_in_svg.get('width'))
             y_scale = image_size[1]/float(image_in_svg.get('height'))
 
-            #Start with ellipses
             sub_image_counter = 0
-            cropped_images = []
+            bounds_dicts = []
 
             for bounds in detail_bounds:
 
@@ -195,6 +197,7 @@ class Continuous_outline(inkex.EffectExtension):
                     y = int((float(bounds.attrib.get('y', 0)) - y_offset)*y_scale)
                     width = int(float(bounds.attrib.get('width', 0))*x_scale)
                     height = int(float(bounds.attrib.get('height', 0))*y_scale)
+                    local_origin = (x, y)
 
                     # Crop the image to the rectangle
                     bbox = (x, y, x + width, y + height)
@@ -207,6 +210,7 @@ class Continuous_outline(inkex.EffectExtension):
                     cy = int((float(bounds.attrib.get('cy', 0)) - y_offset)*y_scale)
                     rx = int(float(bounds.attrib.get('rx', 0))*x_scale)
                     ry = int(float(bounds.attrib.get('ry', 0))*y_scale)
+                    local_origin = np.array([cx - rx, cy - ry])
 
                     # Create a mask for the ellipse
                     mask = Image.new('L', image.size, 0)
@@ -226,14 +230,17 @@ class Continuous_outline(inkex.EffectExtension):
                 cropped_image = cropped_image.crop(bbox)
 
                 # Save the resulting image
-                cropped_images.append(cropped_image)
                 #TODO: need to save temp sub images?
                 output_path = "sub_image_" + str(sub_image_counter) + ".png"
                 sub_image_counter += 1
                 cropped_image.save(output_path)
                 inkex.utils.debug(f"Saved cropped image to {output_path}")
 
-        return cropped_images
+                #Save to dict
+                bounds_dicts.append({"localorigin": local_origin, "imageobject": cropped_image,
+                    "imagepath": output_path})
+
+        return bounds_dicts
 
     def effect(self):
         # internal overwrite for scale:
@@ -241,58 +248,101 @@ class Continuous_outline(inkex.EffectExtension):
     
         if len(self.svg.selected) > 0:
             images = self.svg.selection.filter(inkex.Image).values()
-            detail_bounds = self.svg.selection.filter(inkex.Rectangle, inkex.Ellipse).values()
+            detail_bounds= self.svg.selection.filter(inkex.Rectangle, inkex.Ellipse).values()
 
             if len(images) > 0:
-                for image in images:
-                    exportfile = self.image_prep(image)
-                    detail_sub_images = self.isolate_sub_images(detail_bounds, exportfile, image)
-                    self.msg(str(len(detail_sub_images)))
+                for svg_image in images:
+                    exportfile = self.image_prep(svg_image)
+                    detail_sub_dicts = self.isolate_sub_images(detail_bounds, exportfile, svg_image)
+                    main_image_outline = edge.detect_image_contours(exportfile)
+                    contours_all = list(cp.deepcopy(main_image_outline))
 
+                    # bounds_dicts.append({"localorigin": local_origin, "imageobject": cropped_image,
+                    #                      "imagepath": output_path})
 
+                    with Image.open(exportfile) as image:
+                        image_size = image.size
 
+                        x_scale = image_size[0] / float(svg_image.get('width'))
+                        y_scale = image_size[1] / float(svg_image.get('height'))
+                        scale_nd = np.array([x_scale, y_scale])
 
-                    nodeclipath = os.path.join("imagetracerjs-master", "nodecli", "nodecli.js")
-                    
-                    ## Build up imagetracerjs command according to your settings from extension GUI
-                    command = "node --trace-deprecation " # "node.exe" or "node" on Windows or just "node" on Linux
-                    if os.name=="nt": # your OS is Windows. We handle path separator as "\\" instead of unix-like "/"
-                        command += str(nodeclipath).replace("\\", "\\\\")
-                    else:
-                        command += str(nodeclipath)
-                    command += " " + exportfile
-                    command += " ltres "             + str(self.options.ltres)
-                    command += " qtres "             + str(self.options.qtres)
-                    command += " pathomit "          + str(self.options.pathomit)
-                    command += " rightangleenhance " + str(self.options.rightangleenhance).lower()
-                    command += " colorsampling "     + str(self.options.colorsampling)
-                    command += " numberofcolors "    + str(self.options.numberofcolors) 
-                    command += " mincolorratio "     + str(self.options.mincolorratio)         
-                    command += " numberofcolors "    + str(self.options.numberofcolors) 
-                    command += " colorquantcycles "  + str(self.options.colorquantcycles)         
-                    command += " layering "          + str(self.options.layering)          
-                    command += " strokewidth "       + str(self.options.strokewidth)        
-                    command += " linefilter "        + str(self.options.linefilter).lower()        
-                    command += " scale "             + str(self.options.scale)   
-                    command += " roundcoords "       + str(self.options.roundcoords)   
-                    command += " viewbox "           + str(self.options.viewbox).lower()
-                    command += " desc "              + str(self.options.desc).lower()
-                    command += " blurradius "        + str(self.options.blurradius)   
-                    command += " blurdelta "         + str(self.options.blurdelta)  
-    
-                    # Create the vector traced SVG file
-                    with os.popen(command, "r") as tracerprocess:
-                        result = tracerprocess.read()
-                        if "was saved!" not in result:
-                            self.msg("Error while processing input: " + result)
-                            self.msg("Check the image file (maybe convert and save as new file) and try again.")
-                            self.msg("\nYour parser command:")
-                            self.msg(command)
-    
-    
-                    # proceed if traced SVG file was successfully created
-                    if os.path.exists(exportfile + ".svg"):
-                        self.fit_svg(exportfile, image)
+                    for detail_sub_dict in detail_sub_dicts:
+                        path = detail_sub_dict["imagepath"]
+                        detail_outline = edge.detect_image_contours(path)
+
+                        #Offset detail to line up with master photo
+                        for contour in detail_outline:
+                            for point in contour:
+                                self.msg("Before: " + str(point))
+                                point = (point + detail_sub_dict["localorigin"])/scale_nd
+                                self.msg("After: " + str(point))
+                                contours_all.extend(detail_outline)
+
+                    #TODO: need to save temp sub images?
+                    # Build the path commands
+                    commands = []
+
+                    for contour in contours_all:
+                        for i, point in enumerate(contour):
+                            point_list = list(point[0])
+                            if i == 0:
+                                commands.append(['M', list(point[0])])  # Move to the first point
+                            else:
+                                commands.append(['L', list(point[0])])  # Line to the next point
+                        # commands.append(['Z'])  # Close path
+
+                    # Create the inkex.Path
+                    path = inkex.paths.Path(commands)
+
+                    # Add a new path element to the SVG
+                    path_element = inkex.PathElement()
+                    path_element.style = {'stroke': 'black', 'fill': 'none'}
+                    path_element.set('d', str(path))  # Set the path data
+                    self.svg.get_current_layer().append(path_element)
+                    #TODO: units are in pixels, scaling it's way too big why
+
+                    # nodeclipath = os.path.join("imagetracerjs-master", "nodecli", "nodecli.js")
+                    #
+                    # ## Build up imagetracerjs command according to your settings from extension GUI
+                    # command = "node --trace-deprecation " # "node.exe" or "node" on Windows or just "node" on Linux
+                    # if os.name=="nt": # your OS is Windows. We handle path separator as "\\" instead of unix-like "/"
+                    #     command += str(nodeclipath).replace("\\", "\\\\")
+                    # else:
+                    #     command += str(nodeclipath)
+                    # command += " " + exportfile
+                    # command += " ltres "             + str(self.options.ltres)
+                    # command += " qtres "             + str(self.options.qtres)
+                    # command += " pathomit "          + str(self.options.pathomit)
+                    # command += " rightangleenhance " + str(self.options.rightangleenhance).lower()
+                    # command += " colorsampling "     + str(self.options.colorsampling)
+                    # command += " numberofcolors "    + str(self.options.numberofcolors)
+                    # command += " mincolorratio "     + str(self.options.mincolorratio)
+                    # command += " numberofcolors "    + str(self.options.numberofcolors)
+                    # command += " colorquantcycles "  + str(self.options.colorquantcycles)
+                    # command += " layering "          + str(self.options.layering)
+                    # command += " strokewidth "       + str(self.options.strokewidth)
+                    # command += " linefilter "        + str(self.options.linefilter).lower()
+                    # command += " scale "             + str(self.options.scale)
+                    # command += " roundcoords "       + str(self.options.roundcoords)
+                    # command += " viewbox "           + str(self.options.viewbox).lower()
+                    # command += " desc "              + str(self.options.desc).lower()
+                    # command += " blurradius "        + str(self.options.blurradius)
+                    # command += " blurdelta "         + str(self.options.blurdelta)
+                    #
+                    # # Create the vector traced SVG file
+                    # with os.popen(command, "r") as tracerprocess:
+                    #     result = tracerprocess.read()
+                    #     if "was saved!" not in result:
+                    #         self.msg("Error while processing input: " + result)
+                    #         self.msg("Check the image file (maybe convert and save as new file) and try again.")
+                    #         self.msg("\nYour parser command:")
+                    #         self.msg(command)
+                    #
+                    #
+                    # # proceed if traced SVG file was successfully created
+                    # if os.path.exists(exportfile + ".svg"):
+                    #     self.fit_svg(exportfile, image)
                     
                     #remove the old image or not                    
                     #TODO: re-enable this?

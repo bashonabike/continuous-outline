@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# 2025-01-08 11:13:43.496703
+# 2025-01-08 18:21:38.459848
 
 export DEBUG_RECURSION=1
-export PYTHONPATH=C:\Users\Dell 5290\AppData\Roaming\inkscape\extensions\continuous-outline;C:\Users\Dell 5290\AppData\Roaming\inkscape\extensions;C:\Program Files\Inkscape\share\inkscape\extensions;C:\Program Files\Inkscape\share\inkscape\extensions\inkex\deprecated-simple;C:\Program Files\Inkscape\lib\python311.zip;C:\Program Files\Inkscape\lib\python3.11;C:\Program Files\Inkscape\lib\python3.11\lib-dynload;C:\Program Files\Inkscape\lib\python3.11\site-packages;C:\Program Files\Inkscape\share\inkscape\extensions\inkex\deprecated-simple
-C:\Program Files\Inkscape\bin\pythonw.exe C:\Users\Dell 5290\AppData\Roaming\inkscape\extensions\continuous-outline\continuous-outline.py
+export PYTHONPATH=C:\Users\Dell 5290\AppData\Roaming\inkscape\extensions\continuous-outline;C:\Users\Dell 5290\AppData\Roaming\inkscape\extensions;C:\Program Files\Inkscape\share\inkscape\extensions;C:\Program Files\Inkscape\share\inkscape\extensions\inkex\deprecated-simple;C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\python312.zip;C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\DLLs;C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\Lib;C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312;C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\Lib\site-packages;C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\Lib\site-packages\win32;C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\Lib\site-packages\win32\lib;C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\Lib\site-packages\Pythonwin;C:\Program Files\Inkscape\share\inkscape\extensions\inkex\deprecated-simple
+C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\python.exe C:\Users\Dell 5290\AppData\Roaming\inkscape\extensions\continuous-outline\continuous-outline.py

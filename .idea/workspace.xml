@@ -4,23 +4,29 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Initial sub image gen function, working but dimensioning all off">
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Scaling &amp; shifting working for rect &amp; ellipse crop">
+      <change afterPath="$PROJECT_DIR$/Testing.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helpers/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helpers/edge_detection.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/continuous-outline/_DECREPIT-one-line-tracing.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/_DECREPIT-one-line-tracing.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/debug/continuous-outline.debug" beforeDir="false" afterPath="$PROJECT_DIR$/debug/continuous-outline.debug" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/debug/continuous-outline.sh" beforeDir="false" afterPath="$PROJECT_DIR$/debug/continuous-outline.sh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/debug/continuous-outline_run.py" beforeDir="false" afterPath="$PROJECT_DIR$/debug/continuous-outline_run.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/debug/input_file.svg" beforeDir="false" afterPath="$PROJECT_DIR$/debug/input_file.svg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/sub_image_0.png" beforeDir="false" afterPath="$PROJECT_DIR$/sub_image_0.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/sub_image_1.png" beforeDir="false" afterPath="$PROJECT_DIR$/sub_image_1.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/sub_image_2.png" beforeDir="false" afterPath="$PROJECT_DIR$/sub_image_2.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/sub_image_3.png" beforeDir="false" afterPath="$PROJECT_DIR$/sub_image_3.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/sub_image_4.png" beforeDir="false" afterPath="$PROJECT_DIR$/sub_image_4.png" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -48,6 +54,8 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Python.Testing.executor": "Run",
+    "Python.edge_detection.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "com.codeium.enabled": "true",
     "git-widget-placeholder": "master",
@@ -55,6 +63,11 @@
     "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Dell 5290\AppData\Roaming\inkscape\extensions\continuous-outline\continuous-outline" />
+    </key>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -87,12 +100,21 @@
       <option name="project" value="LOCAL" />
       <updated>1736289189289</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Scaling &amp; shifting working for rect &amp; ellipse crop">
+      <option name="closed" value="true" />
+      <created>1736363701740</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1736363701740</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Initial create" />
     <MESSAGE value="Initial sub image gen function, working but dimensioning all off" />
-    <option name="LAST_COMMIT_MESSAGE" value="Initial sub image gen function, working but dimensioning all off" />
+    <MESSAGE value="Scaling &amp; shifting working for rect &amp; ellipse crop" />
+    <option name="LAST_COMMIT_MESSAGE" value="Scaling &amp; shifting working for rect &amp; ellipse crop" />
   </component>
 </project>

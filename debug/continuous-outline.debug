@@ -1,8 +1,8 @@
 ####################
-# 2025-01-08 11:13:43.494075
+# 2025-01-08 18:21:38.444370
 ####################
 Executable: 
-	C:\Program Files\Inkscape\bin\pythonw.exe
+	C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\python.exe
 CurrentDirectory: 
 	C:\Users\Dell 5290\AppData\Roaming\inkscape\extensions\continuous-outline
 Paths:
@@ -10,10 +10,14 @@ Paths:
 	C:\Users\Dell 5290\AppData\Roaming\inkscape\extensions
 	C:\Program Files\Inkscape\share\inkscape\extensions
 	C:\Program Files\Inkscape\share\inkscape\extensions\inkex\deprecated-simple
-	C:\Program Files\Inkscape\lib\python311.zip
-	C:\Program Files\Inkscape\lib\python3.11
-	C:\Program Files\Inkscape\lib\python3.11\lib-dynload
-	C:\Program Files\Inkscape\lib\python3.11\site-packages
+	C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\python312.zip
+	C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\DLLs
+	C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\Lib
+	C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312
+	C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\Lib\site-packages
+	C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\Lib\site-packages\win32
+	C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\Lib\site-packages\win32\lib
+	C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\Lib\site-packages\Pythonwin
 	C:\Program Files\Inkscape\share\inkscape\extensions\inkex\deprecated-simple
 
 Args:
@@ -42,4 +46,4 @@ Args:
 	--desc=false
 	--blurradius=1
 	--blurdelta=20.0
-	C:\Users\DELL52~1\AppData\Local\Temp\ink_ext_XXXXXX.svg6QCWZ2
+	C:\Users\DELL52~1\AppData\Local\Temp\ink_ext_XXXXXX.svgM3CYZ2

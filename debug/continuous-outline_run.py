@@ -1,15 +1,19 @@
-#!C:\Program Files\Inkscape\bin\pythonw.exe
-# 2025-01-08 11:13:43.497260
+#!C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\python.exe
+# 2025-01-08 18:21:38.461422
 import sys
 import os
 sys.path.append('C:\Users\Dell 5290\AppData\Roaming\inkscape\extensions\continuous-outline')
 sys.path.append('C:\Users\Dell 5290\AppData\Roaming\inkscape\extensions')
 sys.path.append('C:\Program Files\Inkscape\share\inkscape\extensions')
 sys.path.append('C:\Program Files\Inkscape\share\inkscape\extensions\inkex\deprecated-simple')
-sys.path.append('C:\Program Files\Inkscape\lib\python311.zip')
-sys.path.append('C:\Program Files\Inkscape\lib\python3.11')
-sys.path.append('C:\Program Files\Inkscape\lib\python3.11\lib-dynload')
-sys.path.append('C:\Program Files\Inkscape\lib\python3.11\site-packages')
+sys.path.append('C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\python312.zip')
+sys.path.append('C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\DLLs')
+sys.path.append('C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\Lib')
+sys.path.append('C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312')
+sys.path.append('C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\Lib\site-packages')
+sys.path.append('C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\Lib\site-packages\win32')
+sys.path.append('C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\Lib\site-packages\win32\lib')
+sys.path.append('C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\Lib\site-packages\Pythonwin')
 sys.path.append('C:\Program Files\Inkscape\share\inkscape\extensions\inkex\deprecated-simple')
 args = [
     "--id=path4",
