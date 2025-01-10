@@ -104,6 +104,20 @@ class Continuous_outline(inkex.EffectExtension):
         img.save(exportfile, "png")
 
         return exportfile
+
+    def get_image_offsets(self, svg_image):
+        # Determine image offsets
+        parent = svg_image.getparent()
+        if parent is not None and parent != self.document.getroot():
+            tpc = parent.composed_transform()
+            x_offset = tpc.e + float(svg_image.get('x'))
+            y_offset = tpc.f + float(svg_image.get('y'))
+        else:
+            x_offset = float(svg_image.get('x'))
+            y_offset = float(svg_image.get('y'))
+
+        return (x_offset, y_offset)
+
     def fit_svg(self, exportfile, image):
         # Delete the temporary png file again because we do not need it anymore
         if os.path.exists(exportfile):
@@ -169,14 +183,7 @@ class Continuous_outline(inkex.EffectExtension):
 
     def isolate_sub_images(self, detail_bounds, export_file, image_in_svg):
         #Determine image offsets
-        parent = image_in_svg.getparent()
-        if parent is not None and parent != self.document.getroot():
-            tpc = parent.composed_transform()
-            x_offset = tpc.e + float(image_in_svg.get('x'))
-            y_offset = tpc.f + float(image_in_svg.get('y'))
-        else:
-            x_offset = float(image_in_svg.get('x'))
-            y_offset = float(image_in_svg.get('y'))
+        (x_offset, y_offset) = self.get_image_offsets(image_in_svg)
 
         with Image.open(export_file) as image:
             image_size = image.size
@@ -257,9 +264,6 @@ class Continuous_outline(inkex.EffectExtension):
                     main_image_outline = edge.detect_image_contours(exportfile)
                     contours_all = list(cp.deepcopy(main_image_outline))
 
-                    # bounds_dicts.append({"localorigin": local_origin, "imageobject": cropped_image,
-                    #                      "imagepath": output_path})
-
                     with Image.open(exportfile) as image:
                         image_size = image.size
 
@@ -267,29 +271,49 @@ class Continuous_outline(inkex.EffectExtension):
                         y_scale = image_size[1] / float(svg_image.get('height'))
                         scale_nd = np.array([x_scale, y_scale])
 
+                    # Determine image offsets
+                    main_image_offsets = np.array(self.get_image_offsets(svg_image))
+
+                    #Offset main contours to line up with master photo on svg
+                    contours_transformed = []
+                    for contour in contours_all:
+                        new_contour = []
+                        for point in contour:
+                            # self.msg("Before: " + str(point))
+                            new_contour.append(list((point/scale_nd + main_image_offsets)[0]))
+                            # self.msg("After: " + str(newpoint[0]))
+                        contours_transformed.append(new_contour)
+
+                    # bounds_dicts.append({"localorigin": local_origin, "imageobject": cropped_image,
+                    #                      "imagepath": output_path})
+
                     for detail_sub_dict in detail_sub_dicts:
                         path = detail_sub_dict["imagepath"]
                         detail_outline = edge.detect_image_contours(path)
 
                         #Offset detail to line up with master photo
                         for contour in detail_outline:
+                            new_contour = []
                             for point in contour:
-                                self.msg("Before: " + str(point))
-                                point = (point + detail_sub_dict["localorigin"])/scale_nd
-                                self.msg("After: " + str(point))
-                                contours_all.extend(detail_outline)
+                                # self.msg("Before: " + str(point))
+                                new_contour.append(list(((point + detail_sub_dict["localorigin"])/scale_nd +
+                                                         main_image_offsets)[0]))
+                                # point = (point + detail_sub_dict["localorigin"]).astype(int)
+                                # point = point.astype(int)
+                                # self.msg("After: " + str(point))
+                            contours_transformed.append(new_contour)
 
                     #TODO: need to save temp sub images?
                     # Build the path commands
                     commands = []
 
-                    for contour in contours_all:
+                    for contour in contours_transformed:
                         for i, point in enumerate(contour):
-                            point_list = list(point[0])
                             if i == 0:
-                                commands.append(['M', list(point[0])])  # Move to the first point
+                                commands.append(['M', point])  # Move to the first point
                             else:
-                                commands.append(['L', list(point[0])])  # Line to the next point
+                                commands.append(['L', point])  # Line to the next point
+                            self.msg(str(point))
                         # commands.append(['Z'])  # Close path
 
                     # Create the inkex.Path

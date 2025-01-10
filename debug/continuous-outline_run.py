@@ -1,5 +1,5 @@
 #!C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\python.exe
-# 2025-01-08 18:21:38.461422
+# 2025-01-10 12:15:04.834352
 import sys
 import os
 sys.path.append('C:\Users\Dell 5290\AppData\Roaming\inkscape\extensions\continuous-outline')

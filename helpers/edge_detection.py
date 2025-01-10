@@ -21,7 +21,7 @@ def detect_image_contours(image_path):
     while np.mean(iterImg) > 0.01 * np.max(iterImg) and iters < 1000:
         iters += 1
         mask = np.zeros_like(img)
-        cv2.drawContours(mask, contoursall, -1, (255), thickness=20)
+        cv2.drawContours(mask, contoursall, -1, (255), thickness=2000)
         # cv2.imshow('Traced Image', mask)
         # cv2.waitKey(0)
         # cv2.destroyAllWindows()

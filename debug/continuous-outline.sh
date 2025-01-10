@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 2025-01-08 18:21:38.459848
+# 2025-01-10 12:15:04.833813
 
 export DEBUG_RECURSION=1
 export PYTHONPATH=C:\Users\Dell 5290\AppData\Roaming\inkscape\extensions\continuous-outline;C:\Users\Dell 5290\AppData\Roaming\inkscape\extensions;C:\Program Files\Inkscape\share\inkscape\extensions;C:\Program Files\Inkscape\share\inkscape\extensions\inkex\deprecated-simple;C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\python312.zip;C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\DLLs;C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\Lib;C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312;C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\Lib\site-packages;C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\Lib\site-packages\win32;C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\Lib\site-packages\win32\lib;C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\Lib\site-packages\Pythonwin;C:\Program Files\Inkscape\share\inkscape\extensions\inkex\deprecated-simple
