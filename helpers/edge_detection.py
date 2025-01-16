@@ -18,19 +18,19 @@ def detect_image_contours(image_path):
     iterImg = binary
     contoursall = cp.deepcopy(contours)
     iters = 0
-    while np.mean(iterImg) > 0.01 * np.max(iterImg) and iters < 1000:
-        iters += 1
-        mask = np.zeros_like(img)
-        cv2.drawContours(mask, contoursall, -1, (255), thickness=2000)
-        # cv2.imshow('Traced Image', mask)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-
-        img_without_contours = cv2.bitwise_and(img, img, mask=cv2.bitwise_not(mask))
-        iterImg = cp.deepcopy(img_without_contours)
-        # Detect contours
-        _, binary2 = cv2.threshold(img_without_contours, 1, np.max(img_without_contours), cv2.THRESH_BINARY)
-        contours2, _ = cv2.findContours(binary2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contoursall = contoursall + contours2
+    # while np.mean(iterImg) > 0.01 * np.max(iterImg) and iters < 1000:
+    #     iters += 1
+    #     mask = np.zeros_like(img)
+    #     cv2.drawContours(mask, contoursall, -1, (255), thickness=2000)
+    #     # cv2.imshow('Traced Image', mask)
+    #     # cv2.waitKey(0)
+    #     # cv2.destroyAllWindows()
+    #
+    #     img_without_contours = cv2.bitwise_and(img, img, mask=cv2.bitwise_not(mask))
+    #     iterImg = cp.deepcopy(img_without_contours)
+    #     # Detect contours
+    #     _, binary2 = cv2.threshold(img_without_contours, 1, np.max(img_without_contours), cv2.THRESH_BINARY)
+    #     contours2, _ = cv2.findContours(binary2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    #     contoursall = contoursall + contours2
 
     return contoursall

@@ -4,14 +4,19 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Got isolated edge detection working, sorta working, scaling is off, crashing unsure why">
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Scaling working for sub-contours!">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Test 1.svg" beforeDir="false" afterPath="$PROJECT_DIR$/Test 1.svg" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/debug/continuous-outline.debug" beforeDir="false" afterPath="$PROJECT_DIR$/debug/continuous-outline.debug" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/debug/continuous-outline.sh" beforeDir="false" afterPath="$PROJECT_DIR$/debug/continuous-outline.sh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/debug/continuous-outline_run.py" beforeDir="false" afterPath="$PROJECT_DIR$/debug/continuous-outline_run.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/debug/input_file.svg" beforeDir="false" afterPath="$PROJECT_DIR$/debug/input_file.svg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/edge_detection.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detection.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers.png" beforeDir="false" afterPath="$PROJECT_DIR$/helpers.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sub_image_0.png" beforeDir="false" afterPath="$PROJECT_DIR$/sub_image_0.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sub_image_1.png" beforeDir="false" afterPath="$PROJECT_DIR$/sub_image_1.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sub_image_2.png" beforeDir="false" afterPath="$PROJECT_DIR$/sub_image_2.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sub_image_3.png" beforeDir="false" afterPath="$PROJECT_DIR$/sub_image_3.png" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -113,7 +118,15 @@
       <option name="project" value="LOCAL" />
       <updated>1736389585260</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Scaling working for sub-contours!">
+      <option name="closed" value="true" />
+      <created>1736540161522</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1736540161522</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -121,6 +134,7 @@
     <MESSAGE value="Initial sub image gen function, working but dimensioning all off" />
     <MESSAGE value="Scaling &amp; shifting working for rect &amp; ellipse crop" />
     <MESSAGE value="Got isolated edge detection working, sorta working, scaling is off, crashing unsure why" />
-    <option name="LAST_COMMIT_MESSAGE" value="Got isolated edge detection working, sorta working, scaling is off, crashing unsure why" />
+    <MESSAGE value="Scaling working for sub-contours!" />
+    <option name="LAST_COMMIT_MESSAGE" value="Scaling working for sub-contours!" />
   </component>
 </project>

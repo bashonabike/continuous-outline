@@ -279,13 +279,9 @@ class Continuous_outline(inkex.EffectExtension):
                     for contour in contours_all:
                         new_contour = []
                         for point in contour:
-                            # self.msg("Before: " + str(point))
                             new_contour.append(list((point/scale_nd + main_image_offsets)[0]))
-                            # self.msg("After: " + str(newpoint[0]))
                         contours_transformed.append(new_contour)
 
-                    # bounds_dicts.append({"localorigin": local_origin, "imageobject": cropped_image,
-                    #                      "imagepath": output_path})
 
                     for detail_sub_dict in detail_sub_dicts:
                         path = detail_sub_dict["imagepath"]
@@ -295,12 +291,8 @@ class Continuous_outline(inkex.EffectExtension):
                         for contour in detail_outline:
                             new_contour = []
                             for point in contour:
-                                # self.msg("Before: " + str(point))
                                 new_contour.append(list(((point + detail_sub_dict["localorigin"])/scale_nd +
                                                          main_image_offsets)[0]))
-                                # point = (point + detail_sub_dict["localorigin"]).astype(int)
-                                # point = point.astype(int)
-                                # self.msg("After: " + str(point))
                             contours_transformed.append(new_contour)
 
                     #TODO: need to save temp sub images?

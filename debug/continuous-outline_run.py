@@ -1,5 +1,5 @@
 #!C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\python.exe
-# 2025-01-10 12:15:04.834352
+# 2025-01-10 12:55:38.072657
 import sys
 import os
 sys.path.append('C:\Users\Dell 5290\AppData\Roaming\inkscape\extensions\continuous-outline')
@@ -16,12 +16,7 @@ sys.path.append('C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\Lib\
 sys.path.append('C:\Users\Dell 5290\AppData\Local\Programs\Python\Python312\Lib\site-packages\Pythonwin')
 sys.path.append('C:\Program Files\Inkscape\share\inkscape\extensions\inkex\deprecated-simple')
 args = [
-    "--id=path4",
-    "--id=rect4",
     "--id=image1",
-    "--id=rect3",
-    "--id=rect2",
-    "--id=rect1",
     "--tab=tab_general",
     "--keeporiginal=false",
     "--ltres=1.0",
