@@ -261,8 +261,10 @@ class Continuous_outline(inkex.EffectExtension):
                 for svg_image in images:
                     exportfile = self.image_prep(svg_image)
                     detail_sub_dicts = self.isolate_sub_images(detail_bounds, exportfile, svg_image)
-                    main_image_outline = edge.detect_image_contours(exportfile)
+                    edge.k_means_clustering(exportfile)
+                    main_image_outline = edge.detect_edges('clustered.png')
                     contours_all = list(cp.deepcopy(main_image_outline))
+                    edge.vectorize_edgified_image(contours_all)
 
                     with Image.open(exportfile) as image:
                         image_size = image.size
@@ -285,7 +287,7 @@ class Continuous_outline(inkex.EffectExtension):
 
                     for detail_sub_dict in detail_sub_dicts:
                         path = detail_sub_dict["imagepath"]
-                        detail_outline = edge.detect_image_contours(path)
+                        detail_outline = edge.detect_edges(path)
 
                         #Offset detail to line up with master photo
                         for contour in detail_outline:
@@ -305,7 +307,7 @@ class Continuous_outline(inkex.EffectExtension):
                                 commands.append(['M', point])  # Move to the first point
                             else:
                                 commands.append(['L', point])  # Line to the next point
-                            self.msg(str(point))
+                            # self.msg(str(point))
                         # commands.append(['Z'])  # Close path
 
                     # Create the inkex.Path
