@@ -264,7 +264,7 @@ class Continuous_outline(inkex.EffectExtension):
                     edge.k_means_clustering(exportfile)
                     main_image_outline = edge.detect_edges('clustered.png')
                     contours_all = list(cp.deepcopy(main_image_outline))
-                    edge.vectorize_edgified_image(contours_all)
+                    # edge.vectorize_edgified_image(contours_all)
 
                     with Image.open(exportfile) as image:
                         image_size = image.size

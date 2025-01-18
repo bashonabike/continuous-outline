@@ -4,12 +4,88 @@ import copy as cp
 import vtracer as vt
 import autotrace as aut
 from sklearn.cluster import KMeans
+from svgpathtools import Path, Line, parse_path, wsvg, CubicBezier
+from svgpathtools import svg2paths2
+import math
 
 import matplotlib.pyplot as plt
+import helpers.ftlib as ft
+from PIL import Image, ImageDraw
 
 from autotrace import Bitmap, VectorFormat
 from PIL import Image
 
+import helpers.StrayPixelRemover as spr
+
+def split_contour_by_accumulated_deflection(contour, angle_threshold=270):
+    """
+    Splits a contour into sub-contours when the accumulated angle of deflection
+    exceeds the threshold.
+
+    Args:
+        contour: A NumPy array representing the contour points (x,y coordinates).
+        angle_threshold: The maximum accumulated deflection angle in degrees.
+
+    Returns:
+        A list of sub-contours, where each sub-contour is a NumPy array
+        of contour points.
+    """
+
+    sub_contours = []
+    current_sub_contour = []
+    accumulated_angle = 0
+    prev_pt = None
+    test = len(contour)
+
+    if len(contour) == 1:
+        sub_contours.append(contour)
+    else:
+        angle_pos, angle_prev_pos, angle_same_dir = True, True, 0
+        for pt_raw in contour:
+            pt = pt_raw[0]
+            angle_prev_pos = angle_pos
+            if prev_pt is not None:
+                # Calculate angle between current and previous segments
+                if len(current_sub_contour) > 1:
+                    prevprev_pt = current_sub_contour[-2][0]
+                    v1, v2 = prev_pt - prevprev_pt, pt - prev_pt
+                    cross_product = np.cross(v1, v2)
+                    dot_product = np.dot(v1, v2)
+                    angle_rad = np.arctan2(cross_product, dot_product)
+                    angle = np.degrees(angle_rad)
+                else:
+                    angle = 0
+
+                # #Reset if angle deviates
+                # if math.copysign(1, angle) != math.copysign(1, accumulated_angle):
+                #     accumulated_angle = 0
+
+                # Accumulate deflection
+                if angle < 0 or angle > 180:
+                    angle_pos = True
+                else:
+                    angle_pos = False
+
+                if angle_pos != angle_prev_pos: angle_same_dir = 0
+                angle_same_dir += (angle + 180)%360-180
+
+                accumulated_angle = 0.8*accumulated_angle + 0.2*angle
+
+                # Check for deflection threshold
+                if (abs(accumulated_angle) >= angle_threshold or
+                         abs(angle_same_dir) > 0.7*angle_threshold ):
+                    sub_contours.append(np.array(current_sub_contour))
+                    current_sub_contour = [[prev_pt]]
+                    accumulated_angle = 0  # Reset accumulated angle
+                    angle_same_dir = 0
+
+            current_sub_contour.append([pt])
+            prev_pt = pt
+
+        if current_sub_contour:
+            sub_contours.append(np.array(current_sub_contour))
+
+    return sub_contours
 def extract_y_channel_manual(img):
   """
   Extracts the Y' channel from an RGB image manually.
@@ -45,6 +121,93 @@ def extract_y_channel_manual(img):
   y_channel = img_yuv[:, :, 0]
   return y_channel
 
+def split_path_by_deflection(path, deflection_threshold=270, distance_threshold=5):
+    """
+    Splits an SVG path into multiple paths if the accumulated angle of deflection
+    exceeds the threshold within a specified distance.
+
+    Args:
+        path: An SVGPathTools Path object.
+        deflection_threshold: The maximum accumulated deflection angle in degrees.
+        distance_threshold: The distance along the path to check for deflection.
+
+    Returns:
+        A list of SVGPathTools Path objects, representing the split paths.
+    """
+
+    split_paths = []
+    current_path = Path()
+    accumulated_deflection = 0
+    distance_traveled = 0
+    prev_tangent = None
+
+    for segment in path:
+        if isinstance(segment, Line):
+            # Calculate tangent for Line
+            tangent = segment.end - segment.start
+        elif isinstance(segment, CubicBezier):
+            # Approximate tangent at the end point of CubicBezier
+            # (More accurate tangent calculation for Bezier curves is possible)
+            tangent = segment.end - segment.control2
+
+        if prev_tangent is not None:
+            # Calculate angle between tangents
+            dot_product = tangent.real * prev_tangent.real + tangent.imag * prev_tangent.imag
+            if (abs(tangent) * abs(prev_tangent)) > 0:
+                try:
+                    angle = math.acos(dot_product / (abs(tangent) * abs(prev_tangent)))
+                except:
+                    angle=math.pi
+            else:
+                angle = 0
+            deflection = angle * 180 / math.pi
+
+            # Accumulate deflection and update distance
+            accumulated_deflection += deflection
+            distance_traveled += segment.length()
+
+            # Check for splitting condition
+            if accumulated_deflection >= deflection_threshold and distance_traveled >= distance_threshold:
+                split_paths.append(current_path)
+                current_path = Path()
+                accumulated_deflection = 0
+                distance_traveled = 0
+
+        current_path.append(segment)
+        prev_tangent = tangent
+
+    # Add the remaining path segment
+    if current_path:
+        split_paths.append(current_path)
+
+    return split_paths
+
+def split_svg_file(input_file_path, output_file_path,
+                   deflection_threshold=270, distance_threshold=5):
+    """
+    Loads an SVG file, splits each path based on deflection and distance,
+    and saves the result to a new SVG file.
+
+    Args:
+        input_file_path: Path to the input SVG file.
+        output_file_path: Path to the output SVG file.
+        deflection_threshold: The maximum accumulated deflection angle in degrees.
+        distance_threshold: The distance along the path to check for deflection.
+    """
+
+    paths, attributes, svg_attributes = svg2paths2(input_file_path)
+    split_paths_list = []
+
+    for path in paths:
+        split_paths = split_path_by_deflection(path, deflection_threshold, distance_threshold)
+        if len(split_paths_list) == 0:
+            split_paths_list = cp.deepcopy(split_paths)
+        else:
+            split_paths_list.extend(split_paths)
+
+    # Write the split paths to the output file
+    wsvg(split_paths_list, attributes=attributes, filename=output_file_path)
+
 def remove_short_edges(image, min_length=10):
   """
   Removes edges from a grayscale image that are shorter than the specified minimum length.
@@ -73,6 +236,39 @@ def remove_short_edges(image, min_length=10):
 
   return result
 
+def vectorize_edgified_image(edges_path):
+    # #vtracer.convert_image_to_svg_py(inp,
+    # out,
+    # colormode = 'color',        # ["color"] or "binary"
+    # hierarchical = 'stacked',   # ["stacked"] or "cutout"
+    # mode = 'spline',            # ["spline"] "polygon", or "none"
+    # filter_speckle = 4,         # default: 4
+    # color_precision = 6,        # default: 6
+    # layer_difference = 16,      # default: 16
+    # corner_threshold = 60,      # default: 60
+    # length_threshold = 4.0,     # in [3.5, 10] default: 4.0
+    # max_iterations = 10,        # default: 10
+    # splice_threshold = 45,      # default: 45
+    # path_precision = 3          # default: 8
+    #                             )
+    # # cv2.imwrite('edges.jpg', edges)
+    vt.convert_image_to_svg_py(edges_path, 'test.svg', colormode='binary')
+    temp = 1
+    # Load an image.
+    # image = np.asarray(Image.open("edges.jpg").convert("RGB"))
+    #
+    # # Create a bitmap.
+    # bitmap = Bitmap(image)
+    #
+    # # Trace the bitmap.
+    # vector = bitmap.trace(centerline=True)
+    #
+    # # Save the vector as an SVG.
+    # vector.save("autotrace.svg")
+    #
+    # # Get an SVG as a byte string.
+    # svg = vector.encode(VectorFormat.SVG)
+
 def detect_edges(image_path):
     # Read image
     img = cv2.imread(image_path, cv2.IMREAD_COLOR)
@@ -81,49 +277,85 @@ def detect_edges(image_path):
     #Result seems basically the same
     img_y = extract_y_channel_manual(img)
     img_g = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img_LAB = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    l_channel, a_channel, b_channel = cv2.split(img_LAB)
+    edges_post_laplace = np.zeros(img_g.shape, dtype=np.uint8)
 
-    # Remove noise by blurring with a Gaussian filter
-    #TODO: play with sigma and kernal size
-    #TODO: guassian blur before or after flattening to single channel
-    img_blurred = cv2.GaussianBlur(img_g, (3, 3), 0)
+    # for channel in [l_channel, a_channel, b_channel]:
+    for channel in [img_g]:
 
-    cannyd = cv2.Canny(img_y, 350, 400)
+        # Remove noise by blurring with a Gaussian filter
+        #TODO: play with sigma and kernal size
+        #TODO: guassian blur before or after flattening to single channel
+        img_blurred = cv2.GaussianBlur(channel, (5,5), 3)
 
-    #TODO: Play with params
-    #src	Source image.
-# dst	Destination image of the same size and the same number of channels as src .
-# ddepth	Desired depth of the destination image, see combinations.
-# ksize	Aperture size used to compute the second-derivative filters. See getDerivKernels for details. The size must be positive and odd.
-# scale	Optional scale factor for the computed Laplacian values. By default, no scaling is applied. See getDerivKernels for details.
-# delta	Optional delta value that is added to the results prior to storing them in dst .
-# borderType	Pixel extrapolation method, see BorderTypes. BORDER_WRAP is not supported.
-    laplaced = cv2.Laplacian(cannyd, -1, ksize=3)
+        # cannyd = cv2.Canny(img_y, 350, 400)
+
+        #TODO: Play with params
+        #src	Source image.
+    # dst	Destination image of the same size and the same number of channels as src .
+    # ddepth	Desired depth of the destination image, see combinations.
+    # ksize	Aperture size used to compute the second-derivative filters. See getDerivKernels for details. The size must be positive and odd.
+    # scale	Optional scale factor for the computed Laplacian values. By default, no scaling is applied. See getDerivKernels for details.
+    # delta	Optional delta value that is added to the results prior to storing them in dst .
+    # borderType	Pixel extrapolation method, see BorderTypes. BORDER_WRAP is not supported.
+        laplaced = cv2.Laplacian(img_blurred, -1, ksize=5)
+
+        _, thresholded = cv2.threshold(laplaced, 127, 255, cv2.THRESH_TOZERO)
+
+        _, binary_orig = cv2.threshold(thresholded, np.max(img) // 2, np.max(img), cv2.THRESH_BINARY)
+        zeros_idx = binary_orig != 0
+        edges_post_laplace[zeros_idx] = binary_orig[zeros_idx]
 
 
+    postedge = edges_post_laplace
 
 
-    if np.mean(laplaced) > 170:
-        laplaced_prime = cv2.bitwise_not(laplaced)
-    else:
-        laplaced_prime = laplaced
+    #
+    # if np.mean(laplaced) > 170:
+    #     laplaced_prime = cv2.bitwise_not(thresholded)
+    # else:
+    #     laplaced_prime = thresholded
 
-    trimmed = remove_short_edges(laplaced_prime, min_length=100)
+    trimmed = remove_short_edges(edges_post_laplace, min_length=5)
+    #
+    # # Create a structuring element (kernel) for dilation
+    # dilation_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3,3))
+    #
+    # # Perform dilation
+    # broaden_edges = cv2.dilate(trimmed, dilation_kernel, iterations=2)
+    #
+    # #Thin edges
+    # thin_edges = cv2.erode(broaden_edges, dilation_kernel, iterations=2)
+    #
+    # trimmed_thin = remove_short_edges(thin_edges, min_length=1000)
 
-    # Create a structuring element (kernel) for dilation
-    dilation_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3,3))
+    # cv2.imwrite('edges.jpg', trimmed_thin)
 
-    # Perform dilation
-    broaden_edges = cv2.dilate(trimmed, dilation_kernel, iterations=2)
+    pxrem = spr.StrayPixelRemover(1, 30)
+    pixels_removed = pxrem.process(trimmed)
 
-    #Thin edges
-    thin_edges = cv2.erode(broaden_edges, dilation_kernel, iterations=2)
+    # thinned_invert = ft.fastThin(pixels_removed)
+    # _, thinned_raw = cv2.threshold(thinned_invert, 127, 255, cv2.THRESH_BINARY_INV)
+    # # thinned_bool, px_rem_bool = thinned_raw.astype(bool), pixels_removed.astype(bool)
+    # # thinned_corr_bool = (thinned_bool & px_rem_bool)
+    # # thinned = thinned_corr_bool.astype(np.uint8)
+    # thinned = thinned_raw
+    final = trimmed
 
-    trimmed_thin = remove_short_edges(thin_edges, min_length=1000)
+    contours, _ = cv2.findContours(trimmed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    split_contours = []
+    for contour in contours:
+        split_contours.extend(split_contour_by_accumulated_deflection(contour, angle_threshold=270))
+    svg_paths = []
+    for contour in split_contours:
+        path_data = "M " + " ".join(["{},{}".format(x[0][0], x[0][1]) for x in contour])
+        svg_paths.append(Path(path_data))
 
-    cv2.imwrite('edges.jpg', trimmed_thin)
+    # Write SVG file
+    wsvg(svg_paths, filename='test2.svg')
 
-    # Thresholding to get binary image
-    _, binary = cv2.threshold(laplaced_prime, np.max(img) // 2, np.max(img), cv2.THRESH_BINARY)
+
 
     # Detect contours
     # contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -147,40 +379,7 @@ def detect_edges(image_path):
     #     contours2, _ = cv2.findContours(binary2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     #     contoursall = contoursall + contours2
 
-    return binary
-
-def vectorize_edgified_image(edges):
-    # #vtracer.convert_image_to_svg_py(inp,
-    # out,
-    # colormode = 'color',        # ["color"] or "binary"
-    # hierarchical = 'stacked',   # ["stacked"] or "cutout"
-    # mode = 'spline',            # ["spline"] "polygon", or "none"
-    # filter_speckle = 4,         # default: 4
-    # color_precision = 6,        # default: 6
-    # layer_difference = 16,      # default: 16
-    # corner_threshold = 60,      # default: 60
-    # length_threshold = 4.0,     # in [3.5, 10] default: 4.0
-    # max_iterations = 10,        # default: 10
-    # splice_threshold = 45,      # default: 45
-    # path_precision = 3          # default: 8
-    #                             )
-    # # cv2.imwrite('edges.jpg', edges)
-    vt.convert_image_to_svg_py('edges.jpg', 'test.svg', colormode='binary')
-    temp = 1
-    # Load an image.
-    # image = np.asarray(Image.open("edges.jpg").convert("RGB"))
-    #
-    # # Create a bitmap.
-    # bitmap = Bitmap(image)
-    #
-    # # Trace the bitmap.
-    # vector = bitmap.trace(centerline=True)
-    #
-    # # Save the vector as an SVG.
-    # vector.save("autotrace.svg")
-    #
-    # # Get an SVG as a byte string.
-    # svg = vector.encode(VectorFormat.SVG)
+    return postedge,final, pixels_removed
 
 def k_means_clustering(image_path):
     pic = plt.imread(image_path)
