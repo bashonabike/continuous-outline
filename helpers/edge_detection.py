@@ -1,8 +1,8 @@
 import numpy as np
 import cv2
 import copy as cp
-import vtracer as vt
-import autotrace as aut
+# import vtracer as vt
+# import autotrace as aut
 from sklearn.cluster import KMeans
 from svgpathtools import Path, Line, parse_path, wsvg, CubicBezier
 from svgpathtools import svg2paths2
@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import helpers.ftlib as ft
 from PIL import Image, ImageDraw
 
-from autotrace import Bitmap, VectorFormat
+# from autotrace import Bitmap, VectorFormat
 from PIL import Image
 
 import helpers.StrayPixelRemover as spr
@@ -252,7 +252,7 @@ def vectorize_edgified_image(edges_path):
     # path_precision = 3          # default: 8
     #                             )
     # # cv2.imwrite('edges.jpg', edges)
-    vt.convert_image_to_svg_py(edges_path, 'test.svg', colormode='binary')
+    # vt.convert_image_to_svg_py(edges_path, 'test.svg', colormode='binary')
     temp = 1
     # Load an image.
     # image = np.asarray(Image.open("edges.jpg").convert("RGB"))
@@ -317,7 +317,7 @@ def detect_edges(image_path):
     # else:
     #     laplaced_prime = thresholded
 
-    trimmed = remove_short_edges(edges_post_laplace, min_length=5)
+    trimmed = remove_short_edges(edges_post_laplace, min_length=1)
     #
     # # Create a structuring element (kernel) for dilation
     # dilation_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3,3))
@@ -343,14 +343,16 @@ def detect_edges(image_path):
     # thinned = thinned_raw
     final = trimmed
 
-    contours, _ = cv2.findContours(trimmed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(postedge, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     split_contours = []
     for contour in contours:
         split_contours.extend(split_contour_by_accumulated_deflection(contour, angle_threshold=270))
     svg_paths = []
     for contour in split_contours:
         path_data = "M " + " ".join(["{},{}".format(x[0][0], x[0][1]) for x in contour])
-        svg_paths.append(Path(path_data))
+        path = Path(path_data)
+        if path.length() > 0:
+            svg_paths.append(Path(path_data))
 
     # Write SVG file
     wsvg(svg_paths, filename='test2.svg')
@@ -379,7 +381,7 @@ def detect_edges(image_path):
     #     contours2, _ = cv2.findContours(binary2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     #     contoursall = contoursall + contours2
 
-    return postedge,final, pixels_removed
+    return postedge,final, pixels_removed,split_contours
 
 def k_means_clustering(image_path):
     pic = plt.imread(image_path)

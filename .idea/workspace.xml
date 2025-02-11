@@ -4,11 +4,19 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="ACtually getting stuff going!  comparing various algorithms etc">
-      <change afterPath="$PROJECT_DIR$/helpers/SLIC-Segmentation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/continuous-outline.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/continuous-outline.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Add SLIC starter">
+      <change afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/image_fx_(5).jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helpers/SLIC_Segmentation.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helpers/draw_outline.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/edges_image_fx_(18).jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/edges_pxs_rmvd_image_fx_(18).jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/filtered_edges_image_fx_(18).jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/image_fx_(18).jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/SLIC-Segmentation.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/edge_detection.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detection.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test2.svg" beforeDir="false" afterPath="$PROJECT_DIR$/test2.svg" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -56,18 +64,21 @@
     "com.codeium.enabled": "true",
     "git-widget-placeholder": "master",
     "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "C:/Users/Dell 5290/PycharmProjects/inkscape_ExtensionDevTools-master",
+    "last_opened_file_path": "C:/Users/liamc/PycharmProjects/continuous-outline/Trial-AI-Base-Images",
     "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
   }
 }]]></component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\Trial-AI-Base-Images" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\helpers" />
       <recent name="C:\Users\Dell 5290\AppData\Roaming\inkscape\extensions\continuous-outline\continuous-outline" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.SLIC-Segmentation">
-    <configuration name="SLIC-Segmentation" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Python.Testing">
+    <configuration name="SLIC_Segmentation" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="continuous-outline" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -80,7 +91,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="C:\Users\liamc\PycharmProjects\continuous-outline\helpers\SLIC-Segmentation.py" />
+      <option name="SCRIPT_NAME" value="C:\Users\liamc\PycharmProjects\continuous-outline\helpers\SLIC_Segmentation.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -113,13 +124,13 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Python.SLIC-Segmentation" />
+      <item itemvalue="Python.SLIC_Segmentation" />
       <item itemvalue="Python.Testing" />
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.SLIC-Segmentation" />
         <item itemvalue="Python.Testing" />
+        <item itemvalue="Python.SLIC_Segmentation" />
       </list>
     </recent_temporary>
   </component>
@@ -195,7 +206,15 @@
       <option name="project" value="LOCAL" />
       <updated>1737077627983</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="Add SLIC starter">
+      <option name="closed" value="true" />
+      <created>1738884586880</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1738884586880</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -217,7 +236,8 @@
     <MESSAGE value="Scaling working for sub-contours!" />
     <MESSAGE value="Not sure" />
     <MESSAGE value="ACtually getting stuff going!  comparing various algorithms etc" />
-    <option name="LAST_COMMIT_MESSAGE" value="ACtually getting stuff going!  comparing various algorithms etc" />
+    <MESSAGE value="Add SLIC starter" />
+    <option name="LAST_COMMIT_MESSAGE" value="Add SLIC starter" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -228,14 +248,9 @@
           <option name="timeStamp" value="14" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/edge_detection.py</url>
-          <line>71</line>
-          <option name="timeStamp" value="46" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/SLIC-Segmentation.py</url>
-          <line>18</line>
-          <option name="timeStamp" value="47" />
+          <url>file://$PROJECT_DIR$/helpers/draw_outline.py</url>
+          <line>37</line>
+          <option name="timeStamp" value="76" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
