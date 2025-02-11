@@ -4,19 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Add SLIC starter">
-      <change afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/image_fx_(5).jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/helpers/SLIC_Segmentation.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/helpers/draw_outline.py" afterDir="false" />
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Working on slic, drawing alg">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/edges_image_fx_(18).jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/edges_pxs_rmvd_image_fx_(18).jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/filtered_edges_image_fx_(18).jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/image_fx_(18).jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/SLIC-Segmentation.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/edge_detection.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detection.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test2.svg" beforeDir="false" afterPath="$PROJECT_DIR$/test2.svg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/SLIC_Segmentation.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,12 +30,12 @@
     &quot;assignee&quot;: &quot;bashonabike&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/bashonabike/continuous-outline.git",
-    "accountId": "58e94c20-7d39-4b4a-93e7-7d4618e59941"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/bashonabike/continuous-outline.git&quot;,
+    &quot;accountId&quot;: &quot;58e94c20-7d39-4b4a-93e7-7d4618e59941&quot;
   }
-}]]></component>
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 6
 }</component>
@@ -54,20 +45,20 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.SLIC-Segmentation.executor": "Debug",
-    "Python.Testing.executor": "Run",
-    "Python.edge_detection.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "com.codeium.enabled": "true",
-    "git-widget-placeholder": "master",
-    "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "C:/Users/liamc/PycharmProjects/continuous-outline/Trial-AI-Base-Images",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.SLIC-Segmentation.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Testing.executor&quot;: &quot;Run&quot;,
+    &quot;Python.edge_detection.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;com.codeium.enabled&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/liamc/PycharmProjects/continuous-outline/Trial-AI-Base-Images&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\Trial-AI-Base-Images" />
@@ -214,7 +205,15 @@
       <option name="project" value="LOCAL" />
       <updated>1738884586880</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Working on slic, drawing alg">
+      <option name="closed" value="true" />
+      <created>1739241835143</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1739241835143</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -237,7 +236,8 @@
     <MESSAGE value="Not sure" />
     <MESSAGE value="ACtually getting stuff going!  comparing various algorithms etc" />
     <MESSAGE value="Add SLIC starter" />
-    <option name="LAST_COMMIT_MESSAGE" value="Add SLIC starter" />
+    <MESSAGE value="Working on slic, drawing alg" />
+    <option name="LAST_COMMIT_MESSAGE" value="Working on slic, drawing alg" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -246,11 +246,6 @@
           <url>file://$PROJECT_DIR$/helpers/edge_detection.py</url>
           <line>208</line>
           <option name="timeStamp" value="14" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/draw_outline.py</url>
-          <line>37</line>
-          <option name="timeStamp" value="76" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

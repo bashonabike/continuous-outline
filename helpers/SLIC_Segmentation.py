@@ -26,10 +26,25 @@ from typing import List, Tuple
 # # show the plots
 # plt.show()
 
-def slic_image_test_boundaries(img_path, split_contours):
+def mask_test_boundaries(img_path, split_contours):
+	#NOTE: only work PNG with transparent bg, or where background is all white
+	img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
+	mask = None
+	if img.shape[2] == 4:  # Check if it has an alpha channel
+		alpha = img[:, :, 3]  # Get the alpha channel
+		mask = np.where(alpha > 0, 1, 0).astype(np.uint8)  # Create binary mask
+	else:
+		# Image has no alpha channel, treat white as background
+		mask = np.where(img == np.max(img), 0, 1).astype(np.uint8)  # Create binary mask
+
+	return find_contours_near_boundaries(split_contours, mask, tolerance=2), mask
+
+
+def slic_image_test_boundaries(im_float, split_contours, num_segments:int =2):
 	segments = None
-	for num_segs in range(100, 110):
-		segments_trial = slic(img_path, n_segments=num_segs, sigma=5, enforce_connectivity=True)
+	#TODO: maybe do 2 segmentations, one manifold one just for the outline, use manifold one to determine some details
+	for num_segs in range(num_segments, num_segments+20):
+		segments_trial = slic(im_float, n_segments=num_segs, sigma=5, enforce_connectivity=True)
 		if np.max(segments_trial) > 1:
 			segments = segments_trial
 			break

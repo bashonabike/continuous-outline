@@ -49,7 +49,9 @@ for file in os.listdir("Trial-AI-Base-Images"):
 
       #Segment
       im_float = img_as_float(io.imread(image_path))
-      near_boudaries_contours, segments = slic.slic_image_test_boundaries(im_float, split_contours)
+      # near_boudaries_contours, segments = slic.slic_image_test_boundaries(im_float, split_contours)
+      near_boudaries_contours, segments = slic.mask_test_boundaries(image_path, split_contours)
+      details_boundaries_contours = slic.slic_image_test_boundaries(im_float, split_contours, num_segments=150)
       image_with_contours = (mark_boundaries(cv2.imread(image_path), segments) * 255).astype(np.uint8)  # Create a copy to avoid modifying the original
       # cv2.drawContours(image_with_contours, tuple(split_contours), -1, (255,0,0), 1)  # -1 draws all contours
       # cv2.drawContours(image_with_contours, tuple(near_boudaries_contours), -1, (0, 255, 255), 3)  # -1 draws all contours
