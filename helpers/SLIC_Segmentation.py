@@ -35,7 +35,10 @@ def mask_test_boundaries(img_path, split_contours):
 		mask = np.where(alpha > 0, 1, 0).astype(np.uint8)  # Create binary mask
 	else:
 		# Image has no alpha channel, treat white as background
-		mask = np.where(img == np.max(img), 0, 1).astype(np.uint8)  # Create binary mask
+		grey = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+		_, inverted = cv2.threshold(grey, 0.9*np.max(grey), 1, cv2.THRESH_BINARY)
+		mask = np.where(inverted == 0, 1, 0).astype(np.uint8)  # Create binary mask
+
 
 	return find_contours_near_boundaries(split_contours, mask, tolerance=2), mask
 

@@ -16,6 +16,8 @@ def connect_paths(image, paths, obliteration_radius=5):
 
     #TODO: try to minimize sudden changes in pen direction
     #TODO: maybe try breaking up the constituent paths a bit more so have more to select from
+    #TODO: maybe treat like maze, send agents to explore all possible paths within restrictions get best one
+    #TODO: govern restrictions by input params maybe
 
     if not paths:
         return None, None
@@ -35,7 +37,7 @@ def connect_paths(image, paths, obliteration_radius=5):
         for i, path in enumerate(paths):
             if not used_paths[i]:
                 for point in path:
-                    if obliterated_mask[int(point[0][1]), int(point[0][0])] == 0: #Check if obliterated
+                    if obliterated_mask[int(point[0][0]), int(point[0][1])] == 0: #Check if obliterated
                         dist = distance(current_point, point)
                         if dist < min_dist:
                             min_dist = dist
@@ -62,14 +64,15 @@ def connect_paths(image, paths, obliteration_radius=5):
             connection_line = np.array([last_point, nearest_point])
 
             # Obliterate the region around the connection line
-            for i in range(2):
-                for x in range(min(int(connection_line[i][0][0]), int(connection_line[1][0][0])) - obliteration_radius,
-                               max(int(connection_line[i][0][0]), int(connection_line[1][0][0])) + obliteration_radius + 1):
-                    for y in range(min(int(connection_line[i][0][1]), int(connection_line[1][0][1])) - obliteration_radius,
-                                   max(int(connection_line[i][0][1]), int(connection_line[1][0][1])) + obliteration_radius + 1):
-                        if (0 <= x < image.shape[1] and 0 <= y < image.shape[0] and distance((x, y), connection_line[i])
-                                <= obliteration_radius):
-                            obliterated_mask[y, x] = 1
+            draw_path(obliterated_mask, paths[nearest_path_index], (255,255,255), thickness=4, in_place=True)
+            # for i in range(2):
+            #     for x in range(min(int(connection_line[i][0][0]), int(connection_line[1][0][0])) - obliteration_radius,
+            #                    max(int(connection_line[i][0][0]), int(connection_line[1][0][0])) + obliteration_radius + 1):
+            #         for y in range(min(int(connection_line[i][0][1]), int(connection_line[1][0][1])) - obliteration_radius,
+            #                        max(int(connection_line[i][0][1]), int(connection_line[1][0][1])) + obliteration_radius + 1):
+            #             if (0 <= x < image.shape[1] and 0 <= y < image.shape[0] and distance((x, y), connection_line[i])
+            #                     <= obliteration_radius):
+            #                 obliterated_mask[y, x] = 1
 
             connected_path.extend(paths[nearest_path_index])
             used_paths[nearest_path_index] = True
@@ -80,9 +83,10 @@ def connect_paths(image, paths, obliteration_radius=5):
     return np.array(connected_path), obliterated_mask
 
 
-def draw_path(image, path, color=(0, 0, 255), thickness=2):
+def draw_path(image, path, color=(0, 0, 255), thickness=2, in_place=False):
     """Draws a path on an image."""
-    image_with_path = image.copy()
+    if in_place: image_with_path = image
+    else: image_with_path = image.copy()
     if path is not None and len(path) > 1:
         for i in range(len(path) - 1):
             start_point = tuple(path[i][0].astype(int))

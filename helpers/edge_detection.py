@@ -317,7 +317,7 @@ def detect_edges(image_path):
     # else:
     #     laplaced_prime = thresholded
 
-    trimmed = remove_short_edges(edges_post_laplace, min_length=1)
+    # trimmed = remove_short_edges(edges_post_laplace, min_length=1)
     #
     # # Create a structuring element (kernel) for dilation
     # dilation_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3,3))
@@ -332,8 +332,8 @@ def detect_edges(image_path):
 
     # cv2.imwrite('edges.jpg', trimmed_thin)
 
-    pxrem = spr.StrayPixelRemover(1, 30)
-    pixels_removed = pxrem.process(trimmed)
+    # pxrem = spr.StrayPixelRemover(1, 30)
+    # pixels_removed = pxrem.process(trimmed)
 
     # thinned_invert = ft.fastThin(pixels_removed)
     # _, thinned_raw = cv2.threshold(thinned_invert, 127, 255, cv2.THRESH_BINARY_INV)
@@ -341,7 +341,7 @@ def detect_edges(image_path):
     # # thinned_corr_bool = (thinned_bool & px_rem_bool)
     # # thinned = thinned_corr_bool.astype(np.uint8)
     # thinned = thinned_raw
-    final = trimmed
+    # final = trimmed
 
     contours, _ = cv2.findContours(postedge, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     split_contours = []
@@ -381,7 +381,7 @@ def detect_edges(image_path):
     #     contours2, _ = cv2.findContours(binary2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     #     contoursall = contoursall + contours2
 
-    return postedge,final, pixels_removed,split_contours
+    return postedge,split_contours
 
 def k_means_clustering(image_path):
     pic = plt.imread(image_path)

@@ -5,9 +5,24 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Working on slic, drawing alg">
+      <change afterPath="$PROJECT_DIR$/helpers/AgentStats.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helpers/DrawingAgent.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helpers/Enums.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helpers/NodeSet.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helpers/ParsePathsIntoObjects.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helpers/TourConstraints.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helpers/TourNode.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/border_edges_image_fx_(5).jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/drawn_image_fx_(5).jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/edges_image_fx_(5).jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/edges_pxs_rmvd_image_fx_(5).jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/filtered_edges_image_fx_(5).jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/oblit_image_fx_(5).jpg" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/SLIC_Segmentation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/draw_outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/draw_outline.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/edge_detection.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detection.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -45,20 +60,20 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.SLIC-Segmentation.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.Testing.executor&quot;: &quot;Run&quot;,
-    &quot;Python.edge_detection.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;com.codeium.enabled&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/liamc/PycharmProjects/continuous-outline/Trial-AI-Base-Images&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.SLIC-Segmentation.executor": "Debug",
+    "Python.Testing.executor": "Debug",
+    "Python.edge_detection.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "com.codeium.enabled": "true",
+    "git-widget-placeholder": "master",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "C:/Users/liamc/PycharmProjects/continuous-outline/Trial-AI-Base-Images",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\Trial-AI-Base-Images" />
@@ -213,7 +228,15 @@
       <option name="project" value="LOCAL" />
       <updated>1739241835143</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="Working on slic, drawing alg">
+      <option name="closed" value="true" />
+      <created>1739306342136</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1739306342136</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -246,6 +269,16 @@
           <url>file://$PROJECT_DIR$/helpers/edge_detection.py</url>
           <line>208</line>
           <option name="timeStamp" value="14" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Testing.py</url>
+          <line>104</line>
+          <option name="timeStamp" value="18" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Testing.py</url>
+          <line>86</line>
+          <option name="timeStamp" value="28" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
