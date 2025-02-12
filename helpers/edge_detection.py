@@ -121,7 +121,7 @@ def extract_y_channel_manual(img):
   y_channel = img_yuv[:, :, 0]
   return y_channel
 
-def split_path_by_deflection(path, deflection_threshold=270, distance_threshold=5):
+def split_path_by_deflection(path, deflection_threshold=270, distance_threshold=5, max_path_nodes = 500):
     """
     Splits an SVG path into multiple paths if the accumulated angle of deflection
     exceeds the threshold within a specified distance.
@@ -140,8 +140,10 @@ def split_path_by_deflection(path, deflection_threshold=270, distance_threshold=
     accumulated_deflection = 0
     distance_traveled = 0
     prev_tangent = None
+    path_nodes = 0
 
     for segment in path:
+        path_nodes += 1
         if isinstance(segment, Line):
             # Calculate tangent for Line
             tangent = segment.end - segment.start
@@ -167,11 +169,13 @@ def split_path_by_deflection(path, deflection_threshold=270, distance_threshold=
             distance_traveled += segment.length()
 
             # Check for splitting condition
-            if accumulated_deflection >= deflection_threshold and distance_traveled >= distance_threshold:
+            if (path_nodes >= max_path_nodes or
+                    (accumulated_deflection >= deflection_threshold and distance_traveled >= distance_threshold)):
                 split_paths.append(current_path)
                 current_path = Path()
                 accumulated_deflection = 0
                 distance_traveled = 0
+                path_nodes = 0
 
         current_path.append(segment)
         prev_tangent = tangent

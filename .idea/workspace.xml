@@ -4,25 +4,19 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Working on slic, drawing alg">
-      <change afterPath="$PROJECT_DIR$/helpers/AgentStats.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/helpers/DrawingAgent.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/helpers/Enums.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/helpers/NodeSet.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/helpers/ParsePathsIntoObjects.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/helpers/TourConstraints.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/helpers/TourNode.py" afterDir="false" />
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Basic working agentic alg going woohoo!">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/border_edges_image_fx_(5).jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/drawn_image_fx_(5).jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/edges_image_fx_(5).jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/edges_pxs_rmvd_image_fx_(5).jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/filtered_edges_image_fx_(5).jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/oblit_image_fx_(5).jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/image_fx_(5).jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/AgentStats.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/AgentStats.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/DrawingAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/DrawingAgent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/NodeSet.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/NodeSet.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/ParsePathsIntoObjects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/ParsePathsIntoObjects.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/SLIC_Segmentation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/draw_outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/draw_outline.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/TourConstraints.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/TourConstraints.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/TourNode.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/TourNode.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/edge_detection.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detection.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test2.svg" beforeDir="false" afterPath="$PROJECT_DIR$/test2.svg" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -63,7 +57,7 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "Python.SLIC-Segmentation.executor": "Debug",
-    "Python.Testing.executor": "Debug",
+    "Python.Testing.executor": "Run",
     "Python.edge_detection.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
@@ -71,7 +65,7 @@
     "git-widget-placeholder": "master",
     "ignore.virus.scanning.warn.message": "true",
     "last_opened_file_path": "C:/Users/liamc/PycharmProjects/continuous-outline/Trial-AI-Base-Images",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
+    "settings.editor.selected.configurable": "preferences.pluginManager"
   }
 }]]></component>
   <component name="RecentsManager">
@@ -236,7 +230,15 @@
       <option name="project" value="LOCAL" />
       <updated>1739306342136</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="Basic working agentic alg going woohoo!">
+      <option name="closed" value="true" />
+      <created>1739326580901</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1739326580901</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -260,25 +262,21 @@
     <MESSAGE value="ACtually getting stuff going!  comparing various algorithms etc" />
     <MESSAGE value="Add SLIC starter" />
     <MESSAGE value="Working on slic, drawing alg" />
-    <option name="LAST_COMMIT_MESSAGE" value="Working on slic, drawing alg" />
+    <MESSAGE value="Basic working agentic alg going woohoo!" />
+    <option name="LAST_COMMIT_MESSAGE" value="Basic working agentic alg going woohoo!" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/edge_detection.py</url>
-          <line>208</line>
+          <line>212</line>
           <option name="timeStamp" value="14" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Testing.py</url>
-          <line>104</line>
+          <line>186</line>
           <option name="timeStamp" value="18" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Testing.py</url>
-          <line>86</line>
-          <option name="timeStamp" value="28" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

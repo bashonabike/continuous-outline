@@ -13,10 +13,15 @@ class NodeSet:
         self.detail_nodes = [n for n in self.all_nodes if n.set == enums.NodeSet.DETAIL]
         self.outer_bookends = [n for n in self.all_nodes if n.set == enums.NodeSet.OUTER and
                                (n.starter or n.ender)]
+        self.bookends = [n for n in self.all_nodes if n.starter or n.ender]
         self.oblit_nodes = []
+        parse.search_for_cand_next_nodes(self.bookends, self.gridded_nodes)
 
     def reset_oblit(self):
-        for node in [n for n in self.all_nodes if n.set == enums.NodeSet.OUTEROBLIT]:
-            node.set = enums.NodeSet.OUTER
-        for node in [n for n in self.all_nodes if n.set == enums.NodeSet.DETAILOBLIT]:
-            node.set = enums.NodeSet.DETAIL
+        for node in self.all_nodes:
+            if node.set == enums.NodeSet.OUTEROBLIT:
+                node.set = enums.NodeSet.OUTER
+            elif  node.set == enums.NodeSet.DETAILOBLIT:
+                node.set = enums.NodeSet.DETAIL
+
+            node.crowded = False

@@ -11,3 +11,6 @@ class TourNode:
         self.next_angle_rad = 0
         self.starter = False
         self.ender = False
+        self.nodes_in_rings = []
+        self.nodes_in_rings_to_oblate = []
+        self.crowded = False

@@ -9,6 +9,8 @@ import cv2
 import scipy
 from typing import List, Tuple
 
+from helpers import TourConstraints as constr
+
 # testimg = "C:\\Users\\liamc\\PycharmProjects\\continuous-outline\\Trial-AI-Base-Images\\image_fx_(18).jpg"
 # # construct the argument parser and parse the arguments
 # # load the image and convert it to a floating point data type
@@ -43,15 +45,15 @@ def mask_test_boundaries(img_path, split_contours):
 	return find_contours_near_boundaries(split_contours, mask, tolerance=2), mask
 
 
-def slic_image_test_boundaries(im_float, split_contours, num_segments:int =2):
+def slic_image_test_boundaries(im_float, split_contours, num_segments:int =2, enforce_connectivity:bool = True):
 	segments = None
 	#TODO: maybe do 2 segmentations, one manifold one just for the outline, use manifold one to determine some details
 	for num_segs in range(num_segments, num_segments+20):
-		segments_trial = slic(im_float, n_segments=num_segs, sigma=5, enforce_connectivity=True)
+		segments_trial = slic(im_float, n_segments=num_segs, sigma=5, enforce_connectivity=enforce_connectivity)
 		if np.max(segments_trial) > 1:
 			segments = segments_trial
 			break
-	if segments is None: raise Exception("Segmentation failed, image too disperate for outlineing")
+	if segments is None: raise Exception("Segmentation failed, image too disparate for outlining")
 
 	return find_contours_near_boundaries(split_contours, segments, tolerance=2), segments
 
