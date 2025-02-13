@@ -81,6 +81,8 @@ for file in os.listdir("Trial-AI-Base-Images"):
       #use SLIC  for tracing, maybe build agent so it follows line lke maze then jumps to next as needed
       #try to do this intelligently? prioritize maximizing coverage (length)
       #Think where place node, maybe track deflection once gets past certain amt then nodify
+      #maybe break into sub-ranges?  try to get coverage across many?
+      #review notes from actual physical one line tracing!
 
       #Segment
       im_unch = cv2.imread(image_path, cv2.IMREAD_COLOR)
@@ -108,6 +110,9 @@ for file in os.listdir("Trial-AI-Base-Images"):
       #   np.uint8)  # Create a copy to avoid modifying the original
       image_with_contours = (mark_boundaries(cv2.imread(image_path, cv2.IMREAD_COLOR), detail_segments, color=(255, 255, 0)) * 255).astype(
         np.uint8)  # Create a copy to avoid modifying the original
+
+      maze = np.zeros(image_with_contours.shape, dtype=np.uint8)
+      maze = mark_boundaries(maze, detail_segments, color=(255, 255, 255))[:,:, 0].astype(bool)
 
       cv2.imshow("image_with_contours", image_with_contours)
       cv2.waitKey(0)
