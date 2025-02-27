@@ -1,12 +1,9 @@
-import sys
 import inkex
 import os
-import base64
 import urllib.parse as urllib_parse
 import urllib.request as urllib_request
 from PIL import Image, ImageDraw
 from io import BytesIO
-import io
 from lxml import etree
 import base64
 import helpers.edge_detection as edge

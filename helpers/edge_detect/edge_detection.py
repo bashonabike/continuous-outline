@@ -4,18 +4,14 @@ import copy as cp
 # import vtracer as vt
 # import autotrace as aut
 from sklearn.cluster import KMeans
-from svgpathtools import Path, Line, parse_path, wsvg, CubicBezier
+from svgpathtools import Path, Line, wsvg, CubicBezier
 from svgpathtools import svg2paths2
 import math
 
 import matplotlib.pyplot as plt
-import helpers.ftlib as ft
-from PIL import Image, ImageDraw
+
 
 # from autotrace import Bitmap, VectorFormat
-from PIL import Image
-
-import helpers.StrayPixelRemover as spr
 
 def split_contour_by_accumulated_deflection(contour, angle_threshold=270):
     """
@@ -321,7 +317,9 @@ def detect_edges(image_path):
     # else:
     #     laplaced_prime = thresholded
 
-    # trimmed = remove_short_edges(edges_post_laplace, min_length=1)
+    # pxrem = spr.StrayPixelRemover(1, 30)
+    # pixels_removed = pxrem.process(postedge)
+    # trimmed = remove_short_edges(pixels_removed, min_length=500)
     #
     # # Create a structuring element (kernel) for dilation
     # dilation_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3,3))
@@ -337,8 +335,7 @@ def detect_edges(image_path):
     # cv2.imwrite('edges.jpg', trimmed_thin)
 
     # pxrem = spr.StrayPixelRemover(1, 30)
-    # pixels_removed = pxrem.process(trimmed)
-
+    # pixels_removed = pxrem.process(postedge)
     # thinned_invert = ft.fastThin(pixels_removed)
     # _, thinned_raw = cv2.threshold(thinned_invert, 127, 255, cv2.THRESH_BINARY_INV)
     # # thinned_bool, px_rem_bool = thinned_raw.astype(bool), pixels_removed.astype(bool)

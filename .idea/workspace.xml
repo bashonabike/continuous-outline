@@ -4,9 +4,31 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="WOrking on it, probably need to switch to diff method grr">
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="start">
+      <change afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/image_fx_(5).jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helpers/mazify/maze_agent_helpers.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helpers/mazify/temp_options.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helpers/old_method/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TestAgent.svg" beforeDir="false" afterPath="$PROJECT_DIR$/TestAgent.svg" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/1.1-Nomadics-Homepage-original-Size-and-Model.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/_TEMPPPP/1.1-Nomadics-Homepage-original-Size-and-Model.jpg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/AgentStats.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/AgentStats.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/DrawingAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/DrawingAgent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/NodeSet.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/NodeSet.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/PAINT DOT NET SCOPE OOT StrayPixelRemover.cs" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/PAINT DOT NET SCOPE OOT StrayPixelRemover.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/ParsePathsIntoObjects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/ParsePathsIntoObjects.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/StrayPixelRemover.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/StrayPixelRemover.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/TourConstraints.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/TourConstraints.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/TourNode.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/TourNode.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/_DECREPIT-one-line-tracing.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/DECREPIT/_DECREPIT-one-line-tracing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/draw_outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/draw_outline.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/edge_detection.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/edge_detection.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/ftlib.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/ftlib.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test2.svg" beforeDir="false" afterPath="$PROJECT_DIR$/test2.svg" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,7 +69,7 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "Python.SLIC-Segmentation.executor": "Debug",
-    "Python.Testing.executor": "Debug",
+    "Python.Testing.executor": "Run",
     "Python.edge_detection.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
@@ -63,8 +85,11 @@
       <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\Trial-AI-Base-Images" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\helpers\edge-detect" />
+      <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\helpers\DECREPIT" />
+      <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\helpers\old-method" />
+      <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\Trial-AI-Base-Images\_TEMPPPP" />
       <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\helpers" />
-      <recent name="C:\Users\Dell 5290\AppData\Roaming\inkscape\extensions\continuous-outline\continuous-outline" />
     </key>
   </component>
   <component name="RunManager" selected="Python.Testing">
@@ -81,7 +106,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="C:\Users\liamc\PycharmProjects\continuous-outline\helpers\SLIC_Segmentation.py" />
+      <option name="SCRIPT_NAME" value="C:\Users\liamc\PycharmProjects\continuous-outline\helpers\edge-detect\SLIC_Segmentation.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -236,7 +261,15 @@
       <option name="project" value="LOCAL" />
       <updated>1739404438228</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="start">
+      <option name="closed" value="true" />
+      <created>1739472295167</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1739472295167</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -262,25 +295,51 @@
     <MESSAGE value="Working on slic, drawing alg" />
     <MESSAGE value="Basic working agentic alg going woohoo!" />
     <MESSAGE value="WOrking on it, probably need to switch to diff method grr" />
-    <option name="LAST_COMMIT_MESSAGE" value="WOrking on it, probably need to switch to diff method grr" />
+    <MESSAGE value="start" />
+    <option name="LAST_COMMIT_MESSAGE" value="start" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/edge_detection.py</url>
+          <url>file://$PROJECT_DIR$/helpers/edge_detect/edge_detection.py</url>
           <line>212</line>
           <option name="timeStamp" value="14" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Testing.py</url>
-          <line>191</line>
+          <line>218</line>
           <option name="timeStamp" value="18" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Testing.py</url>
-          <line>116</line>
+          <line>143</line>
           <option name="timeStamp" value="57" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Testing.py</url>
+          <line>137</line>
+          <option name="timeStamp" value="59" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Testing.py</url>
+          <line>125</line>
+          <option name="timeStamp" value="61" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
+          <line>18</line>
+          <option name="timeStamp" value="65" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py</url>
+          <line>205</line>
+          <option name="timeStamp" value="73" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py</url>
+          <line>204</line>
+          <option name="timeStamp" value="74" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>

@@ -1,21 +1,19 @@
-import helpers.edge_detection as edge
+import helpers.edge_detect.edge_detection as edge
 import os
 import cv2
-import helpers.StrayPixelRemover as spr
-import helpers.SLIC_Segmentation as slic
+import helpers.edge_detect.SLIC_Segmentation as slic
 from skimage.segmentation import mark_boundaries
-from PIL import Image, ImageDraw
 from skimage.util import img_as_float
-from skimage import io
 import numpy as np
 import time
 import svgwrite as svg
 
-import helpers.DrawingAgent as draw
+import helpers.old_method.DrawingAgent as draw
 import helpers.Enums as Enums
-import helpers.ParsePathsIntoObjects as parse
-import helpers.NodeSet as nodeset
-from helpers import TourConstraints as constr
+import helpers.old_method.ParsePathsIntoObjects as parse
+from helpers.old_method import TourConstraints as constr
+import helpers.old_method.NodeSet as NodeSet
+from helpers.mazify.MazeAgent import MazeAgent
 
 def draw_open_paths(image, paths, color=(0, 0, 255), thickness=2):
   """
@@ -84,99 +82,128 @@ for file in os.listdir("Trial-AI-Base-Images"):
       #maybe break into sub-ranges?  try to get coverage across many?
       #review notes from actual physical one line tracing!
 
-      #Segment
+      # #Segment
+      # im_unch = cv2.imread(image_path, cv2.IMREAD_COLOR)
+      # lab = cv2.cvtColor(im_unch, cv2.COLOR_BGR2LAB)
+      # clahe = cv2.createCLAHE(clipLimit=20.0, tileGridSize=(16,16))  # Adjust clipLimit and tileGridSize
+      # lab[:,:,0] = clahe.apply(lab[:,:,0])
+      # clahe_image = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+      # cv2.imshow("hi contrat", clahe_image)
+      # cv2.waitKey(0)
+      # if clahe_image.shape[2] == 4:  # Check if it has an alpha channel
+      #   im_float = img_as_float(cv2.cvtColor(clahe_image, cv2.COLOR_BGRA2BGR)) # Convert from BGRA to BGR
+      # else:
+      #   im_float = img_as_float(clahe_image)  # If it does not have an alpha channel, just use the image directly.
+
+
       im_unch = cv2.imread(image_path, cv2.IMREAD_COLOR)
-      lab = cv2.cvtColor(im_unch, cv2.COLOR_BGR2LAB)
-      clahe = cv2.createCLAHE(clipLimit=20.0, tileGridSize=(16,16))  # Adjust clipLimit and tileGridSize
-      lab[:,:,0] = clahe.apply(lab[:,:,0])
-      clahe_image = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
-      cv2.imshow("hi contrat", clahe_image)
-      cv2.waitKey(0)
-      if clahe_image.shape[2] == 4:  # Check if it has an alpha channel
-        im_float = img_as_float(cv2.cvtColor(clahe_image, cv2.COLOR_BGRA2BGR)) # Convert from BGRA to BGR
+      if im_unch.shape[2] == 4:  # Check if it has an alpha channel
+        im_float = img_as_float(cv2.cvtColor(im_unch, cv2.COLOR_BGRA2BGR)) # Convert from BGRA to BGR
       else:
-        im_float = img_as_float(clahe_image)  # If it does not have an alpha channel, just use the image directly.
+        im_float = img_as_float(im_unch)  # If it does not have an alpha channel, just use the image directly.
+
+
+
 
       # near_boudaries_contours, segments = slic.slic_image_test_boundaries(im_float, split_contours)
       # near_boudaries_contours, segments = slic.mask_test_boundaries(image_path, split_contours)
-      details_boundaries_contours, detail_segments = slic.slic_image_test_boundaries(im_float, split_contours,
-                                                                       num_segments=constr.mindetailsegments,
-                                                                       enforce_connectivity=False)
-      # image_with_contours = (mark_boundaries(cv2.imread(image_path, cv2.IMREAD_COLOR), segments, color=(255, 0, 0)) * 255).astype(np.uint8)
+
+      outer_edges, mask = slic.mask_boundary_edges(image_path)
+      inner_edges, segments = slic.slic_image_boundary_edges(im_float, num_segments=6, enforce_connectivity=False)
+      edges = outer_edges + inner_edges
+
+      edges_show = edges.astype(np.uint8) * 255
+      cv2.imshow("hi contrat", edges_show)
+      cv2.waitKey(0)
+
+      maze_agent = MazeAgent(edges)
+      maze_agent.proximity_to_edge((100, 200))
+
+
+
+
+
+      testtt = 0
+
+
+      # details_boundaries_contours, detail_segments = slic.slic_image_test_boundaries(im_float, split_contours,
+      #                                                                  num_segments=constr.mindetailsegments,
+      #                                                                  enforce_connectivity=False)
+      # # image_with_contours = (mark_boundaries(cv2.imread(image_path, cv2.IMREAD_COLOR), segments, color=(255, 0, 0)) * 255).astype(np.uint8)
+      # # cv2.imshow("image_with_contours", image_with_contours)
+      # # cv2.waitKey(0)
+      #
+      # # image_with_contours = (mark_boundaries(image_with_contours, detail_segments, color=(255, 255, 0)) * 255).astype(
+      # #   np.uint8)  # Create a copy to avoid modifying the original
+      # image_with_contours = (mark_boundaries(cv2.imread(image_path, cv2.IMREAD_COLOR), detail_segments, color=(255, 255, 0)) * 255).astype(
+      #   np.uint8)  # Create a copy to avoid modifying the original
+      #
+      # maze = np.zeros(image_with_contours.shape, dtype=np.uint8)
+      # maze = mark_boundaries(maze, detail_segments, color=(255, 255, 255))[:,:, 0].astype(bool)
+      #
       # cv2.imshow("image_with_contours", image_with_contours)
       # cv2.waitKey(0)
-
-      # image_with_contours = (mark_boundaries(image_with_contours, detail_segments, color=(255, 255, 0)) * 255).astype(
-      #   np.uint8)  # Create a copy to avoid modifying the original
-      image_with_contours = (mark_boundaries(cv2.imread(image_path, cv2.IMREAD_COLOR), detail_segments, color=(255, 255, 0)) * 255).astype(
-        np.uint8)  # Create a copy to avoid modifying the original
-
-      maze = np.zeros(image_with_contours.shape, dtype=np.uint8)
-      maze = mark_boundaries(maze, detail_segments, color=(255, 255, 255))[:,:, 0].astype(bool)
-
-      cv2.imshow("image_with_contours", image_with_contours)
-      cv2.waitKey(0)
-      # cv2.drawContours(image_with_contours, tuple(split_contours), -1, (255,0,0), 1)  # -1 draws all contours
-      # cv2.drawContours(image_with_contours, tuple(near_boudaries_contours), -1, (0, 255, 255), 3)  # -1 draws all contours
-
-
-      # image_splits = draw_open_paths(image_with_contours, near_boudaries_contours, color=(255, 0, 0), thickness=1) # -1 draws all contours
-      # image_splits_2 = draw_open_paths(image_splits, details_boundaries_contours, color=(0, 255, 0), thickness=1)
-
-      image_splits_2 = draw_open_paths(image_with_contours, details_boundaries_contours, color=(0, 255, 0), thickness=1)
-
-      output_path = os.path.join("Trial-AI-Base-Images", f"border_edges_{file}")
-      # cv2.imwrite(output_path, image_splits_2)
-
-
-      # Save the edge map (optional)
-      output_path = os.path.join("Trial-AI-Base-Images", f"edges_{file}")
-      # cv2.imwrite(output_path, postedge)
-
-
-      # outer_nodes = parse.create_tour_nodes_from_paths(near_boudaries_contours, Enums.NodeSet.OUTER)
-      detail_nodes = parse.create_tour_nodes_from_paths(details_boundaries_contours, Enums.NodeSet.DETAIL)
-      # parsed_nodes = outer_nodes + detail_nodes
-      parsed_nodes =  detail_nodes
-
-      n, m, _ = im_float.shape
-      dims = (n,m)
-
-      node_set = nodeset.NodeSet(parsed_nodes, dims)
-      agents = []
-      iters = 10
-      for agent in range(iters):
-        print(f"\rAgent # {agent+1}/{iters} ({int((agent+1)/iters*100)}%)", end="", flush=True)
-        start = time.perf_counter_ns() // 1000
-        cur_agent = draw.DrawingAgent(dims, node_set)
-        cur_agent.tour()
-        agents.append(cur_agent)
-        end = time.perf_counter_ns() // 1000
-        # print("agenttot: "+ str(float(end-start)/1000.0))
-        node_set.reset_oblit()
-      print()  # Add a newline at the end to move the cursor down
-
-      agents.sort(key=lambda a: a.stats.final_score, reverse=True)
-
-      dwg = svg.Drawing("TestAgent.svg", profile='full')
-      nodes_final = agents[0].tour_path
-      path_data = "M" + str(nodes_final[0].x) + "," + str(nodes_final[0].y)  # Move to the first point
-      for node in nodes_final[1:]:
-        path_data += " L" + str(node.x) + "," + str(node.y)  # Line to each subsequent node
-
-      path = dwg.path(d=path_data, stroke='black', fill="none", stroke_width=2)
-      dwg.add(path)
-      dwg.save()
-
-      agent_num = 0
-      for agent in agents[:10]:
-        agent_num += 1
-        image_agent = draw_object_node_path(image_splits_2, agent.tour_path,
-                                      color=(0, 0, 255), thickness=2)
-        output_path = os.path.join("Trial-AI-Base-Images", f"agent_{str(agent_num)}_output_{file}")
-        cv2.imwrite(output_path, image_agent)
-        print(f"Oblit mask:{agent.stats.oblit_mask_size} - accum defl:{agent.stats.accum_defl_rad} - crowding:{agent.stats.crowding} - length conn:{agent.stats.length_of_connectors}")
-
+      # # cv2.drawContours(image_with_contours, tuple(split_contours), -1, (255,0,0), 1)  # -1 draws all contours
+      # # cv2.drawContours(image_with_contours, tuple(near_boudaries_contours), -1, (0, 255, 255), 3)  # -1 draws all contours
+      #
+      #
+      # # image_splits = draw_open_paths(image_with_contours, near_boudaries_contours, color=(255, 0, 0), thickness=1) # -1 draws all contours
+      # # image_splits_2 = draw_open_paths(image_splits, details_boundaries_contours, color=(0, 255, 0), thickness=1)
+      #
+      # image_splits_2 = draw_open_paths(image_with_contours, details_boundaries_contours, color=(0, 255, 0), thickness=1)
+      #
+      # output_path = os.path.join("Trial-AI-Base-Images", f"border_edges_{file}")
+      # # cv2.imwrite(output_path, image_splits_2)
+      #
+      #
+      # # Save the edge map (optional)
+      # output_path = os.path.join("Trial-AI-Base-Images", f"edges_{file}")
+      # # cv2.imwrite(output_path, postedge)
+      #
+      #
+      # # outer_nodes = parse.create_tour_nodes_from_paths(near_boudaries_contours, Enums.NodeSet.OUTER)
+      # detail_nodes = parse.create_tour_nodes_from_paths(details_boundaries_contours, Enums.NodeSet.DETAIL)
+      # # parsed_nodes = outer_nodes + detail_nodes
+      # parsed_nodes =  detail_nodes
+      #
+      # n, m, _ = im_float.shape
+      # dims = (n,m)
+      #
+      # node_set = NodeSet.NodeSet(parsed_nodes, dims)
+      # agents = []
+      # iters = 10
+      # for agent in range(iters):
+      #   print(f"\rAgent # {agent+1}/{iters} ({int((agent+1)/iters*100)}%)", end="", flush=True)
+      #   start = time.perf_counter_ns() // 1000
+      #   cur_agent = draw.DrawingAgent(dims, node_set)
+      #   cur_agent.tour()
+      #   agents.append(cur_agent)
+      #   end = time.perf_counter_ns() // 1000
+      #   # print("agenttot: "+ str(float(end-start)/1000.0))
+      #   node_set.reset_oblit()
+      # print()  # Add a newline at the end to move the cursor down
+      #
+      # agents.sort(key=lambda a: a.stats.final_score, reverse=True)
+      #
+      # dwg = svg.Drawing("TestAgent.svg", profile='full')
+      # nodes_final = agents[0].tour_path
+      # path_data = "M" + str(nodes_final[0].x) + "," + str(nodes_final[0].y)  # Move to the first point
+      # for node in nodes_final[1:]:
+      #   path_data += " L" + str(node.x) + "," + str(node.y)  # Line to each subsequent node
+      #
+      # path = dwg.path(d=path_data, stroke='black', fill="none", stroke_width=2)
+      # dwg.add(path)
+      # dwg.save()
+      #
+      # agent_num = 0
+      # for agent in agents[:10]:
+      #   agent_num += 1
+      #   image_agent = draw_object_node_path(image_splits_2, agent.tour_path,
+      #                                 color=(0, 0, 255), thickness=2)
+      #   output_path = os.path.join("Trial-AI-Base-Images", f"agent_{str(agent_num)}_output_{file}")
+      #   cv2.imwrite(output_path, image_agent)
+      #   print(f"Oblit mask:{agent.stats.oblit_mask_size} - accum defl:{agent.stats.accum_defl_rad} - crowding:{agent.stats.crowding} - length conn:{agent.stats.length_of_connectors}")
+      #
 
         # cv2.imshow(str(agent_num), image_agent)
 

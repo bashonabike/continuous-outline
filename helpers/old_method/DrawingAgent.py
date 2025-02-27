@@ -3,15 +3,13 @@
 # minimize accum deflection angles
 # minimize crossovers
 # minimize length of connectors
-import helpers.TourConstraints as constr
-import helpers.ParsePathsIntoObjects as parse
+import helpers.old_method.TourConstraints as constr
 import helpers.Enums as enums
-import helpers.NodeSet as nodeset
-import helpers.AgentStats as stat
-import helpers.TourNode as tournode
+import helpers.old_method.AgentStats as stat
+import helpers.old_method.NodeSet as NodeSet
+import helpers.old_method.TourNode as TourNode
 
 import numpy as np
-import copy as cp
 import random as rd
 import cv2
 import time
@@ -19,7 +17,7 @@ from scipy.ndimage import label
 import math
 
 class DrawingAgent:
-    def __init__(self, dims, node_set:nodeset.NodeSet):
+    def __init__(self, dims, node_set: NodeSet.NodeSet):
         self.stats = stat.AgentStats()
         self.blank = np.zeros((dims[0], dims[1]), dtype=np.uint8)
         self.oblit_mask = self.blank.copy()
@@ -158,7 +156,7 @@ class DrawingAgent:
 
 
 
-    def search_for_next_node(self, cur_node:tournode.TourNode):
+    def search_for_next_node(self, cur_node: TourNode.TourNode):
         for oblates, searches in zip(cur_node.nodes_in_rings_to_oblate, cur_node.nodes_in_rings):
             cand_to_check = [c for c in oblates if c.set
                           not in (enums.NodeSet.OUTEROBLIT, enums.NodeSet.DETAILOBLIT)]

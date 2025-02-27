@@ -1,5 +1,5 @@
 
-import helpers.ParsePathsIntoObjects as parse
+import helpers.old_method.ParsePathsIntoObjects as parse
 import helpers.Enums as enums
 
 class NodeSet:

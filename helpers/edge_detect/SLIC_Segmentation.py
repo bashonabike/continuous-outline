@@ -1,15 +1,11 @@
 # import the necessary packages
-from skimage.segmentation import slic
-from skimage.segmentation import mark_boundaries
-from skimage.util import img_as_float
-from skimage import io
-import matplotlib.pyplot as plt
+from skimage.segmentation import slic, mark_boundaries
 import numpy as np
 import cv2
-import scipy
-from typing import List, Tuple
+from typing import List
+from shapely.geometry import LineString
+from simplification.cutil import simplify_coords
 
-from helpers import TourConstraints as constr
 
 # testimg = "C:\\Users\\liamc\\PycharmProjects\\continuous-outline\\Trial-AI-Base-Images\\image_fx_(18).jpg"
 # # construct the argument parser and parse the arguments
@@ -44,10 +40,65 @@ def mask_test_boundaries(img_path, split_contours):
 
 	return find_contours_near_boundaries(split_contours, mask, tolerance=2), mask
 
+def mask_boundary_edges(img_path):
+	#NOTE: only work PNG with transparent bg, or where background is all white
+	img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
+	mask = None
+	if img.shape[2] == 4:  # Check if it has an alpha channel
+		alpha = img[:, :, 3]  # Get the alpha channel
+		mask = np.where(alpha > 0, 1, 0).astype(np.uint8)  # Create binary mask
+	else:
+		# Image has no alpha channel, treat white as background
+		grey = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+		_, inverted = cv2.threshold(grey, 0.9*np.max(grey), 1, cv2.THRESH_BINARY)
+		mask = np.where(inverted == 0, 1, 0).astype(np.uint8)  # Create binary mask
+
+	#Blur n rebinarize n find edges
+	mask_blurred = cv2.GaussianBlur(mask, (9,9), 8)
+	_, edges_binary = cv2.threshold(mask_blurred, 127, 1, cv2.THRESH_BINARY)
+	blank = np.zeros(img.shape, dtype=np.uint8)
+	edges = mark_boundaries(blank, mask, color=(255, 255, 255), mode='outer').astype(np.uint8)[:,:,0]
+	_, edges_binary = cv2.threshold(edges, 127, 1, cv2.THRESH_BINARY)
+	edges_bool = edges_binary.astype(bool)
+
+	# Pop edge image
+	# blank = np.zeros(img.shape, dtype=np.uint8)
+	# edges = mark_boundaries(blank, mask, color=(255, 255, 255), mode='outer').astype(np.uint8)[:,:,0]
+	# mask_contours, hierarchy  = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+	# simpl_contours = []
+	# if hierarchy.shape[0] == 1:
+	# 	simpl_contours.append(simplify_path_rdp(mask_contours, tolerance=1))
+	# else:
+	# 	for contour in mask_contours:
+	# 		simpl_contours.append(simplify_path_rdp(contour, tolerance=1))
+	# simple_contours_plotted = cv2.drawContours(blank, simpl_contours, -1, (255,255,255), 1)
+	#
+	# _, edges_binary = cv2.threshold(simple_contours_plotted[:, :, 0], 127, 1, cv2.THRESH_BINARY)
+	# edges_bool = edges_binary.astype(bool)
+
+	return edges_bool, mask
+
+def slic_image_boundary_edges(im_float, num_segments:int =2, enforce_connectivity:bool = True):
+	segments = None
+	for num_segs in range(num_segments, num_segments+20):
+		segments_trial = slic(im_float, n_segments=num_segs, sigma=5, enforce_connectivity=enforce_connectivity)
+		if np.max(segments_trial) > 1:
+			segments = segments_trial
+			break
+	if segments is None: raise Exception("Segmentation failed, image too disparate for outlining")
+
+	#Pop edge image
+	blank = np.zeros(im_float.shape, dtype=np.bool)
+	edges = mark_boundaries(blank, segments, color=(255, 255, 255), mode='outer')
+	_, edges_binary = cv2.threshold(edges[:,:,0], 127, 1, cv2.THRESH_BINARY)
+	edges_bool = edges_binary.astype(bool)
+	#TODO: Constrict from 2 wide to 1 wide??
+
+	return edges_bool, segments
+
 
 def slic_image_test_boundaries(im_float, split_contours, num_segments:int =2, enforce_connectivity:bool = True):
 	segments = None
-	#TODO: maybe do 2 segmentations, one manifold one just for the outline, use manifold one to determine some details
 	for num_segs in range(num_segments, num_segments+20):
 		segments_trial = slic(im_float, n_segments=num_segs, sigma=5, enforce_connectivity=enforce_connectivity)
 		if np.max(segments_trial) > 1:
@@ -148,3 +199,11 @@ def find_contours_near_boundaries(contours: List[np.ndarray], segments: np.ndarr
 		if is_contour_near_segment_boundary(contour, segments, tolerance):
 			near_boundary_contours.append(contour)
 	return near_boundary_contours
+
+def simplify_path_rdp(points, tolerance=1.0):
+	"""Simplifies a path using the Ramer-Douglas-Peucker algorithm."""
+	testt = points[:,0,:]
+	tyuyt = ""
+	line = LineString(points[:,0,:])
+	simplified_coords = simplify_coords(line.coords, tolerance)
+	return list(simplified_coords)
