@@ -3,6 +3,7 @@ import numpy as np
 
 import helpers.mazify.temp_options as options
 import helpers.mazify.MazeAgentHelpers as helpers
+import helpers.mazify.NetworkInputs as inputs
 
 class MazeAgent:
     def __init__(self, outer_edges, inner_edges, maze_sections):
@@ -17,13 +18,66 @@ class MazeAgent:
         self.prev_direction = -1
         self.inst_directions = []
 
+        self.legality_compass = None
+        self.proximity_compass = None
+        self.intersects_compass = None
+        self.outer_attraction_compass = None
+        self.parallels_compass = None
+        self.deflection_compass = None
+        self.inner_attraction = 0.0
+        self.compasses = [self.legality_compass, self.proximity_compass, self.intersects_compass,
+                          self.outer_attraction_compass, self.parallels_compass, self.deflection_compass,
+                          self.inner_attraction]
+
+
+        self.compass_normalizer = 0.0
+
+        self.network_inputs = inputs.NetworkInputs()
+        self.build_inputs()
+
+    #region Build
+    def build_inputs(self):
+        for compass in self.compasses:
+            if isinstance(compass, dict):
+                for compass_dir in compass.keys():
+                    self.network_inputs.add_input( compass[compass_dir], compass_dir)
+            else:
+                self.network_inputs.add_input(compass, None)
+    #endregion
     #region Run
     def run_round(self):
         self.set_direction_vectors()
 
-    def normalized_compasses(self):
-        #TODO: Normalize to the greatest direction of all compasses
-        pass
+    def find_compasses(self):
+        #Determine raw compasses
+        self.legality_compass = self.legality_check()
+        self.proximity_compass = self.proximity_to_edge()
+        self.intersects_compass = self.check_intersects()
+        #NOTE: Outer attraction refreshes only when entering new section
+        if self.outer_attraction_compass is None:
+            self.outer_attraction_compass = self.check_outer_attraction()
+        self.parallels_compass = self.check_parallels()
+        self.deflection_compass = self.check_deflection()
+        self.inner_attraction = self.check_inner_attraction()
+
+        #Find normalizer
+        compass_points_flat = []
+        for compass in self.compasses:
+            if isinstance(compass, dict):
+                compass_points_flat.extend(compass.values())
+            else:
+                compass_points_flat.append(compass)
+        self.compass_normalizer = max(compass_points_flat)
+
+        #Set inputs
+        for compass in self.compasses:
+            if isinstance(compass, dict):
+                for compass_dir in compass.keys():
+                    cur_input = self.network_inputs.find_input(compass, compass_dir)
+                    cur_input.set_value(compass[compass_dir]/self.compass_normalizer)
+            else:
+                cur_input = self.network_inputs.find_input(compass, None)
+                cur_input.set_value(compass/self.compass_normalizer)
 
     def find_start_point(self):
         #Find start section
@@ -81,7 +135,7 @@ class MazeAgent:
         #Update section if needed
         if len(sub_counts) > 0:
             self.cur_section = self.helper.retrieve_new_section(new_point, self.maze_sections)
-            #TODO: re-calc section sat compass
+            self.outer_attraction_compass =self.check_outer_attraction()
 
         #Update point
         self.cur_point = new_point

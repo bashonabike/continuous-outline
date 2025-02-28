@@ -10,3 +10,9 @@ class NodeSet(Enums):
 class Direction(Enums):
      FORWARD = 1
      BACKWARD = 2
+
+class CompassDir(Enums):
+     N = 1
+     E = 2
+     S = 3
+     W = 4

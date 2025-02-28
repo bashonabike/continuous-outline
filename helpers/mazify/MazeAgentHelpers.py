@@ -3,6 +3,7 @@ from shapely.geometry import LineString
 import math
 
 import helpers.mazify.temp_options as options
+from helpers.Enums import CompassDir
 
 #TODO: use LineString.Simplify to simplify path
 
@@ -86,17 +87,17 @@ class MazeAgentHelpers:
        Returns:
            Dict of compass directions
        """
-        compass = {'N':0.0, 'S':0.0, 'E':0.0, 'W':0.0}
+        compass = {CompassDir.N:0.0, CompassDir.E:0.0, CompassDir.S:0.0, CompassDir.W:0.0}
         for quadrant in quadrant_vectors:
             if quadrant['quadrant'] in (1, 2):
-                compass['N'] += abs(quadrant['vec_y'])
+                compass[CompassDir.N] += abs(quadrant['vec_y'])
             else:
-                compass['S'] += abs(quadrant['vec_y'])
+                compass[CompassDir.S] += abs(quadrant['vec_y'])
 
             if quadrant['quadrant'] in (1, 4):
-                compass['E'] += abs(quadrant['vec_x'])
+                compass[CompassDir.E] += abs(quadrant['vec_x'])
             else:
-                compass['W'] += abs(quadrant['vec_x'])
+                compass[CompassDir.W] += abs(quadrant['vec_x'])
 
         return compass
 
@@ -138,18 +139,18 @@ class MazeAgentHelpers:
        Returns:
            Dict of compass directions
        """
-        compass = {'N':0.0, 'S':0.0, 'E':0.0, 'W':0.0}
+        compass = {CompassDir.N:0.0, CompassDir.E:0.0, CompassDir.S:0.0, CompassDir.W:0.0}
         for direction_vector in direction_vectors:
             weighted_vector = direction_vector['inst_weight'] * direction_vector['norm_vector']
             if direction_vector['quadrant'] in (1, 2):
-                compass['N'] += abs(weighted_vector[0])
+                compass[CompassDir.N] += abs(weighted_vector[0])
             else:
-                compass['S'] += abs(weighted_vector[0])
+                compass[CompassDir.S] += abs(weighted_vector[0])
 
             if direction_vector['quadrant'] in (1, 4):
-                compass['E'] += abs(weighted_vector[1])
+                compass[CompassDir.E] += abs(weighted_vector[1])
             else:
-                compass['W'] += abs(weighted_vector[1])
+                compass[CompassDir.W] += abs(weighted_vector[1])
         return compass
 
     def check_intersects_by_direction_compass(self, direction_vectors, path):
@@ -241,7 +242,7 @@ class MazeAgentHelpers:
         return compass
 
     def outer_sections_attraction_compass(self, maze_sections, cur_section):
-        compass = {'N':0.0, 'S':0.0, 'E':0.0, 'W':0.0}
+        compass = {CompassDir.N:0.0, CompassDir.E:0.0, CompassDir.S:0.0, CompassDir.W:0.0}
         for row in maze_sections.sections:
             for section in row:
                 if section is cur_section: continue
@@ -253,14 +254,14 @@ class MazeAgentHelpers:
 
                 if dy_norm < 0:
                     #reverse since image origin is top left
-                    compass['N'] += abs(dy_norm)*attraction
+                    compass[CompassDir.N] += abs(dy_norm)*attraction
                 else:
-                    compass['S'] += abs(dy_norm)*attraction
+                    compass[CompassDir.S] += abs(dy_norm)*attraction
 
                 if dx_norm > 0:
-                    compass['E'] += abs(dx_norm)*attraction
+                    compass[CompassDir.E] += abs(dx_norm)*attraction
                 else:
-                    compass['W'] += abs(dx_norm)*attraction
+                    compass[CompassDir.W] += abs(dx_norm)*attraction
 
         return compass
 
