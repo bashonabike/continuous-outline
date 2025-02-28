@@ -1,4 +1,7 @@
 import numpy as np
+from scipy.signal import convolve2d
+
+import helpers.mazify.temp_options as options
 
 class MazeSections:
     def __init__(self, outer_edge, m, n):
@@ -42,20 +45,32 @@ class MazeSections:
                 # Extract the section
                 section = boolean_image[y_start:y_end, x_start:x_end]
 
+                # Convolve with ones to find tightest cluster
+                kernel = np.ones((options.cluster_start_point_size, options.cluster_start_point_size), dtype=np.uint8)
+                convolved = convolve2d(section.astype(np.uint8), kernel, mode='same')
+                max_index = np.argmax(convolved)
+                max_clust_y, max_clust_x = np.unravel_index(max_index, section.shape)
+
                 # Count True pixels
                 count = np.count_nonzero(section)
-                sections[i, j] = MazeSection((y_start, y_end, x_start, x_end), count)
+                sections[i, j] = MazeSection((y_start, y_end, x_start, x_end), count, i, j,
+                                             (max_clust_y, max_clust_x))
 
         return sections, section_height, section_width
 
 class MazeSection:
-    def __init__(self, bounds, edge_pixels):
+    def __init__(self, bounds, edge_pixels, y_sec, x_sec, cluster_point_rel):
         (self.ymin, self.ymax, self.xmin, self.xmax) = bounds
+        self.y_sec, self.x_sec = y_sec, x_sec
         self.edge_pixels = edge_pixels
         self.filled_pixels = 0
         self.saturation = 0.0
+        self.attraction = 100.0
+        self.cluster_point_abs = (self.ymin + cluster_point_rel[0], self.xmin + cluster_point_rel[1])
+
 
     def update_saturation(self, fill_count):
         #TODO: improve this so it doesn't double-count saturation
         self.filled_pixels += fill_count
         self.saturation = float(self.filled_pixels) / self.edge_pixels
+        self.attraction = 1.0/(self.saturation + 0.01)

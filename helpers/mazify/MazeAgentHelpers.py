@@ -230,6 +230,44 @@ class MazeAgentHelpers:
             direction_vector['inst_weight'] = direction_vector['legal']
         compass = self.parse_weighted_dir_vectors_into_compass(direction_vectors)
         return compass
+
+    def deflection_compass(self, direction_vectors, prev_direction):
+        for direction_vector in direction_vectors:
+            if (options.max_deflect_rad < abs(direction_vector['direction'] - prev_direction)
+                    < options.rev_max_deflect_rad):
+                direction_vector['inst_weight'] = 0
+            else: direction_vector['inst_weight'] = 1
+        compass = self.parse_weighted_dir_vectors_into_compass(direction_vectors)
+        return compass
+
+    def outer_sections_attraction_compass(self, maze_sections, cur_section):
+        compass = {'N':0.0, 'S':0.0, 'E':0.0, 'W':0.0}
+        for row in maze_sections.sections:
+            for section in row:
+                if section is cur_section: continue
+
+                dx, dy = section.x - cur_section.x, section.y - cur_section.y
+                normalizer = max(abs(dx), abs(dy))
+                dx_norm, dy_norm = dx/normalizer, dy/normalizer
+                attraction = self.inner_section_attraction_scalar(section)
+
+                if dy_norm < 0:
+                    #reverse since image origin is top left
+                    compass['N'] += abs(dy_norm)*attraction
+                else:
+                    compass['S'] += abs(dy_norm)*attraction
+
+                if dx_norm > 0:
+                    compass['E'] += abs(dx_norm)*attraction
+                else:
+                    compass['W'] += abs(dx_norm)*attraction
+
+        return compass
+
+    def inner_section_attraction_scalar(self, cur_section):
+        return cur_section.attraction
+
+
     #endregion
     #region Getters
 

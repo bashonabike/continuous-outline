@@ -12,13 +12,28 @@ class MazeAgent:
         self.dims = (outer_edges.shape[0], outer_edges.shape[1])
         self.maze_sections = maze_sections
         self.helper = helpers.MazeAgentHelpers()
-        self.cur_section = (-1, -1)
+        self.cur_section = None
         self.cur_point = (0, 0)
+        self.prev_direction = -1
         self.inst_directions = []
 
     #region Run
     def run_round(self):
         self.set_direction_vectors()
+
+    def normalized_compasses(self):
+        #TODO: Normalize to the greatest direction of all compasses
+        pass
+
+    def find_start_point(self):
+        #Find start section
+        edge_pixels_array= np.vectorize(lambda x: x.edge_pixels)(self.maze_sections.sections)
+        max_edges_index = np.argmax(edge_pixels_array)
+        start_maze_section = self.maze_sections.sections.flat[max_edges_index]
+
+        #Start point in section one max clustered
+        start_point = start_maze_section.cluster_point_abs
+        return start_point
     #endregion
     #region Compassing
     def legality_check(self):
@@ -41,6 +56,18 @@ class MazeAgent:
                                                                   self.outer_edges)
         return parallels_compass
 
+    def check_deflection(self):
+        deflection_compass = self.helper.deflection_compass(self.inst_directions, self.prev_direction)
+        return deflection_compass
+
+    def check_outer_attraction(self):
+        outer_attraction_compass = self.helper.outer_sections_attraction_compass(self.maze_sections, self.cur_section)
+        return outer_attraction_compass
+
+    def check_inner_attraction(self):
+        inner_attraction_scalar = self.helper.inner_section_attraction_scalar(self.cur_section)
+        return inner_attraction_scalar
+
     #endregion
     #region Setters
     def update_section_saturation_and_point(self, direction):
@@ -54,10 +81,12 @@ class MazeAgent:
         #Update section if needed
         if len(sub_counts) > 0:
             self.cur_section = self.helper.retrieve_new_section(new_point, self.maze_sections)
+            #TODO: re-calc section sat compass
 
         #Update point
         self.cur_point = new_point
         self.path.append(self.cur_point)
+        self.prev_direction = direction
 
     def set_direction_vectors(self):
         self.inst_directions = self.helper.parse_direction_vector_starters(self.cur_point, self.dims)
