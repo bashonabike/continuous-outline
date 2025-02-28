@@ -2,8 +2,8 @@ class NetworkInputs:
     def __init__(self):
         self.inputs = []
 
-    def add_input(self, parent_compass, compass_dir):
-        self.inputs.append(NetworkInput(parent_compass, compass_dir))
+    def add_input(self, parent_compass, compass_type, compass_dir):
+        self.inputs.append(NetworkInput(parent_compass, compass_type, compass_dir))
 
     def find_input(self, parent_compass, compass_dir):
         for input in self.inputs:
@@ -11,8 +11,9 @@ class NetworkInputs:
                 return input
 
 class NetworkInput:
-    def __init__(self, parent_compass, compass_dir):
+    def __init__(self, parent_compass, compass_type, compass_dir):
         self.parent_compass = parent_compass
+        self.compass_type = compass_type
         self.compass_dir = compass_dir
         self.value = 0.0
 

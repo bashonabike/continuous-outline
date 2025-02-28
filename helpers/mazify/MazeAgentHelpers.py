@@ -234,8 +234,9 @@ class MazeAgentHelpers:
 
     def deflection_compass(self, direction_vectors, prev_direction):
         for direction_vector in direction_vectors:
-            if (options.max_deflect_rad < abs(direction_vector['direction'] - prev_direction)
-                    < options.rev_max_deflect_rad):
+            if (prev_direction > -1 and
+                    (options.max_deflect_rad < abs(direction_vector['direction'] - prev_direction)
+                    < options.rev_max_deflect_rad)):
                 direction_vector['inst_weight'] = 0
             else: direction_vector['inst_weight'] = 1
         compass = self.parse_weighted_dir_vectors_into_compass(direction_vectors)

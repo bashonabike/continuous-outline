@@ -7,6 +7,16 @@ class MazeSections:
     def __init__(self, outer_edge, m, n):
         self.outer_edge = outer_edge
         self.sections, self.y_grade, self.x_grade = self.count_true_pixels_in_sections(outer_edge, m, n)
+        self.num_sections = m * n
+        self.sections_satisfied = 0
+        self.sections_satisfied_pct = 0.0
+
+    def update_saturation(self):
+        self.sections_satisfied += 1
+        self.sections_satisfied_pct = self.sections_satisfied / self.num_sections
+
+    def check_saturation(self):
+        return self.sections_satisfied_pct
 
 
     def count_true_pixels_in_sections(self, boolean_image, m, n):
@@ -65,12 +75,16 @@ class MazeSection:
         self.edge_pixels = edge_pixels
         self.filled_pixels = 0
         self.saturation = 0.0
+        self.saturated = False
         self.attraction = 100.0
         self.cluster_point_abs = (self.ymin + cluster_point_rel[0], self.xmin + cluster_point_rel[1])
 
 
-    def update_saturation(self, fill_count):
+    def update_saturation(self, parent:MazeSections, fill_count):
         #TODO: improve this so it doesn't double-count saturation
         self.filled_pixels += fill_count
         self.saturation = float(self.filled_pixels) / self.edge_pixels
         self.attraction = 1.0/(self.saturation + 0.01)
+        if not self.saturated and self.saturation >= options.section_saturation_satisfied:
+            self.saturated = True
+            parent.update_saturation()

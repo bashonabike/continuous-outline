@@ -4,9 +4,12 @@ import numpy as np
 import helpers.mazify.temp_options as options
 import helpers.mazify.MazeAgentHelpers as helpers
 import helpers.mazify.NetworkInputs as inputs
+import helpers.mazify.MazeSections as sections
+import helpers.mazify.TestGetDirection as getdir
+from helpers.Enums import CompassType
 
 class MazeAgent:
-    def __init__(self, outer_edges, inner_edges, maze_sections):
+    def __init__(self, outer_edges, inner_edges, maze_sections: sections.MazeSections):
         self.path = []
         self.outer_edges = outer_edges
         self.inner_edges = inner_edges
@@ -28,6 +31,9 @@ class MazeAgent:
         self.compasses = [self.legality_compass, self.proximity_compass, self.intersects_compass,
                           self.outer_attraction_compass, self.parallels_compass, self.deflection_compass,
                           self.inner_attraction]
+        self.compass_types = [CompassType.legality_compass, CompassType.proximity_compass, CompassType.intersects_compass,
+                              CompassType.outer_attraction_compass, CompassType.parallels_compass, CompassType.deflection_compass,
+                              CompassType.inner_attraction]
 
 
         self.compass_normalizer = 0.0
@@ -37,18 +43,26 @@ class MazeAgent:
 
     #region Build
     def build_inputs(self):
-        for compass in self.compasses:
+        for compass, type in zip(self.compasses, self.compass_types):
             if isinstance(compass, dict):
                 for compass_dir in compass.keys():
-                    self.network_inputs.add_input( compass[compass_dir], compass_dir)
+                    self.network_inputs.add_input( compass[compass_dir], type, compass_dir)
             else:
-                self.network_inputs.add_input(compass, None)
+                self.network_inputs.add_input(compass, type, None)
     #endregion
     #region Run
-    def run_round(self):
-        self.set_direction_vectors()
+    def run_round_dumb(self):
+        self.cur_point, self.cur_section = self.find_start_point()
+        self.path.append(self.cur_point)
 
-    def find_compasses(self):
+        while not self.maze_sections.check_saturation():
+            self.set_direction_vectors()
+            self.set_compasses()
+            direction = getdir.get_direction(self.network_inputs)
+            self.update_section_saturation_and_point(direction)
+
+
+    def set_compasses(self):
         #Determine raw compasses
         self.legality_compass = self.legality_check()
         self.proximity_compass = self.proximity_to_edge()
@@ -87,7 +101,7 @@ class MazeAgent:
 
         #Start point in section one max clustered
         start_point = start_maze_section.cluster_point_abs
-        return start_point
+        return start_point, start_maze_section
     #endregion
     #region Compassing
     def legality_check(self):
@@ -130,7 +144,7 @@ class MazeAgent:
         for sub_count in sub_counts:
             if (sub_count['y_sec'], sub_count['x_sec']) in self.maze_sections.sections:
                 (self.maze_sections.sections[(sub_count['y_sec'], sub_count['x_sec'])]
-                 .update_saturation(sub_count['sub_count']))
+                 .update_saturation(self.maze_sections.sections, sub_count['sub_count']))
 
         #Update section if needed
         if len(sub_counts) > 0:

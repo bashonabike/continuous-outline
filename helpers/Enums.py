@@ -16,3 +16,12 @@ class CompassDir(Enums):
      E = 2
      S = 3
      W = 4
+
+class CompassType(Enums):
+     legality_compass = 1
+     proximity_compass = 2
+     intersects_compass = 3
+     outer_attraction_compass = 4
+     parallels_compass = 5
+     deflection_compass = 6
+     inner_attraction = 7
