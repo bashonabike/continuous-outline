@@ -5,30 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="start">
-      <change afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/image_fx_(5).jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/helpers/mazify/maze_agent_helpers.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/helpers/mazify/temp_options.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/helpers/old_method/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/continuous-outline.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/continuous-outline.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TestAgent.svg" beforeDir="false" afterPath="$PROJECT_DIR$/TestAgent.svg" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/1.1-Nomadics-Homepage-original-Size-and-Model.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/_TEMPPPP/1.1-Nomadics-Homepage-original-Size-and-Model.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/AgentStats.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/AgentStats.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/DrawingAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/DrawingAgent.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/NodeSet.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/NodeSet.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/PAINT DOT NET SCOPE OOT StrayPixelRemover.cs" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/PAINT DOT NET SCOPE OOT StrayPixelRemover.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/ParsePathsIntoObjects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/ParsePathsIntoObjects.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/StrayPixelRemover.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/StrayPixelRemover.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/TourConstraints.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/TourConstraints.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/TourNode.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/TourNode.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/_DECREPIT-one-line-tracing.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/DECREPIT/_DECREPIT-one-line-tracing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/draw_outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/draw_outline.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/edge_detection.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/edge_detection.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/ftlib.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/ftlib.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test2.svg" beforeDir="false" afterPath="$PROJECT_DIR$/test2.svg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/maze_agent_helpers.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgentHelpers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/temp_options.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/temp_options.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -51,12 +36,12 @@
     &quot;assignee&quot;: &quot;bashonabike&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/bashonabike/continuous-outline.git&quot;,
-    &quot;accountId&quot;: &quot;58e94c20-7d39-4b4a-93e7-7d4618e59941&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/bashonabike/continuous-outline",
+    "accountId": "5bb13a72-640e-4370-a31b-398c259cc1b1"
   }
-}</component>
+}]]></component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 6
 }</component>
@@ -124,7 +109,6 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="SDK_NAME" value="Python 3.13" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
@@ -152,7 +136,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-495700d161d3-aa17d162503b-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-243.22562.220" />
+        <option value="bundled-python-sdk-975db3bf15a3-31b6be0877a2-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-241.18034.82" />
       </set>
     </attachedChunks>
   </component>
@@ -307,39 +291,19 @@
           <option name="timeStamp" value="14" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Testing.py</url>
-          <line>218</line>
-          <option name="timeStamp" value="18" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Testing.py</url>
-          <line>143</line>
-          <option name="timeStamp" value="57" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Testing.py</url>
-          <line>137</line>
-          <option name="timeStamp" value="59" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Testing.py</url>
-          <line>125</line>
-          <option name="timeStamp" value="61" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>18</line>
-          <option name="timeStamp" value="65" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py</url>
-          <line>205</line>
+          <line>215</line>
           <option name="timeStamp" value="73" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py</url>
-          <line>204</line>
+          <line>214</line>
           <option name="timeStamp" value="74" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py</url>
+          <line>68</line>
+          <option name="timeStamp" value="78" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>

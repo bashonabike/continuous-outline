@@ -14,6 +14,7 @@ import helpers.old_method.ParsePathsIntoObjects as parse
 from helpers.old_method import TourConstraints as constr
 import helpers.old_method.NodeSet as NodeSet
 from helpers.mazify.MazeAgent import MazeAgent
+from helpers.mazify.MazeSections import MazeSections, MazeSection
 
 def draw_open_paths(image, paths, color=(0, 0, 255), thickness=2):
   """
@@ -113,11 +114,16 @@ for file in os.listdir("Trial-AI-Base-Images"):
       edges = outer_edges + inner_edges
 
       edges_show = edges.astype(np.uint8) * 255
-      cv2.imshow("hi contrat", edges_show)
-      cv2.waitKey(0)
+      # cv2.imshow("outer", outer_edges.astype(np.uint8) * 255)
+      # cv2.imshow("inner", inner_edges.astype(np.uint8) * 255)
+      # cv2.imshow("all", edges_show)
+      # cv2.waitKey(0)
 
-      maze_agent = MazeAgent(edges)
-      maze_agent.proximity_to_edge((100, 200))
+      maze_sections = MazeSections(edges_show, 10, 10)
+
+      maze_agent = MazeAgent(outer_edges, inner_edges, maze_sections)
+      prox_to_edge = maze_agent.proximity_to_edge((500, 400))
+
 
 
 

@@ -3,8 +3,8 @@ from skimage.segmentation import slic, mark_boundaries
 import numpy as np
 import cv2
 from typing import List
-from shapely.geometry import LineString
-from simplification.cutil import simplify_coords
+# from shapely.geometry import LineString
+# from simplification.cutil import simplify_coords
 
 
 # testimg = "C:\\Users\\liamc\\PycharmProjects\\continuous-outline\\Trial-AI-Base-Images\\image_fx_(18).jpg"
@@ -46,18 +46,28 @@ def mask_boundary_edges(img_path):
 	mask = None
 	if img.shape[2] == 4:  # Check if it has an alpha channel
 		alpha = img[:, :, 3]  # Get the alpha channel
-		mask = np.where(alpha > 0, 1, 0).astype(np.uint8)  # Create binary mask
+		mask = np.where(alpha > 0, 255, 0).astype(np.uint8)  # Create binary mask
 	else:
 		# Image has no alpha channel, treat white as background
 		grey = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
 		_, inverted = cv2.threshold(grey, 0.9*np.max(grey), 1, cv2.THRESH_BINARY)
-		mask = np.where(inverted == 0, 1, 0).astype(np.uint8)  # Create binary mask
+		mask = np.where(inverted == 0, 255, 0).astype(np.uint8)  # Create binary mask
 
 	#Blur n rebinarize n find edges
 	mask_blurred = cv2.GaussianBlur(mask, (9,9), 8)
-	_, edges_binary = cv2.threshold(mask_blurred, 127, 1, cv2.THRESH_BINARY)
+
+
+
+	_, edges_binary = cv2.threshold(mask_blurred, 10, 1, cv2.THRESH_BINARY)
+	erode_kernel = np.ones((5, 5), np.uint8)
+	eroded_edges = cv2.erode(edges_binary, erode_kernel, iterations=1)*255
+	fill_contours, _ = cv2.findContours(eroded_edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+	filled_mask = eroded_edges.copy()
+	# Fill contours (holes)
+	# for cnt in fill_contours:
+	cv2.drawContours(filled_mask, fill_contours, -1, (255,255,255), thickness=cv2.FILLED)  # -1 fills the contour
 	blank = np.zeros(img.shape, dtype=np.uint8)
-	edges = mark_boundaries(blank, mask, color=(255, 255, 255), mode='outer').astype(np.uint8)[:,:,0]
+	edges = mark_boundaries(blank, filled_mask, color=(255, 255, 255), mode='outer').astype(np.uint8)[:,:,0]
 	_, edges_binary = cv2.threshold(edges, 127, 1, cv2.THRESH_BINARY)
 	edges_bool = edges_binary.astype(bool)
 
@@ -88,7 +98,7 @@ def slic_image_boundary_edges(im_float, num_segments:int =2, enforce_connectivit
 	if segments is None: raise Exception("Segmentation failed, image too disparate for outlining")
 
 	#Pop edge image
-	blank = np.zeros(im_float.shape, dtype=np.bool)
+	blank = np.zeros(im_float.shape, dtype=np.uint8)
 	edges = mark_boundaries(blank, segments, color=(255, 255, 255), mode='outer')
 	_, edges_binary = cv2.threshold(edges[:,:,0], 127, 1, cv2.THRESH_BINARY)
 	edges_bool = edges_binary.astype(bool)
@@ -200,10 +210,10 @@ def find_contours_near_boundaries(contours: List[np.ndarray], segments: np.ndarr
 			near_boundary_contours.append(contour)
 	return near_boundary_contours
 
-def simplify_path_rdp(points, tolerance=1.0):
-	"""Simplifies a path using the Ramer-Douglas-Peucker algorithm."""
-	testt = points[:,0,:]
-	tyuyt = ""
-	line = LineString(points[:,0,:])
-	simplified_coords = simplify_coords(line.coords, tolerance)
-	return list(simplified_coords)
+# def simplify_path_rdp(points, tolerance=1.0):
+# 	"""Simplifies a path using the Ramer-Douglas-Peucker algorithm."""
+# 	testt = points[:,0,:]
+# 	tyuyt = ""
+# 	line = LineString(points[:,0,:])
+# 	simplified_coords = simplify_coords(line.coords, tolerance)
+# 	return list(simplified_coords)
