@@ -1,0 +1,1 @@
+Screensnips of first attempt edge detection results diff types, slic, attempts tracing edges close to slic some images also number of nodes too complex loses gist of trying to get overview of shape, realized bg mask plus slic does much better jorb of that than edge detect 
