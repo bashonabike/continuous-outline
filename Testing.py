@@ -112,18 +112,18 @@ for file in os.listdir("Trial-AI-Base-Images"):
 
       outer_edges, mask = slic.mask_boundary_edges(image_path)
       inner_edges, segments = slic.slic_image_boundary_edges(im_float, num_segments=6, enforce_connectivity=False)
-      edges = outer_edges + inner_edges
-
-      edges_show = edges.astype(np.uint8) * 255
+      # edges = outer_edges + inner_edges
+      #
+      # edges_show = edges.astype(np.uint8) * 255
       # cv2.imshow("outer", outer_edges.astype(np.uint8) * 255)
       # cv2.imshow("inner", inner_edges.astype(np.uint8) * 255)
       # cv2.imshow("all", edges_show)
       # cv2.waitKey(0)
 
-      maze_sections = MazeSections(edges_show, options.maze_sections_across, options.maze_sections_across)
+      maze_sections = MazeSections(outer_edges, options.maze_sections_across, options.maze_sections_across)
 
       maze_agent = MazeAgent(outer_edges, inner_edges, maze_sections)
-      prox_to_edge = maze_agent.proximity_to_edge((500, 400))
+      maze_agent.run_round_dumb()
 
 
 

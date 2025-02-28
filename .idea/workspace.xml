@@ -4,15 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="configured network inputs">
-      <change afterPath="$PROJECT_DIR$/helpers/mazify/TestGetDirection.py" afterDir="false" />
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Dumb round working!  incl dumb af term cond, dsumb weights, dumb starbucks, etc">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/Enums.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/Enums.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testing.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgentHelpers.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgentHelpers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/NetworkInputs.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/NetworkInputs.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/temp_options.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/temp_options.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -284,7 +279,15 @@
       <option name="project" value="LOCAL" />
       <updated>1740779399250</updated>
     </task>
-    <option name="localTasksCounter" value="18" />
+    <task id="LOCAL-00018" summary="Dumb round working!  incl dumb af term cond, dsumb weights, dumb starbucks, etc">
+      <option name="closed" value="true" />
+      <created>1740783961799</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1740783961799</updated>
+    </task>
+    <option name="localTasksCounter" value="19" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -315,7 +318,8 @@
     <MESSAGE value="consolidate compass funcitons, did legality" />
     <MESSAGE value="deflectin &amp; starting point" />
     <MESSAGE value="configured network inputs" />
-    <option name="LAST_COMMIT_MESSAGE" value="configured network inputs" />
+    <MESSAGE value="Dumb round working!  incl dumb af term cond, dsumb weights, dumb starbucks, etc" />
+    <option name="LAST_COMMIT_MESSAGE" value="Dumb round working!  incl dumb af term cond, dsumb weights, dumb starbucks, etc" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

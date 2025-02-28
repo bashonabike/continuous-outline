@@ -13,6 +13,7 @@ class MazeAgent:
         self.path = []
         self.outer_edges = outer_edges
         self.inner_edges = inner_edges
+        self.all_edges = self.outer_edges + self.inner_edges
         self.dims = (outer_edges.shape[0], outer_edges.shape[1])
         self.maze_sections = maze_sections
         self.helper = helpers.MazeAgentHelpers()
@@ -109,7 +110,7 @@ class MazeAgent:
         return legal_compass
     def proximity_to_edge(self):
         #Adding 10E-3 to avoid floating point errors
-        proximities = self.helper.process_points_in_quadrant_boxes_to_weighted_centroids(self.cur_point, self.outer_edges,
+        proximities = self.helper.process_points_in_quadrant_boxes_to_weighted_centroids(self.cur_point, self.all_edges,
                                                                                          options.proximity_search_radius)
         proximities_compass = self.helper.compute_compass_from_quadrant_vectors(proximities)
         return proximities_compass
@@ -121,7 +122,7 @@ class MazeAgent:
 
     def check_parallels(self):
         parallels_compass = self.helper.compute_paralells_compass(self.cur_point, self.inst_directions,
-                                                                  self.outer_edges)
+                                                                  self.all_edges)
         return parallels_compass
 
     def check_deflection(self):
