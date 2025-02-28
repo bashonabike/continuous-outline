@@ -12,6 +12,7 @@ class MazeAgentHelpers:
         self.sin_lut = self.create_sin_lut()
         self.cos_lut = self.create_cos_lut()
 
+    #region LUTs
     def create_sin_lut(self):
         angles = np.arange(0.0, 2 * math.pi - options.directions_incr + 0.001, options.directions_incr)
         sin_values = np.sin(angles)
@@ -25,10 +26,12 @@ class MazeAgentHelpers:
     def approx_sin(self, angle_rad):
         index = int(angle_rad * len(self.sin_lut) / (2 * np.pi)) % len(self.sin_lut)
         return self.sin_lut[index]
+
     def approx_cos(self, angle_rad):
         index = int(angle_rad * len(self.cos_lut) / (2 * np.pi)) % len(self.cos_lut)
         return self.cos_lut[index]
-
+    #endregion
+    #region Inputs
     def process_points_in_quadrant_boxes_to_weighted_centroids(self,point, image, radius):
         """
         Finds True points within quadrant bounding boxes, computes centroids,
@@ -73,28 +76,6 @@ class MazeAgentHelpers:
                 results.append({'quadrant': quadrant, 'cent_y': 0.0, 'cent_x': 0.0, 'vec_y': 0.0, 'vec_x': 0.0})
         return results
 
-    def find_true_points_in_bbox(self,array, bbox):
-        """
-        Finds all True points within a bounding box in a NumPy ndarray.
-
-        Args:
-            array: The NumPy ndarray (boolean).
-            bbox: A tuple (min_y, max_y, min_x, max_x) defining the bounding box.
-
-        Returns:
-            A NumPy array of (y, x) coordinates of True points.
-        """
-
-        min_y, max_y, min_x, max_x = bbox
-        sub_array = array[min_y:max_y, min_x:max_x]
-        y_indices, x_indices = np.where(sub_array)
-
-        # Adjust indices to the original array's coordinates
-        y_indices += min_y
-        x_indices += min_x
-
-        return np.column_stack((y_indices, x_indices))
-
     def compute_compass_from_quadrant_vectors(self,quadrant_vectors):
         """
        Compute compass directions for input to network
@@ -129,27 +110,54 @@ class MazeAgentHelpers:
                 num_intersections += 1
         return num_intersections
 
-    def check_intersects_by_direction(self,point, path):
-        quadrant_vectors = []
-        cur_quadrant = {'quadrant': 1, 'vec_y': 0.0, 'vec_x': 0.0}
+    def parse_direction_vector_starters(self, point, dims):
+        direction_vectors = []
         for direction in np.arange(0.0, 2 * math.pi - options.directions_incr + 0.001, options.directions_incr):
             #NOTE: flip y since origin is top left
-            new_tent_y = (-1)*(point[0] + options.segment_length * self.approx_cos(direction))
-            new_tent_x = point[1] + options.segment_length * self.approx_sin(direction)
+            new_tent_y = (-1)*round(point[0] + options.segment_length * self.approx_cos(direction), 0)
+            new_tent_x = round(point[1] + options.segment_length * self.approx_sin(direction), 0)
             tent_line = [(point[0], point[1]), (new_tent_y, new_tent_x)]
-            intersects = self.check_intersections(tent_line, path)
             norm_vector = np.array([new_tent_y - point[0], new_tent_x - point[1]])/options.segment_length
-            weighted_vector = intersects * norm_vector
-            if direction >= cur_quadrant['quadrant'] * (math.pi/2):
-                quadrant_vectors.append(cur_quadrant)
-                next_quad_num = cur_quadrant['quadrant'] + 1
-                cur_quadrant = {'quadrant': next_quad_num,'vec_y': 0.0, 'vec_x': 0.0}
+            if new_tent_y < 0 or new_tent_y >= dims[0] or new_tent_x < 0 or new_tent_x >= dims[1]:
+                legal = 0
+            else:
+                legal = 1
+            cur_dir = {'quadrant': 1 + direction//(math.pi/2), 'direction': direction, 'new_tent_y': new_tent_y,
+                       'new_tent_x': new_tent_x, 'tent_line': tent_line, 'norm_vector': norm_vector, 'legal': legal,
+                       'inst_weight': 0.0}
+            direction_vectors.append(cur_dir)
+        return direction_vectors
 
-            cur_quadrant['vec_y'] += weighted_vector[0]
-            cur_quadrant['vec_x'] += weighted_vector[1]
+    def parse_weighted_dir_vectors_into_compass(self, direction_vectors):
+        """
+       Compute compass directions for input to network
 
-        quadrant_vectors.append(cur_quadrant)
-        return quadrant_vectors
+       Args:
+           direction_vectors: list(dict).
+
+       Returns:
+           Dict of compass directions
+       """
+        compass = {'N':0.0, 'S':0.0, 'E':0.0, 'W':0.0}
+        for direction_vector in direction_vectors:
+            weighted_vector = direction_vector['inst_weight'] * direction_vector['norm_vector']
+            if direction_vector['quadrant'] in (1, 2):
+                compass['N'] += abs(weighted_vector[0])
+            else:
+                compass['S'] += abs(weighted_vector[0])
+
+            if direction_vector['quadrant'] in (1, 4):
+                compass['E'] += abs(weighted_vector[1])
+            else:
+                compass['W'] += abs(weighted_vector[1])
+        return compass
+
+    def check_intersects_by_direction_compass(self, direction_vectors, path):
+        for direction_vector in direction_vectors:
+            intersects = self.check_intersections(direction_vector['tent_line'], path)
+            direction_vector['inst_weight'] = intersects
+        compass = self.parse_weighted_dir_vectors_into_compass(direction_vectors)
+        return compass
 
     def count_edge_pixels_paralleled(self, edges, start_point, end_point, direction, sub_box=None):
         count = 0
@@ -180,26 +188,15 @@ class MazeAgentHelpers:
         sub_array = edges[min_y:max_y, min_x:max_x]
         return np.sum(sub_array), (min_y, max_y, min_x, max_x)
 
-    def compute_paralells_quadrant_vectors(self, point, edges):
-        quadrant_vectors = []
-        cur_quadrant = {'quadrant': 1, 'vec_y': 0.0, 'vec_x': 0.0}
-        for direction in np.arange(0.0, 2 * math.pi - options.directions_incr + 0.001, options.directions_incr):
-            # NOTE: flip y since origin is top left
-            new_tent_y = (-1) * (point[0] + options.segment_length * self.approx_cos(direction))
-            new_tent_x = point[1] + options.segment_length * self.approx_sin(direction)
-            count, _ = self.count_edge_pixels_paralleled(edges, point, (new_tent_y, new_tent_x), direction)
-            norm_vector = np.array([new_tent_y - point[0], new_tent_x - point[1]]) / options.segment_length
-            weighted_vector = count * norm_vector
-            if direction >= cur_quadrant['quadrant'] * (math.pi / 2):
-                quadrant_vectors.append(cur_quadrant)
-                next_quad_num = cur_quadrant['quadrant'] + 1
-                cur_quadrant = {'quadrant': next_quad_num, 'vec_y': 0.0, 'vec_x': 0.0}
-
-            cur_quadrant['vec_y'] += weighted_vector[0]
-            cur_quadrant['vec_x'] += weighted_vector[1]
-
-        quadrant_vectors.append(cur_quadrant)
-        return quadrant_vectors
+    def compute_paralells_compass(self, point, direction_vectors, edges):
+        for direction_vector in direction_vectors:
+            count, _ = self.count_edge_pixels_paralleled(edges, point,
+                                                         (direction_vector['new_tent_y'],
+                                                          direction_vector['new_tent_x']),
+                                                         direction_vector['direction'])
+            direction_vector['inst_weight'] = count
+        compass = self.parse_weighted_dir_vectors_into_compass(direction_vectors)
+        return compass
 
     def single_dir_parallels(self, point, edges, direction, maze_sections):
         # NOTE: flip y since origin is top left
@@ -223,5 +220,47 @@ class MazeAgentHelpers:
                     sub_counts.append({'y_sec': y_sec, 'x_sec': x_sec, 'sub_count': sub_count})
 
 
-        return count, (min_y, max_y, min_x, max_x), sub_counts
+        return count, (min_y, max_y, min_x, max_x), sub_counts, (new_tent_y, new_tent_x)
 
+    def saturation_quadrant_vectors(self, cur_quadrant, maze_sections):
+        return 1
+
+    def legality_compass(self, direction_vectors):
+        for direction_vector in direction_vectors:
+            direction_vector['inst_weight'] = direction_vector['legal']
+        compass = self.parse_weighted_dir_vectors_into_compass(direction_vectors)
+        return compass
+    #endregion
+    #region Getters
+
+    def retrieve_new_section(self, point, maze_sections):
+        y_sec_new = point[0] // maze_sections.y_grade
+        x_sec_new = point[1] // maze_sections.x_grade
+        if (y_sec_new, x_sec_new) in maze_sections.sections:
+            return (y_sec_new, x_sec_new)
+
+        return (-1, -1)
+    #endregion
+    #region Misc Helpers
+    def find_true_points_in_bbox(self,array, bbox):
+        """
+        Finds all True points within a bounding box in a NumPy ndarray.
+
+        Args:
+            array: The NumPy ndarray (boolean).
+            bbox: A tuple (min_y, max_y, min_x, max_x) defining the bounding box.
+
+        Returns:
+            A NumPy array of (y, x) coordinates of True points.
+        """
+
+        min_y, max_y, min_x, max_x = bbox
+        sub_array = array[min_y:max_y, min_x:max_x]
+        y_indices, x_indices = np.where(sub_array)
+
+        # Adjust indices to the original array's coordinates
+        y_indices += min_y
+        x_indices += min_x
+
+        return np.column_stack((y_indices, x_indices))
+    #endregion
