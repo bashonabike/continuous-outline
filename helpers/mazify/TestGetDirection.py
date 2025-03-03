@@ -8,6 +8,7 @@ import math
 def get_direction(network_inputs: inputs.NetworkInputs):
     #Compute net compass directions
     compass_net = {CompassDir.N: 0.0, CompassDir.E: 0.0, CompassDir.S: 0.0, CompassDir.W: 0.0}
+    inner_draw = 0.0
     for input in network_inputs.inputs:
         match input.compass_type:
             case CompassType.legality_compass:
@@ -27,7 +28,12 @@ def get_direction(network_inputs: inputs.NetworkInputs):
             case _:
                 weight = 0.0
 
-        compass_net[input.compass_dir] += input.value * weight
+        if input.compass_dir is not None:
+            compass_net[input.compass_dir] += input.value * weight
+        else:
+            inner_draw += input.value * weight
+
+        #TODO: configure inner_draw to increase weight of running parallels within current section
 
     #Determine strongest pull
     y, x = 0.0, 0.0

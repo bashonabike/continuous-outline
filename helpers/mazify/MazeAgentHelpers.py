@@ -32,6 +32,12 @@ class MazeAgentHelpers:
         index = int(angle_rad * len(self.cos_lut) / (2 * np.pi)) % len(self.cos_lut)
         return self.cos_lut[index]
     #endregion
+    #region Misc Helpers
+    def bound_coords(self, y, x, dims):
+        y_mod = round(min(max(y, 0), dims[0] - 1), 0)
+        x_mod = round(min(max(x, 0), dims[1] - 1), 0)
+        return int(y_mod), int(x_mod)
+    #endregion
     #region Inputs
     def process_points_in_quadrant_boxes_to_weighted_centroids(self,point, image, radius):
         """
@@ -105,8 +111,12 @@ class MazeAgentHelpers:
         """Checks if segment1 intersects any of the segments in the list."""
         num_intersections = 0
         line1 = LineString(segment_proposed)
-        for segment2 in segments_existing:
-            line2 = LineString(segment2)
+        prev_node, cur_node = None, None
+        for node in segments_existing:
+            prev_node = cur_node
+            cur_node = node
+            if prev_node is None: continue
+            line2 = LineString([prev_node, cur_node])
             if line1.intersects(line2):
                 num_intersections += 1
         return num_intersections
@@ -115,8 +125,10 @@ class MazeAgentHelpers:
         direction_vectors = []
         for direction in np.arange(0.0, 2 * math.pi - options.directions_incr + 0.001, options.directions_incr):
             #NOTE: flip y since origin is top left
-            new_tent_y = (-1)*round(point[0] + options.segment_length * self.approx_cos(direction), 0)
-            new_tent_x = round(point[1] + options.segment_length * self.approx_sin(direction), 0)
+            new_tent_y_raw = round(point[0] - options.segment_length * self.approx_sin(direction), 0)
+            new_tent_x_raw = round(point[1] + options.segment_length * self.approx_cos(direction), 0)
+            new_tent_y, new_tent_x = int(new_tent_y_raw), int(new_tent_x_raw)
+
             tent_line = [(point[0], point[1]), (new_tent_y, new_tent_x)]
             norm_vector = np.array([new_tent_y - point[0], new_tent_x - point[1]])/options.segment_length
             if new_tent_y < 0 or new_tent_y >= dims[0] or new_tent_x < 0 or new_tent_x >= dims[1]:
@@ -166,13 +178,16 @@ class MazeAgentHelpers:
         right_ortho = (direction + math.pi/2) % (2 * math.pi)
         #TODO: if too crappy, try to approx diagonally
         min_y, max_y, min_x, max_x = 99999, -1, 99999, -1
+        dims = edges.shape
 
         #Determine bounding box
         for dir in [left_ortho, right_ortho]:
             for point in [start_point, end_point]:
                 # NOTE: flip y since origin is top left
-                y = round((-1)*(start_point[0] + options.parallel_search_radius * self.approx_cos(left_ortho)), 0)
-                x = round(start_point[1] + options.parallel_search_radius * self.approx_sin(left_ortho), 0)
+                y_raw = start_point[0] - options.parallel_search_radius * self.approx_sin(left_ortho)
+                x_raw = start_point[1] + options.parallel_search_radius * self.approx_cos(left_ortho)
+                y, x = self.bound_coords(y_raw, x_raw, dims)
+
                 min_y = min(min_y, y)
                 max_y = max(max_y, y)
                 min_x = min(min_x, x)
@@ -189,7 +204,7 @@ class MazeAgentHelpers:
         sub_array = edges[min_y:max_y, min_x:max_x]
         return np.sum(sub_array), (min_y, max_y, min_x, max_x)
 
-    def compute_paralells_compass(self, point, direction_vectors, edges):
+    def compute_parallels_compass(self, point, direction_vectors, edges):
         for direction_vector in direction_vectors:
             count, _ = self.count_edge_pixels_paralleled(edges, point,
                                                          (direction_vector['new_tent_y'],
@@ -201,8 +216,9 @@ class MazeAgentHelpers:
 
     def single_dir_parallels(self, point, edges, direction, maze_sections):
         # NOTE: flip y since origin is top left
-        new_tent_y = (-1) * (point[0] + options.segment_length * self.approx_cos(direction))
-        new_tent_x = point[1] + options.segment_length * self.approx_sin(direction)
+        new_tent_y_raw = point[0] - options.segment_length * self.approx_sin(direction)
+        new_tent_x_raw = point[1] + options.segment_length * self.approx_cos(direction)
+        new_tent_y, new_tent_x = self.bound_coords(new_tent_y_raw, new_tent_x_raw, edges.shape)
         count, (min_y, max_y, min_x, max_x) = self.count_edge_pixels_paralleled(edges, point, (new_tent_y,
                                                                                                new_tent_x), direction)
 
@@ -212,7 +228,7 @@ class MazeAgentHelpers:
         sub_counts = []
         for y_sec in range(min_y_sec, max_y_sec + 1):
             for x_sec in range(min_x_sec, max_x_sec + 1):
-                if (y_sec, x_sec) in maze_sections.sections:
+                if 0 <= y_sec < maze_sections.m and 0 <= x_sec < maze_sections.n:
                     bbox = (maze_sections.y_grade*y_sec, maze_sections.y_grade*(y_sec + 1),
                             maze_sections.x_grade*x_sec, maze_sections.x_grade* (x_sec + 1))
                     sub_count, _ = self.count_edge_pixels_paralleled(edges, point,
@@ -248,9 +264,9 @@ class MazeAgentHelpers:
             for section in row:
                 if section is cur_section: continue
 
-                dx, dy = section.x - cur_section.x, section.y - cur_section.y
+                dy, dx = section.y_sec - cur_section.y_sec, section.x_sec - cur_section.x_sec
                 normalizer = max(abs(dx), abs(dy))
-                dx_norm, dy_norm = dx/normalizer, dy/normalizer
+                dy_norm, dx_norm = dy/normalizer, dx/normalizer
                 attraction = self.inner_section_attraction_scalar(section)
 
                 if dy_norm < 0:
@@ -276,10 +292,10 @@ class MazeAgentHelpers:
     def retrieve_new_section(self, point, maze_sections):
         y_sec_new = point[0] // maze_sections.y_grade
         x_sec_new = point[1] // maze_sections.x_grade
-        if (y_sec_new, x_sec_new) in maze_sections.sections:
-            return (y_sec_new, x_sec_new)
+        if 0 <= y_sec_new < maze_sections.m and 0 <= x_sec_new < maze_sections.n:
+            return maze_sections.sections[y_sec_new, x_sec_new]
 
-        return (-1, -1)
+        return None
     #endregion
     #region Misc Helpers
     def find_true_points_in_bbox(self,array, bbox):
