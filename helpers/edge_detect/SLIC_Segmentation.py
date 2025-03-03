@@ -1,8 +1,12 @@
 # import the necessary packages
 from skimage.segmentation import slic, mark_boundaries
+from skimage.measure import find_contours
+from scipy import signal
 import numpy as np
 import cv2
 from typing import List
+import math
+import matplotlib.pyplot as plt
 # from shapely.geometry import LineString
 # from simplification.cutil import simplify_coords
 
@@ -23,6 +27,36 @@ from typing import List
 # 	plt.axis("off")
 # # show the plots
 # plt.show()
+
+def find_transition_nodes(regioned_img: np.ndarray):
+	num_regions = regioned_img.max()
+	#Encode each region in base 10 and run with ones 3x3
+	encoded_regions = np.pow(10, regioned_img - 1).astype(np.uint64)
+	kernel = np.ones((3, 3), np.uint64)
+	convolved = signal.convolve2d(encoded_regions, kernel, mode='same', boundary='fill')
+
+	#Break down to decode areas with 3 or more regions
+	transitions_map = np.zeros(regioned_img.shape, dtype=np.uint64)
+	regions_rem = convolved
+	for region_mux in range(num_regions):
+		region_div = int(math.floor(math.pow(10, (num_regions - 1) - region_mux)))
+		regions_rem_new = regions_rem % region_div
+		transitions_map += np.where(regions_rem_new != regions_rem, 1, 0).astype(np.uint64)
+		regions_rem = regions_rem_new
+
+	#Identify regions where there are 3 or more regions
+	transition_nodes = np.where(transitions_map >= 3, True, False)
+
+	# Create a perimeter mask for 2 or more and edge pixel
+	perimeter_mask = np.zeros_like(transitions_map, dtype=bool)
+	perimeter_mask[0, :] = True  # Top row
+	perimeter_mask[-1, :] = True  # Bottom row
+	perimeter_mask[:, 0] = True  # Left column
+	perimeter_mask[:, -1] = True  # Right column
+	full_mask = (transitions_map >= 2) & perimeter_mask
+
+	transition_nodes = transition_nodes | full_mask
+	return transition_nodes
 
 def mask_test_boundaries(img_path, split_contours):
 	#NOTE: only work PNG with transparent bg, or where background is all white
@@ -86,25 +120,49 @@ def mask_boundary_edges(img_path):
 	# _, edges_binary = cv2.threshold(simple_contours_plotted[:, :, 0], 127, 1, cv2.THRESH_BINARY)
 	# edges_bool = edges_binary.astype(bool)
 
-	return edges_bool, mask
+	return edges_bool, fill_contours,  mask
 
 def slic_image_boundary_edges(im_float, num_segments:int =2, enforce_connectivity:bool = True):
 	segments = None
+	num_segs_actual = -1
 	for num_segs in range(num_segments, num_segments+20):
 		segments_trial = slic(im_float, n_segments=num_segs, sigma=5, enforce_connectivity=enforce_connectivity)
 		if np.max(segments_trial) > 1:
 			segments = segments_trial
+			num_segs_actual = num_segs
 			break
 	if segments is None: raise Exception("Segmentation failed, image too disparate for outlining")
 
+	#Determine contours
+	contours = []
+	for segment_val in range(1, np.max(segments)+1):
+		finder = np.where(segments == segment_val, 255, 0).astype(np.uint8)
+		partial_contours, _ = cv2.findContours(finder, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+		contours.extend(partial_contours)
+
+	#Plot contours on blank coded for reference
+	edges = np.zeros_like(segments).astype(np.uint16)
+	for contour_idx in range(len(contours)):
+		cv2.drawContours(edges, contours, contour_idx, (contour_idx + 1, contour_idx + 1, contour_idx + 1))
+
+	#Wipe outside edge, false contours
+	perimeter_mask = np.zeros_like(edges, dtype=bool)
+	perimeter_mask[0, :] = True  # Top row
+	perimeter_mask[-1, :] = True  # Bottom row
+	perimeter_mask[:, 0] = True  # Left column
+	perimeter_mask[:, -1] = True  # Right column
+	edges[perimeter_mask] = 0
+
 	#Pop edge image
-	blank = np.zeros(im_float.shape, dtype=np.uint8)
-	edges = mark_boundaries(blank, segments, color=(255, 255, 255), mode='outer')
-	_, edges_binary = cv2.threshold(edges[:,:,0], 127, 1, cv2.THRESH_BINARY)
-	edges_bool = edges_binary.astype(bool)
+	# blank = np.zeros(im_float.shape, dtype=np.uint8)
+	#
+	# edges = mark_boundaries(blank, segments, color=(255, 255, 255), mode='outer')
+	# _, edges_binary = cv2.threshold(edges[:,:,0], 127, 1, cv2.THRESH_BINARY)
+	# edges_bool = edges_binary.astype(bool)
+
 	#TODO: Constrict from 2 wide to 1 wide??
 
-	return edges_bool, segments
+	return edges, contours, segments, num_segs_actual
 
 
 def slic_image_test_boundaries(im_float, split_contours, num_segments:int =2, enforce_connectivity:bool = True):

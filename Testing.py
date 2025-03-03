@@ -110,25 +110,30 @@ for file in os.listdir("Trial-AI-Base-Images"):
       # near_boudaries_contours, segments = slic.slic_image_test_boundaries(im_float, split_contours)
       # near_boudaries_contours, segments = slic.mask_test_boundaries(image_path, split_contours)
 
-      outer_edges, mask = slic.mask_boundary_edges(image_path)
-      inner_edges, segments = slic.slic_image_boundary_edges(im_float, num_segments=6, enforce_connectivity=False)
-      # edges = outer_edges + inner_edges
+      outer_edges, outer_contours, mask = slic.mask_boundary_edges(image_path)
+      inner_edges, inner_contours, segments, num_segs = slic.slic_image_boundary_edges(im_float, num_segments=options.slic_regions,
+                                                             enforce_connectivity=False)
+      edges = outer_edges + inner_edges
+
+      # transition_nodes = slic.find_transition_nodes(segments)
       #
-      # edges_show = edges.astype(np.uint8) * 255
+      edges_show = edges.astype(np.uint8) * 255
       # cv2.imshow("outer", outer_edges.astype(np.uint8) * 255)
       # cv2.imshow("inner", inner_edges.astype(np.uint8) * 255)
-      # cv2.imshow("all", edges_show)
-      # cv2.waitKey(0)
+      cv2.imshow("all", edges_show)
+      # cv2.imshow("nodes", transition_nodes.astype(np.uint8) * 255)
+      cv2.waitKey(0)
 
       maze_sections = MazeSections(outer_edges, options.maze_sections_across, options.maze_sections_across)
 
-      maze_agent = MazeAgent(outer_edges, inner_edges, maze_sections)
-      maze_agent.run_round_dumb()
+      maze_agent = MazeAgent(outer_edges, outer_contours, inner_edges, inner_contours, maze_sections)
+      maze_agent.run_round_dumb(image_path)
 
 
-
-
-
+      #TODO: Pass in vector segs, use compass pick dir, lock onto seg, criteria for losing seg, use dir just for between segs
+      #TODO: pre-walk each edge forward, set smoothed direction for each node maybe do as kernal so backward and forward predictyion
+      #Have it walk-dir invariant, but relative to forward walk, have smoothing as func of angle and displacement with next node
+      #While walking, parse each node into a quadrant for easy retrieval
 
       testtt = 0
 

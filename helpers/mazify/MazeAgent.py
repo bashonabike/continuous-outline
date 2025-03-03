@@ -1,5 +1,8 @@
 import math
 import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
+import time
 
 import helpers.mazify.temp_options as options
 import helpers.mazify.MazeAgentHelpers as helpers
@@ -9,10 +12,14 @@ import helpers.mazify.TestGetDirection as getdir
 from helpers.Enums import CompassType, CompassDir
 
 class MazeAgent:
-    def __init__(self, outer_edges, inner_edges, maze_sections: sections.MazeSections):
-        self.path = []
-        self.outer_edges = outer_edges
-        self.inner_edges = inner_edges
+    def __init__(self, outer_edges, outer_contours, inner_edges, inner_contours,
+                 maze_sections: sections.MazeSections):
+        self.path, self.path_nd = [], np.array([])
+        self.unique_segments, self.unique_segments_list, self.unique_segments_centroid_nd = (
+            set([]), [], np.array([]))
+        #NOTE: outer edges are codified numerically to correspond with outer contours
+        self.outer_edges, self.outer_contours = outer_edges, outer_contours
+        self.inner_edges, self.inner_contours = inner_edges, inner_contours
         self.all_edges = self.outer_edges + self.inner_edges
         self.dims = (outer_edges.shape[0], outer_edges.shape[1])
         self.maze_sections = maze_sections
@@ -54,17 +61,39 @@ class MazeAgent:
                 self.network_inputs.add_input(compass_def['type'], None)
     #endregion
     #region Run
-    def run_round_dumb(self):
+    def plot_path(self, path_coords, image):
+        """
+        Plots a path defined by a list of tuple coordinates.
+
+        Args:
+            path_coords: A list of tuples, where each tuple represents (x, y) coordinates.
+        """
+
+        if not path_coords:
+            print("Path is empty.")
+            return
+
+        x_coords, y_coords = zip(*path_coords)
+
+        plt.imshow(image)  # Display the image
+        plt.plot(x_coords, y_coords, color='red', linewidth=1, marker='o', markersize=1)  # Plot the path
+
+        plt.axis('off')  # Turn off axis labels and ticks
+        plt.show(block=True)
+
+    def run_round_dumb(self, im_orig_path):
         self.cur_point, self.cur_section = self.find_start_point()
         self.path.append(self.cur_point)
+        self.path_nd = np.array(self.cur_point)
+        image = Image.open(im_orig_path)
 
         while not self.maze_sections.check_saturation():
             self.set_direction_vectors()
             self.set_compasses()
             direction = getdir.get_direction(self.network_inputs)
             self.update_section_saturation_and_point(direction)
-            if len(self.path)%10 == 0:
-                sdf=""
+            if len(self.path)%100 == 0:
+                self.plot_path(self.path, image)
 
     def set_compass(self, compass_type):
         instantiate = None
@@ -78,8 +107,12 @@ class MazeAgent:
     def set_compasses(self):
         #Set compasses as needed
         for compass_def in self.compass_defs:
+            start= time.perf_counter_ns()
             if self.compasses.get(compass_def['type']) is None or not compass_def['persist']:
                 self.compasses[compass_def['type']] = compass_def['instantiate']()
+
+            end= time.perf_counter_ns()
+            print(f"{compass_def['type']}: {(end-start)/1000000} ms")
 
         #Find normalizer
         compass_points_flat = []
@@ -101,6 +134,8 @@ class MazeAgent:
                 cur_input.set_value(compass/self.compass_normalizer)
 
     def find_start_point(self):
+        #TODO: cluster whole maze
+
         #Find start section
         edge_pixels_array= np.vectorize(lambda x: x.edge_pixels)(self.maze_sections.sections)
         max_edges_index = np.argmax(edge_pixels_array)
@@ -123,7 +158,9 @@ class MazeAgent:
 
 
     def check_intersects(self):
-        intersects_compass = self.helper.check_intersects_by_direction_compass(self.inst_directions, self.path)
+        intersects_compass = self.helper.check_intersects_by_direction_compass(self.inst_directions,
+                                                                               self.unique_segments_list,
+                                                                               self.unique_segments_centroid_nd)
         return intersects_compass
 
     def check_parallels(self):
@@ -152,7 +189,7 @@ class MazeAgent:
             cur_section = self.maze_sections.sections[(sub_count['y_sec'], sub_count['x_sec'])]
             if 0 <= sub_count['y_sec'] < self.maze_sections.m and 0 <= sub_count['x_sec'] < self.maze_sections.n and not \
                 cur_section.saturated:
-                cur_section.update_saturation(self.maze_sections.sections, sub_count['sub_count'])
+                cur_section.update_saturation(self.maze_sections, sub_count['sub_count'])
 
         #Update section if needed
         if len(sub_counts) > 0:
@@ -162,10 +199,38 @@ class MazeAgent:
         #Update point
         self.cur_point = new_point
         self.path.append(self.cur_point)
+        self.path_nd = np.vstack((self.path_nd, np.array(self.cur_point)))
+        if len(self.path) >= 2:
+            self.unique_segments_list, self.unique_segments_centroid_nd =\
+                self.add_sort_segment_to_set(self.path[-1], self.path[-2], self.unique_segments,
+                                             self.unique_segments_list, self.unique_segments_centroid_nd)
         self.prev_direction = direction
 
     def set_direction_vectors(self):
         self.inst_directions = self.helper.parse_direction_vector_starters(self.cur_point, self.dims)
+
+    def add_sort_segment_to_set(self, point1: tuple, point2: tuple, segments: set, segments_list: list,
+                                centroids_nd:np.array):
+        old_seg_size = len(segments)
+        seg_to_add = None
+        if point1[0] < point2[0]:
+            seg_to_add = (point1, point2)
+        elif point2[0] < point1[0]:
+            seg_to_add = (point2, point1)
+        elif point1[1] < point2[1]:
+            seg_to_add = (point1, point2)
+        else:
+            seg_to_add = (point2, point1)
+        segments.add(seg_to_add)
+
+        #Check if actually added
+        if len(segments) > old_seg_size:
+            segments_list.append(seg_to_add)
+            centroid = ((seg_to_add[0][0] + seg_to_add[1][0]) // 2, (seg_to_add[0][1] + seg_to_add[1][1]) // 2)
+            if centroids_nd.size > 0:
+                centroids_nd = np.vstack((centroids_nd, np.array(centroid)))
+            else: centroids_nd = np.array(centroid)
+        return segments_list, centroids_nd
     #endregion
 
 

@@ -1,6 +1,8 @@
 import numpy as np
-from shapely.geometry import LineString
+from numpy.ma.core import indices
+from shapely.geometry import LineString, Point, MultiPoint
 import math
+import time
 
 import helpers.mazify.temp_options as options
 from helpers.Enums import CompassDir
@@ -10,27 +12,31 @@ from helpers.Enums import CompassDir
 class MazeAgentHelpers:
 
     def __init__(self):
-        self.sin_lut = self.create_sin_lut()
-        self.cos_lut = self.create_cos_lut()
+        self.sin_lut, self.parallel_sin_lut, self.segment_sin_lut = self.create_sin_lut()
+        self.cos_lut, self.parallel_cos_lut, self.segment_cos_lut = self.create_cos_lut()
 
     #region LUTs
     def create_sin_lut(self):
         angles = np.arange(0.0, 2 * math.pi - options.directions_incr + 0.001, options.directions_incr)
         sin_values = np.sin(angles)
-        return sin_values
+        parallel_sin_values = options.parallel_search_radius * sin_values
+        segment_sin_values = options.segment_length * sin_values
+        return sin_values, parallel_sin_values, segment_sin_values
 
     def create_cos_lut(self):
         angles = np.arange(0.0, 2 * math.pi - options.directions_incr + 0.001, options.directions_incr)
         cos_values = np.cos(angles)
-        return cos_values
+        parallel_cos_values = options.parallel_search_radius * cos_values
+        segment_cos_values = options.segment_length * cos_values
+        return cos_values, parallel_cos_values, segment_cos_values
 
     def approx_sin(self, angle_rad):
         index = int(angle_rad * len(self.sin_lut) / (2 * np.pi)) % len(self.sin_lut)
-        return self.sin_lut[index]
+        return self.sin_lut[index], self.parallel_sin_lut[index], self.segment_sin_lut[index]
 
     def approx_cos(self, angle_rad):
         index = int(angle_rad * len(self.cos_lut) / (2 * np.pi)) % len(self.cos_lut)
-        return self.cos_lut[index]
+        return self.cos_lut[index], self.parallel_cos_lut[index], self.segment_cos_lut[index]
     #endregion
     #region Misc Helpers
     def bound_coords(self, y, x, dims):
@@ -107,26 +113,63 @@ class MazeAgentHelpers:
 
         return compass
 
-    def check_intersections(self,segment_proposed, segments_existing):
-        """Checks if segment1 intersects any of the segments in the list."""
+    def ccw(self, A, B, C):
+        return (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0])
+
+    # Return true if line segments AB and CD intersect
+    def intersect(self, vec1, vec2):
+        return (self.ccw(vec1[0], vec2[0], vec2[1]) != self.ccw(vec1[1], vec2[0], vec2[1]) and
+                self.ccw(vec1[0], vec1[1], vec2[0]) != self.ccw(vec1[0], vec1[1], vec2[1]))
+
+    def check_intersections(self,segment_proposed, segments_existing: list, centroids_existing: np.array):
+        """
+        Finds path indices within a bounding box, groups neighbors, and checks for intersections.
+
+        Args:
+            segment_proposed: Tuple of tuples ((x1, y1), (x2, y2)) representing the line segment.
+            segments_existing: List of tuple coordinates (x, y).
+
+        Returns:
+            Number of intersects found
+        """
+        if len(segments_existing) == 0: return 0
+
         num_intersections = 0
-        line1 = LineString(segment_proposed)
-        prev_node, cur_node = None, None
-        for node in segments_existing:
-            prev_node = cur_node
-            cur_node = node
-            if prev_node is None: continue
-            line2 = LineString([prev_node, cur_node])
-            if line1.intersects(line2):
+
+        dx = dy = options.segment_length
+        centroid = tuple((segment_proposed[0][i] + segment_proposed[1][i]) // 2 for i in range(2))
+        min_y, min_x = centroid[0] - dy, centroid[1] - dx
+        max_y, max_x = centroid[0] + dy, centroid[1] + dx
+
+        if centroids_existing.size > 2:
+            bb_mask = (
+                (centroids_existing[:, 0] >= min_y) &
+                (centroids_existing[:, 0] <= max_y) &
+                (centroids_existing[:, 1] >= min_x) &
+                (centroids_existing[:, 1] <= max_x)
+            )
+            indices_in_bbox = np.where(bb_mask)[0].tolist()
+        else:
+            bb_mask = (
+                    (centroids_existing[0] >= min_y) &
+                    (centroids_existing[0] <= max_y) &
+                    (centroids_existing[1] >= min_x) &
+                    (centroids_existing[1] <= max_x)
+            )
+            indices_in_bbox = [0] if bb_mask else []
+
+        for i in indices_in_bbox:
+            if self.intersect(segments_existing[i], segment_proposed):
                 num_intersections += 1
+
         return num_intersections
 
     def parse_direction_vector_starters(self, point, dims):
         direction_vectors = []
         for direction in np.arange(0.0, 2 * math.pi - options.directions_incr + 0.001, options.directions_incr):
             #NOTE: flip y since origin is top left
-            new_tent_y_raw = round(point[0] - options.segment_length * self.approx_sin(direction), 0)
-            new_tent_x_raw = round(point[1] + options.segment_length * self.approx_cos(direction), 0)
+            new_tent_y_raw = round(point[0] - self.approx_sin(direction)[2], 0)
+            new_tent_x_raw = round(point[1] + self.approx_cos(direction)[2], 0)
             new_tent_y, new_tent_x = int(new_tent_y_raw), int(new_tent_x_raw)
 
             tent_line = [(point[0], point[1]), (new_tent_y, new_tent_x)]
@@ -165,18 +208,20 @@ class MazeAgentHelpers:
                 compass[CompassDir.W] += abs(weighted_vector[1])
         return compass
 
-    def check_intersects_by_direction_compass(self, direction_vectors, path):
+    def check_intersects_by_direction_compass(self, direction_vectors, segments_existing: list,
+                                              centroids_existing: np.array):
         for direction_vector in direction_vectors:
-            intersects = self.check_intersections(direction_vector['tent_line'], path)
-            direction_vector['inst_weight'] = intersects
+            intersects = self.check_intersections(direction_vector['tent_line'],
+                                                  segments_existing, centroids_existing)
+            direction_vector['inst_weight'] = 1.0/(1 + math.pow(intersects, 2))
         compass = self.parse_weighted_dir_vectors_into_compass(direction_vectors)
         return compass
 
     def count_edge_pixels_paralleled(self, edges, start_point, end_point, direction, sub_box=None):
-        count = 0
         left_ortho = (direction - math.pi/2) % (2 * math.pi)
         right_ortho = (direction + math.pi/2) % (2 * math.pi)
         #TODO: if too crappy, try to approx diagonally
+        #TODO: Make this faster!
         min_y, max_y, min_x, max_x = 99999, -1, 99999, -1
         dims = edges.shape
 
@@ -184,8 +229,8 @@ class MazeAgentHelpers:
         for dir in [left_ortho, right_ortho]:
             for point in [start_point, end_point]:
                 # NOTE: flip y since origin is top left
-                y_raw = start_point[0] - options.parallel_search_radius * self.approx_sin(left_ortho)
-                x_raw = start_point[1] + options.parallel_search_radius * self.approx_cos(left_ortho)
+                y_raw = point[0] - self.approx_sin(dir)[1]
+                x_raw = point[1] + self.approx_cos(dir)[1]
                 y, x = self.bound_coords(y_raw, x_raw, dims)
 
                 min_y = min(min_y, y)
@@ -216,8 +261,8 @@ class MazeAgentHelpers:
 
     def single_dir_parallels(self, point, edges, direction, maze_sections):
         # NOTE: flip y since origin is top left
-        new_tent_y_raw = point[0] - options.segment_length * self.approx_sin(direction)
-        new_tent_x_raw = point[1] + options.segment_length * self.approx_cos(direction)
+        new_tent_y_raw = point[0] - self.approx_sin(direction)[2]
+        new_tent_x_raw = point[1] + self.approx_cos(direction)[2]
         new_tent_y, new_tent_x = self.bound_coords(new_tent_y_raw, new_tent_x_raw, edges.shape)
         count, (min_y, max_y, min_x, max_x) = self.count_edge_pixels_paralleled(edges, point, (new_tent_y,
                                                                                                new_tent_x), direction)

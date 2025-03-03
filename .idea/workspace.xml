@@ -4,14 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Dumb round working!  incl dumb af term cond, dsumb weights, dumb starbucks, etc">
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Debugging &amp; improvements of basic dumb round func">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/Enums.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/Enums.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgentHelpers.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgentHelpers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/NetworkInputs.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/NetworkInputs.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/TestGetDirection.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/TestGetDirection.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/temp_options.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/temp_options.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -299,7 +299,15 @@
       <option name="project" value="LOCAL" />
       <updated>1740784276727</updated>
     </task>
-    <option name="localTasksCounter" value="20" />
+    <task id="LOCAL-00020" summary="Debugging &amp; improvements of basic dumb round func">
+      <option name="closed" value="true" />
+      <created>1740982636188</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1740982636188</updated>
+    </task>
+    <option name="localTasksCounter" value="21" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -331,7 +339,8 @@
     <MESSAGE value="deflectin &amp; starting point" />
     <MESSAGE value="configured network inputs" />
     <MESSAGE value="Dumb round working!  incl dumb af term cond, dsumb weights, dumb starbucks, etc" />
-    <option name="LAST_COMMIT_MESSAGE" value="Dumb round working!  incl dumb af term cond, dsumb weights, dumb starbucks, etc" />
+    <MESSAGE value="Debugging &amp; improvements of basic dumb round func" />
+    <option name="LAST_COMMIT_MESSAGE" value="Debugging &amp; improvements of basic dumb round func" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -343,28 +352,18 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>66</line>
-          <option name="timeStamp" value="101" />
+          <line>93</line>
+          <option name="timeStamp" value="155" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>64</line>
-          <option name="timeStamp" value="123" />
+          <url>file://$PROJECT_DIR$/Testing.py</url>
+          <line>126</line>
+          <option name="timeStamp" value="165" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>63</line>
-          <option name="timeStamp" value="124" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/mazify/TestGetDirection.py</url>
-          <line>38</line>
-          <option name="timeStamp" value="127" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/mazify/TestGetDirection.py</url>
-          <line>50</line>
-          <option name="timeStamp" value="128" />
+          <url>file://$PROJECT_DIR$/Testing.py</url>
+          <line>115</line>
+          <option name="timeStamp" value="166" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

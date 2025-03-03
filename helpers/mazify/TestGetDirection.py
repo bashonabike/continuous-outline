@@ -12,17 +12,18 @@ def get_direction(network_inputs: inputs.NetworkInputs):
     for input in network_inputs.inputs:
         match input.compass_type:
             case CompassType.legality_compass:
-                weight = 1.0
+                weight = 20.0/2.4
             case CompassType.proximity_compass:
-                weight = 1.0
+                weight = 2.0/2
             case CompassType.intersects_compass:
-                weight = 1.0
+                weight = 1.0/2.4
             case CompassType.outer_attraction_compass:
-                weight = 1.0
+                weight = 1.0/1000
             case CompassType.parallels_compass:
-                weight = 1.0
+                # weight = 1.0
+                weight = 1.0/20.0
             case CompassType.deflection_compass:
-                weight = 1.0
+                weight = 2.0/2.4
             case CompassType.inner_attraction:
                 weight = 1.0
             case _:
