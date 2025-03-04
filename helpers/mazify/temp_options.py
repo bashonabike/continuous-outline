@@ -13,6 +13,8 @@ saturation_termination = 0.8
 
 slic_regions = 6
 
+dir_smoothing_size, dir_smoothing_sigma = 21, 2.0
+
 
 #CALCULATED DO NOT TOUCH!!
 rev_max_deflect_rad = 2 * math.pi - max_deflect_rad

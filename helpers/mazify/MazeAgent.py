@@ -10,6 +10,7 @@ import helpers.mazify.NetworkInputs as inputs
 import helpers.mazify.MazeSections as sections
 import helpers.mazify.TestGetDirection as getdir
 from helpers.Enums import CompassType, CompassDir
+from helpers.mazify.EdgePath import EdgePath
 
 class MazeAgent:
     def __init__(self, outer_edges, outer_contours, inner_edges, inner_contours,
@@ -17,10 +18,16 @@ class MazeAgent:
         self.path, self.path_nd = [], np.array([])
         self.unique_segments, self.unique_segments_list, self.unique_segments_centroid_nd = (
             set([]), [], np.array([]))
-        #NOTE: outer edges are codified numerically to correspond with outer contours
+        #NOTE: edges are codified numerically to correspond with outer contours
         self.outer_edges, self.outer_contours = outer_edges, outer_contours
         self.inner_edges, self.inner_contours = inner_edges, inner_contours
-        self.all_edges = self.outer_edges + self.inner_edges
+
+        self.all_edges_bool, self.all_contours = (np.where(self.outer_edges + self.inner_edges > 0, True, False),
+                                             self.outer_contours + self.inner_contours)
+        self.all_contours_objects = []
+        for i in range(len(self.all_contours)):
+            self.all_contours_objects.append(EdgePath(i + 1, self.all_contours[i], maze_sections))
+
         self.dims = (outer_edges.shape[0], outer_edges.shape[1])
         self.maze_sections = maze_sections
         self.helper = helpers.MazeAgentHelpers()
@@ -181,8 +188,70 @@ class MazeAgent:
         return inner_attraction_scalar
 
     #endregion
+    #region Walkies
+    def check_segment_hit_edge(self, start_point, end_point):
+        #Walk path one pixel at a time
+        dy, dx = end_point[0] - start_point[0], end_point[1] - start_point[1]
+        dydx_mag = abs(dy/dx) if dx > 0 else 99999.0
+        y_disp, x_disp = 0, 0
+        y_dir, x_dir = 1 if dy >= 0 else -1, 1 if dx >= 0 else -1
+        while not (abs(y_disp) >= abs(dy) and abs(x_disp) >= abs(dx)):
+            try_x = abs(x_disp)*dydx_mag < abs(y_disp)
+            if try_x and abs(x_disp) < abs(dx):
+                x_disp += x_dir
+            elif abs(y_disp) < abs(dy):
+                y_disp += y_dir
+            elif abs(x_disp) < abs(dx):
+                x_disp += x_dir
+
+            #Check if hit edge
+            cur_px = (start_point[0] + y_disp, start_point[1] + x_disp)
+            if self.all_edges_bool[cur_px]:
+                return cur_px
+
+        return None
+
+    def find_closest_node_to_edge_point(self, edge_point):
+        #Test outer first, then inner
+        edge_num = self.outer_edges[edge_point]
+        if edge_num == 0:
+            edge_num = self.inner_edges[edge_point]
+
+        if edge_num == 0:
+            #Phantom edge weird stuff but not worth breaking
+            return None
+
+        #Retrieve specified edge path and find closest node
+        edge_path = self.get_edge_path_by_number(edge_num)
+        point_section = self.maze_sections.get_section_from_coords(edge_point[0], edge_point[1])
+        nodes = point_section.get_nodes_by_edge_number(edge_num)
+        if len(nodes) == 0:
+            #Expand search to surrounding sections
+            nodes = point_section.get_surrounding_nodes_by_edge__number(self.maze_sections, edge_num)
+        if len(nodes) == 0:
+            #Phantom, ignore
+            return None
+
+        nodes_coords = [(node.y, node.x) for node in nodes]
+        nodes_coords_nd = np.array(nodes_coords)
+        edge_point_nd = np.array(edge_point)
+        diff = nodes_coords_nd - edge_point_nd
+        squared_dist = np.sum(diff**2, axis=1)
+        closest_node = nodes[np.argmin(squared_dist)]
+        return closest_node
+
+
+
+
+
+    #endregion
+    #region Getters
+    def get_edge_path_by_number(self, path_num):
+        return self.all_contours_objects[path_num - 1]
+    #endregion
     #region Setters
     def update_section_saturation_and_point(self, direction):
+        #TODO: replace this with node saturation
         total_count, (min_y, max_y, min_x, max_x), sub_counts, new_point = (
             self.helper.single_dir_parallels(self.cur_point, self.outer_edges, direction, self.maze_sections))
         for sub_count in sub_counts:

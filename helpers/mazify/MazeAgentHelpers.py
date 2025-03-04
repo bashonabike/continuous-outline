@@ -5,7 +5,9 @@ import math
 import time
 
 import helpers.mazify.temp_options as options
+from Testing import maze_sections
 from helpers.Enums import CompassDir
+import helpers.mazify.MazeSections as sections
 
 #TODO: use LineString.Simplify to simplify path
 
@@ -268,8 +270,8 @@ class MazeAgentHelpers:
                                                                                                new_tent_x), direction)
 
         # Check if crossing over into mult sections
-        min_y_sec, max_y_sec = min_y // maze_sections.y_grade, max_y // maze_sections.y_grade
-        min_x_sec, max_x_sec = min_x // maze_sections.x_grade, max_x // maze_sections.x_grade
+        min_y_sec, min_x_sec = maze_sections.get_section_indices_from_coords(min_y, min_x)
+        max_y_sec, max_x_sec = maze_sections.get_section_indices_from_coords(max_y, max_x)
         sub_counts = []
         for y_sec in range(min_y_sec, max_y_sec + 1):
             for x_sec in range(min_x_sec, max_x_sec + 1):
@@ -334,9 +336,8 @@ class MazeAgentHelpers:
     #endregion
     #region Getters
 
-    def retrieve_new_section(self, point, maze_sections):
-        y_sec_new = point[0] // maze_sections.y_grade
-        x_sec_new = point[1] // maze_sections.x_grade
+    def retrieve_new_section(self, point, maze_sections: sections.MazeSections):
+        y_sec_new, x_sec_new = maze_sections.get_section_indices_from_coords(point[0], point[1])
         if 0 <= y_sec_new < maze_sections.m and 0 <= x_sec_new < maze_sections.n:
             return maze_sections.sections[y_sec_new, x_sec_new]
 

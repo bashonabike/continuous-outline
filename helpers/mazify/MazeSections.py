@@ -71,6 +71,12 @@ class MazeSections:
 
         return sections, section_indices_list, section_height, section_width
 
+    def get_section_from_coords(self, y, x):
+        return self.sections[min(y // self.y_grade, self.m - 1), min(x // self.x_grade, self.n - 1)]
+
+    def get_section_indices_from_coords(self, y, x):
+        return min(y // self.y_grade, self.m - 1), min(x // self.x_grade, self.n - 1)
+
 class MazeSection:
     def __init__(self, parent:MazeSections, bounds, edge_pixels, y_sec, x_sec, cluster_point_rel):
         (self.ymin, self.ymax, self.xmin, self.xmax) = bounds
@@ -82,6 +88,7 @@ class MazeSection:
         if self.saturated: parent.update_saturation()
         self.attraction = 100.0
         self.cluster_point_abs = (self.ymin + cluster_point_rel[0], self.xmin + cluster_point_rel[1])
+        self.nodes = []
 
 
     def update_saturation(self, parent:MazeSections, fill_count):
@@ -92,3 +99,17 @@ class MazeSection:
         if not self.saturated and self.saturation >= options.section_saturation_satisfied:
             self.saturated = True
             parent.update_saturation()
+
+    def add_node(self, node):
+        self.nodes.append(node)
+
+    def get_nodes_by_edge_number(self, path_number):
+        return [node for node in self.nodes if node.path_number == path_number]
+
+    def get_surrounding_nodes_by_edge__number(self, parent:MazeSections, path_number):
+        nodes = []
+        for y_sec in range(max(0, self.y_sec - 1), min(parent.m, self.y_sec + 2)):
+            for x_sec in range(max(0, self.x_sec - 1), min(parent.n, self.x_sec + 2)):
+                nodes.extend(parent.sections[y_sec, x_sec].get_nodes_by_edge_number(path_number))
+
+        return nodes

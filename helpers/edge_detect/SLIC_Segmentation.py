@@ -102,8 +102,18 @@ def mask_boundary_edges(img_path):
 	cv2.drawContours(filled_mask, fill_contours, -1, (255,255,255), thickness=cv2.FILLED)  # -1 fills the contour
 	blank = np.zeros(img.shape, dtype=np.uint8)
 	edges = mark_boundaries(blank, filled_mask, color=(255, 255, 255), mode='outer').astype(np.uint8)[:,:,0]
-	_, edges_binary = cv2.threshold(edges, 127, 1, cv2.THRESH_BINARY)
-	edges_bool = edges_binary.astype(bool)
+
+
+
+	# _, edges_binary = cv2.threshold(edges, 127, 1, cv2.THRESH_BINARY)
+	# edges_bool = edges_binary.astype(bool)
+
+	#Set final contours contours on blank coded for reference
+	final_contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+	edges_final = np.zeros_like(edges).astype(np.uint16)
+	for contour_idx in range(len(final_contours)):
+		cv2.drawContours(edges_final, final_contours, contour_idx, (contour_idx + 1, contour_idx + 1,
+																	contour_idx + 1))
 
 	# Pop edge image
 	# blank = np.zeros(img.shape, dtype=np.uint8)
@@ -120,9 +130,9 @@ def mask_boundary_edges(img_path):
 	# _, edges_binary = cv2.threshold(simple_contours_plotted[:, :, 0], 127, 1, cv2.THRESH_BINARY)
 	# edges_bool = edges_binary.astype(bool)
 
-	return edges_bool, fill_contours,  mask
+	return edges_final, list(final_contours),  mask
 
-def slic_image_boundary_edges(im_float, num_segments:int =2, enforce_connectivity:bool = True):
+def slic_image_boundary_edges(im_float, num_segments:int =2, enforce_connectivity:bool = True, contour_offset = 0):
 	segments = None
 	num_segs_actual = -1
 	for num_segs in range(num_segments, num_segments+20):
@@ -143,7 +153,9 @@ def slic_image_boundary_edges(im_float, num_segments:int =2, enforce_connectivit
 	#Plot contours on blank coded for reference
 	edges = np.zeros_like(segments).astype(np.uint16)
 	for contour_idx in range(len(contours)):
-		cv2.drawContours(edges, contours, contour_idx, (contour_idx + 1, contour_idx + 1, contour_idx + 1))
+		cv2.drawContours(edges, contours, contour_idx, (contour_idx + 1 + contour_offset,
+														contour_idx + 1 + contour_offset,
+														contour_idx + 1 + contour_offset))
 
 	#Wipe outside edge, false contours
 	perimeter_mask = np.zeros_like(edges, dtype=bool)

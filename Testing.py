@@ -111,8 +111,10 @@ for file in os.listdir("Trial-AI-Base-Images"):
       # near_boudaries_contours, segments = slic.mask_test_boundaries(image_path, split_contours)
 
       outer_edges, outer_contours, mask = slic.mask_boundary_edges(image_path)
-      inner_edges, inner_contours, segments, num_segs = slic.slic_image_boundary_edges(im_float, num_segments=options.slic_regions,
-                                                             enforce_connectivity=False)
+      inner_edges, inner_contours, segments, num_segs = slic.slic_image_boundary_edges(im_float,
+                                                                                       num_segments=options.slic_regions,
+                                                             enforce_connectivity=False,
+                                                                                       contour_offset = len(outer_contours))
       edges = outer_edges + inner_edges
 
       # transition_nodes = slic.find_transition_nodes(segments)
@@ -133,7 +135,7 @@ for file in os.listdir("Trial-AI-Base-Images"):
       #TODO: Pass in vector segs, use compass pick dir, lock onto seg, criteria for losing seg, use dir just for between segs
       #TODO: pre-walk each edge forward, set smoothed direction for each node maybe do as kernal so backward and forward predictyion
       #Have it walk-dir invariant, but relative to forward walk, have smoothing as func of angle and displacement with next node
-      #While walking, parse each node into a quadrant for easy retrieval
+      #While walking, parse each node into a quadrant for easy retrieval, maybe make quadrant object, so can do refs to nodes
 
       testtt = 0
 
