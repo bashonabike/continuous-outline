@@ -3,6 +3,7 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 import time
+from scipy.signal import convolve2d
 
 import helpers.mazify.temp_options as options
 import helpers.mazify.MazeAgentHelpers as helpers
@@ -11,6 +12,7 @@ import helpers.mazify.MazeSections as sections
 import helpers.mazify.TestGetDirection as getdir
 from helpers.Enums import CompassType, CompassDir
 from helpers.mazify.EdgePath import EdgePath
+from helpers.mazify.EdgeNode import EdgeNode
 
 class MazeAgent:
     def __init__(self, outer_edges, outer_contours, inner_edges, inner_contours,
@@ -26,7 +28,8 @@ class MazeAgent:
                                              self.outer_contours + self.inner_contours)
         self.all_contours_objects = []
         for i in range(len(self.all_contours)):
-            self.all_contours_objects.append(EdgePath(i + 1, self.all_contours[i], maze_sections))
+            self.all_contours_objects.append(EdgePath(i + 1, self.all_contours[i], maze_sections,
+                                             i < len(self.outer_contours)))
 
         self.dims = (outer_edges.shape[0], outer_edges.shape[1])
         self.maze_sections = maze_sections
@@ -38,19 +41,19 @@ class MazeAgent:
 
         self.compass_defs =[
             {"type": CompassType.legality_compass, "instantiate": self.legality_check,
-             "persist": False, "scalar": False},
-            {"type": CompassType.proximity_compass, "instantiate": self.proximity_to_edge,
-             "persist": False, "scalar": False},
-            {"type": CompassType.intersects_compass, "instantiate": self.check_intersects,
-             "persist": False, "scalar": False},
+             "persist": False, "scalar": False, "on_edge": False},
+            # {"type": CompassType.proximity_compass, "instantiate": self.proximity_to_edge,
+            #  "persist": False, "scalar": False, "on_edge": False},
+            # {"type": CompassType.intersects_compass, "instantiate": self.check_intersects,
+            #  "persist": False, "scalar": False, "on_edge": False},
             {"type": CompassType.outer_attraction_compass, "instantiate": self.check_outer_attraction,
-             "persist": True, "scalar": False},
-            {"type": CompassType.parallels_compass, "instantiate": self.check_parallels,
-             "persist": False, "scalar": False},
+             "persist": True, "scalar": False, "on_edge": True},
+            # {"type": CompassType.parallels_compass, "instantiate": self.check_parallels,
+            #  "persist": False, "scalar": False, "on_edge": False},
             {"type": CompassType.deflection_compass, "instantiate": self.check_deflection,
-             "persist": False, "scalar": False},
+             "persist": False, "scalar": False, "on_edge": False},
             {"type": CompassType.inner_attraction, "instantiate": self.check_inner_attraction,
-             "persist": False, "scalar": True},
+             "persist": False, "scalar": True, "on_edge": False},
         ]
         self.compasses = {}
         self.compass_normalizer = 0.0
@@ -63,9 +66,9 @@ class MazeAgent:
         for compass_def in self.compass_defs:
             if not compass_def['scalar']:
                 for compass_dir in CompassDir:
-                    self.network_inputs.add_input(compass_def['type'], compass_dir)
+                    self.network_inputs.add_input(compass_def['type'], compass_dir, compass_def['on_edge'])
             else:
-                self.network_inputs.add_input(compass_def['type'], None)
+                self.network_inputs.add_input(compass_def['type'], None, compass_def['on_edge'])
     #endregion
     #region Run
     def plot_path(self, path_coords, image):
@@ -95,12 +98,14 @@ class MazeAgent:
         image = Image.open(im_orig_path)
 
         while not self.maze_sections.check_saturation():
-            self.set_direction_vectors()
-            self.set_compasses()
-            direction = getdir.get_direction(self.network_inputs)
-            self.update_section_saturation_and_point(direction)
-            if len(self.path)%100 == 0:
-                self.plot_path(self.path, image)
+            found_node = None
+            while found_node is None:
+                self.set_direction_vectors()
+                self.set_compasses()
+                direction = getdir.get_direction(self.network_inputs)
+                found_node = self.check_intersect_edge_update_point(direction)
+            self.plot_path(self.path, image) #TEMPPP
+            self.walk_edge_until_exit_section(found_node)
 
     def set_compass(self, compass_type):
         instantiate = None
@@ -111,7 +116,7 @@ class MazeAgent:
         self.compasses[compass_type] = instantiate()
 
 
-    def set_compasses(self):
+    def set_compasses(self, on_edge=False):
         #Set compasses as needed
         for compass_def in self.compass_defs:
             start= time.perf_counter_ns()
@@ -141,15 +146,12 @@ class MazeAgent:
                 cur_input.set_value(compass/self.compass_normalizer)
 
     def find_start_point(self):
-        #TODO: cluster whole maze
-
-        #Find start section
-        edge_pixels_array= np.vectorize(lambda x: x.edge_pixels)(self.maze_sections.sections)
-        max_edges_index = np.argmax(edge_pixels_array)
-        start_maze_section = self.maze_sections.sections.flat[max_edges_index]
-
-        #Start point in section one max clustered
-        start_point = start_maze_section.cluster_point_abs
+        # Convolve with ones to find tightest cluster
+        kernel = np.ones((options.cluster_start_point_size, options.cluster_start_point_size), dtype=np.uint8)
+        convolved = convolve2d(np.where(self.outer_edges > 0, 1, 0).astype(np.uint8), kernel, mode='same')
+        max_index = np.argmax(convolved)
+        start_point = np.unravel_index(max_index, self.all_edges_bool.shape)
+        start_maze_section = self.maze_sections.get_section_indices_from_coords(start_point[0], start_point[1])
         return start_point, start_maze_section
     #endregion
     #region Compassing
@@ -158,7 +160,8 @@ class MazeAgent:
         return legal_compass
     def proximity_to_edge(self):
         #Adding 10E-3 to avoid floating point errors
-        proximities = self.helper.process_points_in_quadrant_boxes_to_weighted_centroids(self.cur_point, self.all_edges,
+        proximities = self.helper.process_points_in_quadrant_boxes_to_weighted_centroids(self.cur_point,
+                                                                                         self.all_edges_bool,
                                                                                          options.proximity_search_radius)
         proximities_compass = self.helper.compute_compass_from_quadrant_vectors(proximities)
         return proximities_compass
@@ -172,7 +175,7 @@ class MazeAgent:
 
     def check_parallels(self):
         parallels_compass = self.helper.compute_parallels_compass(self.cur_point, self.inst_directions,
-                                                                  self.all_edges)
+                                                                  self.all_edges_bool)
         return parallels_compass
 
     def check_deflection(self):
@@ -250,22 +253,82 @@ class MazeAgent:
         return self.all_contours_objects[path_num - 1]
     #endregion
     #region Setters
-    def update_section_saturation_and_point(self, direction):
-        #TODO: replace this with node saturation
-        total_count, (min_y, max_y, min_x, max_x), sub_counts, new_point = (
-            self.helper.single_dir_parallels(self.cur_point, self.outer_edges, direction, self.maze_sections))
-        for sub_count in sub_counts:
-            cur_section = self.maze_sections.sections[(sub_count['y_sec'], sub_count['x_sec'])]
-            if 0 <= sub_count['y_sec'] < self.maze_sections.m and 0 <= sub_count['x_sec'] < self.maze_sections.n and not \
-                cur_section.saturated:
-                cur_section.update_saturation(self.maze_sections, sub_count['sub_count'])
+    def walk_edge_until_exit_section(self, start_edge_node:EdgeNode):
+        #Set up starters
+        cur_edge_node = start_edge_node
+        #Find closest direction to compass pull
+        if (abs(self.prev_direction - cur_edge_node.fwd_dir_smoothed)
+            < abs(self.prev_direction - cur_edge_node.rev_dir_smoothed)):
+            edge_rev = True
+        else: edge_rev = False
+        terminate = False
 
-        #Update section if needed
-        if len(sub_counts) > 0:
-            self.cur_section = self.helper.retrieve_new_section(new_point, self.maze_sections)
+        num_nodes_x_in_section = 0
+        while not terminate:
+            #Set node into path
+            self.update_point(cur_edge_node.point, cur_edge_node.rev_dir if edge_rev else cur_edge_node.fwd_dir)
+            if cur_edge_node.section is not self.cur_section:
+                #Set nodes into old section
+                if num_nodes_x_in_section > 0:
+                    self.cur_section.update_saturation(self.maze_sections, num_nodes_x_in_section)
+                num_nodes_x_in_section = 0
+
+                #Update section
+                self.cur_section = cur_edge_node.section
+                self.set_compass(CompassType.outer_attraction_compass)
+
+                #Check if need to exit edge
+                ideal_direction = getdir.get_direction(self.network_inputs, on_edge=True)
+
+                actual_direction = cur_edge_node.rev_dir_smoothed if edge_rev else cur_edge_node.fwd_dir_smoothed
+                if abs((2 * math.pi) +ideal_direction - actual_direction)%(2 * math.pi) > options.need_to_steer_off_edge:
+                    terminate = True
+                    self.cur_section.update_saturation(self.maze_sections, 1)
+                    self.prev_direction = actual_direction
+                    break
+
+            num_nodes_x_in_section += 1
+
+            #Get next node
+            cur_edge_node = cur_edge_node.path.get_next_node(cur_edge_node, edge_rev)
+
+
+    def check_intersect_edge_update_point(self, direction):
+        #Get prospective new point and check if intersects with edge
+        # total_count, (min_y, max_y, min_x, max_x), sub_counts, new_point = (
+        #     self.helper.single_dir_parallels(self.cur_point, self.outer_edges, direction, self.maze_sections))
+        new_section, new_point = self.helper.get_next_point(self.cur_point, direction, self.outer_edges,
+                                                            self.maze_sections)
+        nearest_edge_point = self.check_segment_hit_edge(self.cur_point, new_point)
+        if nearest_edge_point is not None:
+            #Look for node, if exists
+            nearest_edge_node = self.find_closest_node_to_edge_point(nearest_edge_point)
+            if nearest_edge_node is not None:
+                return nearest_edge_node
+
+        #If not hit edge, continue with forging new path
+        if new_section is not self.cur_section:
+            self.cur_section = new_section
             self.set_compass(CompassType.outer_attraction_compass)
 
+
+
+            # for sub_count in sub_counts:
+        #     cur_section = self.maze_sections.sections[(sub_count['y_sec'], sub_count['x_sec'])]
+            # if 0 <= sub_count['y_sec'] < self.maze_sections.m and 0 <= sub_count['x_sec'] < self.maze_sections.n and not \
+            #     cur_section.saturated:
+            #     cur_section.update_saturation(self.maze_sections)
+
+        #Update section if needed
+        # if len(sub_counts) > 0:
+        #     self.cur_section = self.helper.retrieve_new_section(new_point, self.maze_sections)
+        #     self.set_compass(CompassType.outer_attraction_compass)
+
         #Update point
+        self.update_point(new_point, direction)
+        return None
+
+    def update_point(self, new_point, direction):
         self.cur_point = new_point
         self.path.append(self.cur_point)
         self.path_nd = np.vstack((self.path_nd, np.array(self.cur_point)))

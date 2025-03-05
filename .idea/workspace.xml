@@ -4,15 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Got stuff funcitoning, perf imprv, didn't work well tho, started on path-walking use compass just to find Jumps between paths">
-      <change afterPath="$PROJECT_DIR$/helpers/mazify/EdgeNode.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" afterDir="false" />
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Working on edge-snapping">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgeNode.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgeNode.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgentHelpers.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgentHelpers.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/NetworkInputs.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/NetworkInputs.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/TestGetDirection.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/TestGetDirection.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/temp_options.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/temp_options.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -317,7 +317,15 @@
       <option name="project" value="LOCAL" />
       <updated>1741045599570</updated>
     </task>
-    <option name="localTasksCounter" value="22" />
+    <task id="LOCAL-00022" summary="Working on edge-snapping">
+      <option name="closed" value="true" />
+      <created>1741124446590</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1741124446590</updated>
+    </task>
+    <option name="localTasksCounter" value="23" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -351,7 +359,8 @@
     <MESSAGE value="Dumb round working!  incl dumb af term cond, dsumb weights, dumb starbucks, etc" />
     <MESSAGE value="Debugging &amp; improvements of basic dumb round func" />
     <MESSAGE value="Got stuff funcitoning, perf imprv, didn't work well tho, started on path-walking use compass just to find Jumps between paths" />
-    <option name="LAST_COMMIT_MESSAGE" value="Got stuff funcitoning, perf imprv, didn't work well tho, started on path-walking use compass just to find Jumps between paths" />
+    <MESSAGE value="Working on edge-snapping" />
+    <option name="LAST_COMMIT_MESSAGE" value="Working on edge-snapping" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -360,11 +369,6 @@
           <url>file://$PROJECT_DIR$/helpers/edge_detect/edge_detection.py</url>
           <line>212</line>
           <option name="timeStamp" value="14" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>100</line>
-          <option name="timeStamp" value="155" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

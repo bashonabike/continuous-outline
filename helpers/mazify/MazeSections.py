@@ -2,6 +2,7 @@ import numpy as np
 from scipy.signal import convolve2d
 
 import helpers.mazify.temp_options as options
+from helpers.mazify.EdgeNode import EdgeNode
 
 class MazeSections:
     def __init__(self, outer_edge, m, n):
@@ -58,16 +59,9 @@ class MazeSections:
                 section = boolean_image[y_start:y_end, x_start:x_end]
                 section_indices_list.append((i, j))
 
-                # Convolve with ones to find tightest cluster
-                kernel = np.ones((options.cluster_start_point_size, options.cluster_start_point_size), dtype=np.uint8)
-                convolved = convolve2d(section.astype(np.uint8), kernel, mode='same')
-                max_index = np.argmax(convolved)
-                max_clust_y, max_clust_x = np.unravel_index(max_index, section.shape)
-
                 # Count True pixels
                 count = np.count_nonzero(section)
-                sections[i, j] = MazeSection(self, (y_start, y_end, x_start, x_end), count, i, j,
-                                             (max_clust_y, max_clust_x))
+                sections[i, j] = MazeSection(self, (y_start, y_end, x_start, x_end), count, i, j)
 
         return sections, section_indices_list, section_height, section_width
 
@@ -78,30 +72,33 @@ class MazeSections:
         return min(y // self.y_grade, self.m - 1), min(x // self.x_grade, self.n - 1)
 
 class MazeSection:
-    def __init__(self, parent:MazeSections, bounds, edge_pixels, y_sec, x_sec, cluster_point_rel):
+    def __init__(self, parent:MazeSections, bounds, edge_pixels, y_sec, x_sec):
         (self.ymin, self.ymax, self.xmin, self.xmax) = bounds
         self.y_sec, self.x_sec = y_sec, x_sec
         self.edge_pixels = edge_pixels
-        self.filled_pixels = 0
-        self.saturation = 0.0 if edge_pixels > 0 else 1.0
-        self.saturated = False if edge_pixels > 0 else True
-        if self.saturated: parent.update_saturation()
         self.attraction = 100.0
-        self.cluster_point_abs = (self.ymin + cluster_point_rel[0], self.xmin + cluster_point_rel[1])
-        self.nodes = []
+        self.nodes, self.outer_nodes = [], []
 
 
-    def update_saturation(self, parent:MazeSections, fill_count):
-        #TODO: improve this so it doesn't double-count saturation
-        self.filled_pixels += fill_count
-        self.saturation = float(self.filled_pixels) / self.edge_pixels
+    def setup_saturation(self, parent:MazeSections):
+        #Only do this AFTER nodes are filled
+        self.filled_nodes= 0
+        self.saturation = 0.0 if len(self.outer_nodes) > 0 else 1.0
+        self.saturated = False if len(self.outer_nodes) > 0 else True
+        self.attraction = 100.0 if len(self.outer_nodes) > 0 else 0
+        if self.saturated: parent.update_saturation()
+
+    def update_saturation(self, parent:MazeSections, num_nodes):
+        self.filled_nodes += num_nodes
+        self.saturation = float(self.filled_nodes) / len(self.outer_nodes)
         self.attraction = 1.0/(self.saturation + 0.01)
         if not self.saturated and self.saturation >= options.section_saturation_satisfied:
             self.saturated = True
             parent.update_saturation()
 
-    def add_node(self, node):
+    def add_node(self, node: EdgeNode):
         self.nodes.append(node)
+        if node.outer: self.outer_nodes.append(node)
 
     def get_nodes_by_edge_number(self, path_number):
         return [node for node in self.nodes if node.path_number == path_number]

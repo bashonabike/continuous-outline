@@ -261,6 +261,20 @@ class MazeAgentHelpers:
         compass = self.parse_weighted_dir_vectors_into_compass(direction_vectors)
         return compass
 
+    def get_next_point(self, point, direction, edges, maze_sections: sections.MazeSections):
+        # NOTE: flip y since origin is top left
+        new_tent_y_raw = point[0] - self.approx_sin(direction)[2]
+        new_tent_x_raw = point[1] + self.approx_cos(direction)[2]
+        new_tent_y, new_tent_x = self.bound_coords(new_tent_y_raw, new_tent_x_raw, edges.shape)
+
+        #Check new section
+        new_section = maze_sections.get_section_indices_from_coords(new_tent_y, new_tent_x)
+
+        return new_section, (new_tent_y, new_tent_x)
+
+
+
+
     def single_dir_parallels(self, point, edges, direction, maze_sections):
         # NOTE: flip y since origin is top left
         new_tent_y_raw = point[0] - self.approx_sin(direction)[2]

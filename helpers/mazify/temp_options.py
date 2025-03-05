@@ -8,8 +8,9 @@ parallel_search_radius = 5
 max_deflect_rad = 2*math.pi/3
 maze_sections_across = 4
 cluster_start_point_size = 5
-section_saturation_satisfied = 0.8
-saturation_termination = 0.8
+section_saturation_satisfied = 0.5
+saturation_termination = 0.4 #NOTE: all paths are double-counted due to nature of contours
+need_to_steer_off_edge = 2*math.pi/3
 
 slic_regions = 6
 

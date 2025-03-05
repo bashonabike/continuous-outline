@@ -5,11 +5,12 @@ import helpers.mazify.temp_options as options
 
 import math
 
-def get_direction(network_inputs: inputs.NetworkInputs):
+def get_direction(network_inputs: inputs.NetworkInputs, on_edge=True):
     #Compute net compass directions
     compass_net = {CompassDir.N: 0.0, CompassDir.E: 0.0, CompassDir.S: 0.0, CompassDir.W: 0.0}
     inner_draw = 0.0
     for input in network_inputs.inputs:
+        if on_edge and not input.on_edge: continue
         match input.compass_type:
             case CompassType.legality_compass:
                 weight = 20.0/2.4

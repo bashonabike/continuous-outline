@@ -7,12 +7,12 @@ import helpers.mazify.EdgeNode as EdgeNode
 import helpers.mazify.MazeSections as sections
 
 class EdgePath:
-    def __init__(self, path_num, path_raw, maze_sections: sections.MazeSections):
+    def __init__(self, path_num, path_raw, maze_sections: sections.MazeSections, is_outer=False):
         self.path, self.num = [], path_num
-        self.parse_path(path_raw, maze_sections)
+        self.parse_path(path_raw, maze_sections, is_outer)
 
 
-    def parse_path(self, path, maze_sections: sections.MazeSections):
+    def parse_path(self, path, maze_sections: sections.MazeSections, is_outer=False):
         #Determine explicit directions
         dys,dxs = [],[]
         for i in range(len(path)):
@@ -21,21 +21,35 @@ class EdgePath:
             dys.append(dy)
             dxs.append(dx)
         dy_nd, dx_nd = np.array(dys), np.array(dxs)
-        path_fwd_dirs = np.arctan2(dy_nd, dx_nd).tolist()
+        path_fwd_dirs_nd = np.arctan2(dy_nd, dx_nd)
+        path_fwd_dirs = path_fwd_dirs_nd.tolist()
+        path_rev_dirs_part = (path_fwd_dirs_nd + np.pi) % (2 * np.pi)
+        path_rev_dirs = np.concatenate(path_rev_dirs_part[-1], path_rev_dirs_part[:-1]).tolist()
         path_displs = np.sqrt(dy_nd**2 + dx_nd**2).tolist()
 
         #Set smoothed directions
         kernel = self.gaussian_kernel_1d(options.dir_smoothing_size, options.dir_smoothing_sigma)
         smoothed_dy_nd, smoothed_dx_nd = convolve(dy_nd, kernel, mode='wrap'),  convolve(dx_nd, kernel, mode='wrap')
-        path_fwd_dirs_smoothed = np.arctan2(smoothed_dy_nd, smoothed_dx_nd).tolist()
+        path_fwd_dirs_smoothed_nd = np.arctan2(smoothed_dy_nd, smoothed_dx_nd)
+        path_fwd_dirs_smoothed = path_fwd_dirs_smoothed_nd.tolist()
+        path_rev_dirs_smoothed_part = (path_fwd_dirs_smoothed_nd + np.pi) % (2 * np.pi)
+        path_rev_dirs_smoothed = np.concatenate(path_rev_dirs_smoothed_part[-1],
+                                                path_rev_dirs_smoothed_part[:-1]).tolist()
 
         #Set up nodes
         for i in range(len(path)):
-            node = EdgeNode.EdgeNode(path[i][0][0], path[i][0][1],
-                                     path_fwd_dirs[i], path_fwd_dirs_smoothed[i], path_displs[i])
+            node = EdgeNode.EdgeNode(path[i][0][0], path[i][0][1], self, path_rev_dirs[i], path_rev_dirs_smoothed[i],
+                                     path_fwd_dirs[i], path_fwd_dirs_smoothed[i], path_displs[i], is_outer)
             self.path.append(node)
             cur_section = maze_sections.get_section_from_coords(node.y, node.x)
             cur_section.add_node(node)
+            node.section = cur_section
+
+    def get_next_node(self, cur_node, edge_rev:bool):
+        if edge_rev:
+            return self.path[(len(self.path) + self.path.index(cur_node) - 1) % len(self.path)]
+        return self.path[(self.path.index(cur_node) + 1) % len(self.path)]
+
 
     def gaussian_kernel_1d(self, kernel_size, sigma):
         """
