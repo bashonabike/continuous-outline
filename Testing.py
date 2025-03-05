@@ -1,19 +1,19 @@
-import helpers.edge_detect.edge_detection as edge
 import os
 import cv2
-import helpers.edge_detect.SLIC_Segmentation as slic
 from skimage.segmentation import mark_boundaries
 from skimage.util import img_as_float
 import numpy as np
 import time
 import svgwrite as svg
 
+from helpers.mazify.MazeAgent import MazeAgent
+import helpers.edge_detect.SLIC_Segmentation as slic
+import helpers.edge_detect.edge_detection as edge
 import helpers.old_method.DrawingAgent as draw
 import helpers.Enums as Enums
 import helpers.old_method.ParsePathsIntoObjects as parse
 from helpers.old_method import TourConstraints as constr
 import helpers.old_method.NodeSet as NodeSet
-from helpers.mazify.MazeAgent import MazeAgent
 from helpers.mazify.MazeSections import MazeSections, MazeSection
 import helpers.mazify.temp_options as options
 
@@ -110,11 +110,11 @@ for file in os.listdir("Trial-AI-Base-Images"):
       # near_boudaries_contours, segments = slic.slic_image_test_boundaries(im_float, split_contours)
       # near_boudaries_contours, segments = slic.mask_test_boundaries(image_path, split_contours)
 
-      outer_edges, outer_contours, mask = slic.mask_boundary_edges(image_path)
-      inner_edges, inner_contours, segments, num_segs = slic.slic_image_boundary_edges(im_float,
-                                                                                       num_segments=options.slic_regions,
-                                                             enforce_connectivity=False,
-                                                                                       contour_offset = len(outer_contours))
+      outer_edges, outer_contours_yx, mask = slic.mask_boundary_edges(image_path)
+      inner_edges, inner_contours_yx, segments, num_segs = slic.slic_image_boundary_edges(im_float,
+                                                                                          num_segments=options.slic_regions,
+                                                                                          enforce_connectivity=False,
+                                                                                          contour_offset = len(outer_contours_yx))
       edges = outer_edges + inner_edges
 
       # transition_nodes = slic.find_transition_nodes(segments)
@@ -122,13 +122,13 @@ for file in os.listdir("Trial-AI-Base-Images"):
       edges_show = edges.astype(np.uint8) * 255
       # cv2.imshow("outer", outer_edges.astype(np.uint8) * 255)
       # cv2.imshow("inner", inner_edges.astype(np.uint8) * 255)
-      cv2.imshow("all", edges_show)
+      # cv2.imshow("all", edges_show)
       # cv2.imshow("nodes", transition_nodes.astype(np.uint8) * 255)
-      cv2.waitKey(0)
+      # cv2.waitKey(0)
 
       maze_sections = MazeSections(outer_edges, options.maze_sections_across, options.maze_sections_across)
 
-      maze_agent = MazeAgent(outer_edges, outer_contours, inner_edges, inner_contours, maze_sections)
+      maze_agent = MazeAgent(outer_edges, outer_contours_yx, inner_edges, inner_contours_yx, maze_sections)
       maze_agent.run_round_dumb(image_path)
 
 

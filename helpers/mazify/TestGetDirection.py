@@ -5,12 +5,13 @@ import helpers.mazify.temp_options as options
 
 import math
 
-def get_direction(network_inputs: inputs.NetworkInputs, on_edge=True):
+def get_direction(network_inputs: inputs.NetworkInputs, on_edge=False, off_edge=False):
     #Compute net compass directions
     compass_net = {CompassDir.N: 0.0, CompassDir.E: 0.0, CompassDir.S: 0.0, CompassDir.W: 0.0}
     inner_draw = 0.0
     for input in network_inputs.inputs:
         if on_edge and not input.on_edge: continue
+        if off_edge and not input.off_edge: continue
         match input.compass_type:
             case CompassType.legality_compass:
                 weight = 20.0/2.4
@@ -26,6 +27,8 @@ def get_direction(network_inputs: inputs.NetworkInputs, on_edge=True):
             case CompassType.deflection_compass:
                 weight = 2.0/2.4
             case CompassType.inner_attraction:
+                weight = 1.0
+            case CompassType.edge_magnetism:
                 weight = 1.0
             case _:
                 weight = 0.0
@@ -52,4 +55,5 @@ def get_direction(network_inputs: inputs.NetworkInputs, on_edge=True):
     granular_direction = ((2 * math.pi) + math.atan2(y, x)) % (2 * math.pi)
     direction_selector = round(granular_direction/options.directions_incr, 0)
     direction = direction_selector * options.directions_incr
-    return direction
+
+    return direction, inner_draw

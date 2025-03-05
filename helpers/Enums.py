@@ -27,3 +27,4 @@ class CompassType(Enum):
      parallels_compass = 5
      deflection_compass = 6
      inner_attraction = 7
+     edge_magnetism = 8

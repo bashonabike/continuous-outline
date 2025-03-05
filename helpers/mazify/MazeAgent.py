@@ -35,25 +35,36 @@ class MazeAgent:
         self.maze_sections = maze_sections
         self.helper = helpers.MazeAgentHelpers()
         self.cur_section = None
-        self.cur_point = (0, 0)
+        self.cur_point, self.cur_node = (0, 0), None
         self.prev_direction = -1
         self.inst_directions = []
+        self.edge_rev = False
 
         self.compass_defs =[
             {"type": CompassType.legality_compass, "instantiate": self.legality_check,
-             "persist": False, "scalar": False, "on_edge": False},
-            # {"type": CompassType.proximity_compass, "instantiate": self.proximity_to_edge,
-            #  "persist": False, "scalar": False, "on_edge": False},
+             "persist": False, "scalar": False, "on_edge": False, "off_edge": True,
+             "custom_normalizer": None},
+            {"type": CompassType.proximity_compass, "instantiate": self.proximity_to_edge,
+             "persist": False, "scalar": False, "on_edge": False, "off_edge": True,
+             "custom_normalizer": None},
             # {"type": CompassType.intersects_compass, "instantiate": self.check_intersects,
-            #  "persist": False, "scalar": False, "on_edge": False},
+            #  "persist": False, "scalar": False, "on_edge": False, "off_edge": True,
+            #              "custom_normalizer": None},
             {"type": CompassType.outer_attraction_compass, "instantiate": self.check_outer_attraction,
-             "persist": True, "scalar": False, "on_edge": True},
+             "persist": True, "scalar": False, "on_edge": True, "off_edge": True,
+             "custom_normalizer": None},
             # {"type": CompassType.parallels_compass, "instantiate": self.check_parallels,
-            #  "persist": False, "scalar": False, "on_edge": False},
+            #  "persist": False, "scalar": False, "on_edge": False, "off_edge": True,
+            #              "custom_normalizer": None},
             {"type": CompassType.deflection_compass, "instantiate": self.check_deflection,
-             "persist": False, "scalar": False, "on_edge": False},
+             "persist": False, "scalar": False, "on_edge": False, "off_edge": True,
+             "custom_normalizer": None},
             {"type": CompassType.inner_attraction, "instantiate": self.check_inner_attraction,
-             "persist": False, "scalar": True, "on_edge": False},
+             "persist": False, "scalar": True, "on_edge": False, "off_edge": True,
+             "custom_normalizer": 100},
+            {"type": CompassType.edge_magnetism, "instantiate": self.check_edge_magenetism,
+             "persist": False, "scalar": True, "on_edge": True, "off_edge": False,
+             "custom_normalizer": 100*options.edge_magnetism_look_ahead_sections}
         ]
         self.compasses = {}
         self.compass_normalizer = 0.0
@@ -66,9 +77,11 @@ class MazeAgent:
         for compass_def in self.compass_defs:
             if not compass_def['scalar']:
                 for compass_dir in CompassDir:
-                    self.network_inputs.add_input(compass_def['type'], compass_dir, compass_def['on_edge'])
+                    self.network_inputs.add_input(compass_def['type'], compass_dir, compass_def['on_edge'],
+                                                  compass_def['off_edge'])
             else:
-                self.network_inputs.add_input(compass_def['type'], None, compass_def['on_edge'])
+                self.network_inputs.add_input(compass_def['type'], None, compass_def['on_edge'],
+                                                  compass_def['off_edge'])
     #endregion
     #region Run
     def plot_path(self, path_coords, image):
@@ -92,20 +105,22 @@ class MazeAgent:
         plt.show(block=True)
 
     def run_round_dumb(self, im_orig_path):
-        self.cur_point, self.cur_section = self.find_start_point()
-        self.path.append(self.cur_point)
-        self.path_nd = np.array(self.cur_point)
+        self.cur_node, self.cur_point, self.cur_section = self.find_start_node()
+        self.set_direction_vectors()
+        self.set_compasses(on_edge=True)
+        self.prev_direction, _ = getdir.get_direction(self.network_inputs, on_edge=True)
         image = Image.open(im_orig_path)
 
         while not self.maze_sections.check_saturation():
-            found_node = None
-            while found_node is None:
+            self.walk_edge_until_exit_section()
+            self.cur_node = None
+            while self.cur_node is None:
                 self.set_direction_vectors()
-                self.set_compasses()
-                direction = getdir.get_direction(self.network_inputs)
-                found_node = self.check_intersect_edge_update_point(direction)
+                self.set_compasses(off_edge=True)
+                direction, _ = getdir.get_direction(self.network_inputs, off_edge=True)
+                #TODO: Configure with staying power factored in
+                self.cur_node = self.check_intersect_edge_update_point(direction)
             self.plot_path(self.path, image) #TEMPPP
-            self.walk_edge_until_exit_section(found_node)
 
     def set_compass(self, compass_type):
         instantiate = None
@@ -116,12 +131,16 @@ class MazeAgent:
         self.compasses[compass_type] = instantiate()
 
 
-    def set_compasses(self, on_edge=False):
+    def set_compasses(self, on_edge=False, off_edge=False):
         #Set compasses as needed
         for compass_def in self.compass_defs:
+            if on_edge and not compass_def['on_edge']: continue
+            if off_edge and not compass_def['off_edge']: continue
             start= time.perf_counter_ns()
             if self.compasses.get(compass_def['type']) is None or not compass_def['persist']:
                 self.compasses[compass_def['type']] = compass_def['instantiate']()
+                if compass_def['custom_normalizer'] is not None:
+                    self.compasses[compass_def['type']]/= compass_def['custom_normalizer']
 
             end= time.perf_counter_ns()
             print(f"{compass_def['type']}: {(end-start)/1000000} ms")
@@ -132,7 +151,8 @@ class MazeAgent:
             if isinstance(compass, dict):
                 compass_points_flat.extend(compass.values())
             else:
-                compass_points_flat.append(compass)
+                #Scalars must be custom normalized
+                continue
         self.compass_normalizer = max(compass_points_flat)
 
         #Set inputs
@@ -142,17 +162,19 @@ class MazeAgent:
                     cur_input = self.network_inputs.find_input(compass_type, compass_dir)
                     cur_input.set_value(compass_val/self.compass_normalizer)
             else:
+                #Scalars must be custom normalized
                 cur_input = self.network_inputs.find_input(compass_type, None)
-                cur_input.set_value(compass/self.compass_normalizer)
+                cur_input.set_value(compass)
 
-    def find_start_point(self):
+    def find_start_node(self):
         # Convolve with ones to find tightest cluster
         kernel = np.ones((options.cluster_start_point_size, options.cluster_start_point_size), dtype=np.uint8)
-        convolved = convolve2d(np.where(self.outer_edges > 0, 1, 0).astype(np.uint8), kernel, mode='same')
+        convolved = convolve2d(self.all_edges_bool.astype(np.uint8), kernel, mode='same')
         max_index = np.argmax(convolved)
-        start_point = np.unravel_index(max_index, self.all_edges_bool.shape)
-        start_maze_section = self.maze_sections.get_section_indices_from_coords(start_point[0], start_point[1])
-        return start_point, start_maze_section
+        cluster_point = np.unravel_index(max_index, self.all_edges_bool.shape)
+        nearest_outer_point = self.find_closest_outer_edge_point(cluster_point)
+        start_node = self.find_closest_node_to_edge_point(nearest_outer_point)
+        return start_node, start_node.point, start_node.section
     #endregion
     #region Compassing
     def legality_check(self):
@@ -190,6 +212,10 @@ class MazeAgent:
         inner_attraction_scalar = self.helper.inner_section_attraction_scalar(self.cur_section)
         return inner_attraction_scalar
 
+    def check_edge_magenetism(self):
+        edge_magnetism_scalar = self.helper.edge_magnetism_scalar(self.cur_node, self.edge_rev, self.maze_sections)
+        return edge_magnetism_scalar
+
     #endregion
     #region Walkies
     def check_segment_hit_edge(self, start_point, end_point):
@@ -217,6 +243,7 @@ class MazeAgent:
     def find_closest_node_to_edge_point(self, edge_point):
         #Test outer first, then inner
         edge_num = self.outer_edges[edge_point]
+
         if edge_num == 0:
             edge_num = self.inner_edges[edge_point]
 
@@ -243,7 +270,30 @@ class MazeAgent:
         closest_node = nodes[np.argmin(squared_dist)]
         return closest_node
 
+    def find_closest_outer_edge_point(self, point):
+        """
+        Finds the closest non-zero point in a 2D NumPy ndarray to a given point.
 
+        Args:
+            point: Tuple (x, y) representing the target point.
+            array_2d: 2D NumPy ndarray.
+
+        Returns:
+            Tuple (x, y) representing the closest non-zero point, or None if no non-zero points exist.
+        """
+
+        point = np.array(point)
+        nonzero_indices = np.nonzero(self.outer_edges)
+        nonzero_points = np.column_stack(nonzero_indices)
+
+        if len(nonzero_points) == 0:
+            return None  # No non-zero points found
+
+        distances = np.linalg.norm(nonzero_points - point, axis=1)
+        closest_index = np.argmin(distances)
+        closest_point = tuple(nonzero_points[closest_index])
+
+        return closest_point
 
 
 
@@ -253,44 +303,42 @@ class MazeAgent:
         return self.all_contours_objects[path_num - 1]
     #endregion
     #region Setters
-    def walk_edge_until_exit_section(self, start_edge_node:EdgeNode):
-        #Set up starters
-        cur_edge_node = start_edge_node
+    def walk_edge_until_exit_section(self):
         #Find closest direction to compass pull
-        if (abs(self.prev_direction - cur_edge_node.fwd_dir_smoothed)
-            < abs(self.prev_direction - cur_edge_node.rev_dir_smoothed)):
-            edge_rev = True
-        else: edge_rev = False
+        if (abs(self.prev_direction - self.cur_node.fwd_dir_smoothed)
+            < abs(self.prev_direction - self.cur_node.rev_dir_smoothed)):
+                self.edge_rev = True
+        else: self.edge_rev = False
         terminate = False
 
-        num_nodes_x_in_section = 0
+        num_outer_nodes_x_in_section = 0
         while not terminate:
             #Set node into path
-            self.update_point(cur_edge_node.point, cur_edge_node.rev_dir if edge_rev else cur_edge_node.fwd_dir)
-            if cur_edge_node.section is not self.cur_section:
+            self.update_point(self.cur_node.point, self.cur_node.rev_dir if self.edge_rev else self.cur_node.fwd_dir)
+            if self.cur_node.section is not self.cur_section:
                 #Set nodes into old section
-                if num_nodes_x_in_section > 0:
-                    self.cur_section.update_saturation(self.maze_sections, num_nodes_x_in_section)
-                num_nodes_x_in_section = 0
+                if num_outer_nodes_x_in_section > 0:
+                    self.cur_section.update_saturation(self.maze_sections, num_outer_nodes_x_in_section)
+                num_outer_nodes_x_in_section = 0
 
                 #Update section
-                self.cur_section = cur_edge_node.section
-                self.set_compass(CompassType.outer_attraction_compass)
+                self.cur_section = self.cur_node.section
+                self.set_compasses(on_edge=True)
 
                 #Check if need to exit edge
-                ideal_direction = getdir.get_direction(self.network_inputs, on_edge=True)
+                ideal_direction, staying_power = getdir.get_direction(self.network_inputs, on_edge=True)
+                if staying_power < options.edge_magnetism_cutoff:
+                    actual_direction = self.cur_node.rev_dir_smoothed if self.edge_rev else self.cur_node.fwd_dir_smoothed
+                    if abs((2 * math.pi) +ideal_direction - actual_direction)%(2 * math.pi) > options.need_to_steer_off_edge:
+                        terminate = True
+                        self.cur_section.update_saturation(self.maze_sections, 1)
+                        self.prev_direction = actual_direction
+                        break
 
-                actual_direction = cur_edge_node.rev_dir_smoothed if edge_rev else cur_edge_node.fwd_dir_smoothed
-                if abs((2 * math.pi) +ideal_direction - actual_direction)%(2 * math.pi) > options.need_to_steer_off_edge:
-                    terminate = True
-                    self.cur_section.update_saturation(self.maze_sections, 1)
-                    self.prev_direction = actual_direction
-                    break
-
-            num_nodes_x_in_section += 1
+            if self.cur_node.path.outer: num_outer_nodes_x_in_section += 1
 
             #Get next node
-            cur_edge_node = cur_edge_node.path.get_next_node(cur_edge_node, edge_rev)
+            self.cur_node = self.cur_node.path.get_next_node(self.cur_node, self.edge_rev)
 
 
     def check_intersect_edge_update_point(self, direction):
@@ -331,7 +379,11 @@ class MazeAgent:
     def update_point(self, new_point, direction):
         self.cur_point = new_point
         self.path.append(self.cur_point)
-        self.path_nd = np.vstack((self.path_nd, np.array(self.cur_point)))
+        if len(self.path) >= 2:
+            self.path_nd = np.vstack((self.path_nd, np.array(self.cur_point)))
+        else:
+            self.path_nd = np.array(self.cur_point)
+
         if len(self.path) >= 2:
             self.unique_segments_list, self.unique_segments_centroid_nd =\
                 self.add_sort_segment_to_set(self.path[-1], self.path[-2], self.unique_segments,

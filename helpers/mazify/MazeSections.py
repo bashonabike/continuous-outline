@@ -79,6 +79,11 @@ class MazeSection:
         self.attraction = 100.0
         self.nodes, self.outer_nodes = [], []
 
+        self.filled_nodes = 0
+        self.saturation = 0.0
+        self.saturated = False
+        self.attraction = 100.0
+
 
     def setup_saturation(self, parent:MazeSections):
         #Only do this AFTER nodes are filled
@@ -89,6 +94,7 @@ class MazeSection:
         if self.saturated: parent.update_saturation()
 
     def update_saturation(self, parent:MazeSections, num_nodes):
+        if len(self.outer_nodes) == 0: return
         self.filled_nodes += num_nodes
         self.saturation = float(self.filled_nodes) / len(self.outer_nodes)
         self.attraction = 1.0/(self.saturation + 0.01)
@@ -101,7 +107,7 @@ class MazeSection:
         if node.outer: self.outer_nodes.append(node)
 
     def get_nodes_by_edge_number(self, path_number):
-        return [node for node in self.nodes if node.path_number == path_number]
+        return [node for node in self.nodes if node.path_num == path_number]
 
     def get_surrounding_nodes_by_edge__number(self, parent:MazeSections, path_number):
         nodes = []

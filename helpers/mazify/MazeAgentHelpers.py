@@ -5,9 +5,9 @@ import math
 import time
 
 import helpers.mazify.temp_options as options
-from Testing import maze_sections
 from helpers.Enums import CompassDir
 import helpers.mazify.MazeSections as sections
+from helpers.mazify.EdgeNode import EdgeNode
 
 #TODO: use LineString.Simplify to simplify path
 
@@ -268,7 +268,7 @@ class MazeAgentHelpers:
         new_tent_y, new_tent_x = self.bound_coords(new_tent_y_raw, new_tent_x_raw, edges.shape)
 
         #Check new section
-        new_section = maze_sections.get_section_indices_from_coords(new_tent_y, new_tent_x)
+        new_section = maze_sections.get_section_from_coords(new_tent_y, new_tent_x)
 
         return new_section, (new_tent_y, new_tent_x)
 
@@ -345,6 +345,31 @@ class MazeAgentHelpers:
 
     def inner_section_attraction_scalar(self, cur_section):
         return cur_section.attraction
+
+
+    def edge_magnetism_scalar(self, cur_node:EdgeNode, edge_rev:bool, maze_sections: sections.MazeSections):
+        cur_path, cur_section, cur_section_tracker_num = cur_node.path, cur_node.section, cur_node.section_tracker_num
+
+        #Look ahead prescribed num sections, check how many are satisfied
+        if not edge_rev:
+            inst_section_tracker = cur_path.section_tracker
+            inst_tracker_num = cur_section_tracker_num
+        else:
+            inst_section_tracker = cur_path.section_tracker_rev
+            inst_tracker_num = (len(cur_path.section_tracker) - 1) - cur_section_tracker_num
+
+        section_tracker_end = inst_tracker_num + options.edge_magnetism_look_ahead_sections
+        section_tracker_split = (len(inst_section_tracker) - section_tracker_end)
+        if section_tracker_split >= 0:
+            look_ahead_sections = inst_section_tracker[inst_tracker_num:section_tracker_end]
+        else:
+            look_ahead_sections = (inst_section_tracker[inst_tracker_num:len(inst_section_tracker)] +
+            inst_section_tracker[0:(-1)*section_tracker_split])
+
+        distinct_sections = list(set(look_ahead_sections))
+        magnetism = sum([s.attraction for s in distinct_sections if not s.saturated])
+
+        return magnetism
 
 
     #endregion

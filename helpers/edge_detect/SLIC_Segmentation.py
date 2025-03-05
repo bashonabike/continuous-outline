@@ -130,7 +130,15 @@ def mask_boundary_edges(img_path):
 	# _, edges_binary = cv2.threshold(simple_contours_plotted[:, :, 0], 127, 1, cv2.THRESH_BINARY)
 	# edges_bool = edges_binary.astype(bool)
 
-	return edges_final, list(final_contours),  mask
+	#Flip contours to yx to conform to cv standard
+	flipped_contours = []
+	for c in final_contours:
+		if c[0].size == 1:
+			flipped_contours.append([c[1], c[0]])
+		else:
+			flipped_contours.append([[p[0][1], p[0][0]] for p in c])
+
+	return edges_final, flipped_contours,  mask
 
 def slic_image_boundary_edges(im_float, num_segments:int =2, enforce_connectivity:bool = True, contour_offset = 0):
 	segments = None
@@ -173,8 +181,15 @@ def slic_image_boundary_edges(im_float, num_segments:int =2, enforce_connectivit
 	# edges_bool = edges_binary.astype(bool)
 
 	#TODO: Constrict from 2 wide to 1 wide??
+	#Flip contours to yx to conform to cv standard
+	flipped_contours = []
+	for c in contours:
+		if c[0].size == 1:
+			flipped_contours.append([c[1], c[0]])
+		else:
+			flipped_contours.append([[p[0][1], p[0][0]] for p in c])
 
-	return edges, contours, segments, num_segs_actual
+	return edges, flipped_contours, segments, num_segs_actual
 
 
 def slic_image_test_boundaries(im_float, split_contours, num_segments:int =2, enforce_connectivity:bool = True):
