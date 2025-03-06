@@ -27,15 +27,14 @@ class MazeAgent:
 
         self.all_edges_bool, self.all_contours = (np.where(self.outer_edges + self.inner_edges > 0, True, False),
                                              self.outer_contours + self.inner_contours)
-        self.all_contours_objects = []
+        self.all_contours_objects, self.outer_contours_objects, self.inner_contours_objects  = [], [], []
         for i in range(len(self.all_contours)):
-            self.all_contours_objects.append(EdgePath(i + 1, self.all_contours[i], maze_sections,
-                                             i < len(self.outer_contours)))
+            new_path = EdgePath(i + 1, self.all_contours[i], maze_sections, i < len(self.outer_contours))
+            self.all_contours_objects.append(new_path)
+            if new_path.outer: self.outer_contours_objects.append(new_path)
+            else: self.inner_contours_objects.append(new_path)
+
         maze_sections.set_dumb_nodes()
-        req_dumb_nodes = [n for n in range(1, maze_sections.dumb_opt_node_start)]
-        test_path = shorty.find_shortest_path_with_coverage(maze_sections.dumb_nodes_weighted,
-                                                            maze_sections.dumb_nodes_req,
-                                                            req_dumb_nodes)
 
 
 
@@ -44,6 +43,7 @@ class MazeAgent:
         self.helper = helpers.MazeAgentHelpers()
         self.cur_section = None
         self.cur_point, self.cur_node = (0, 0), None
+        self.start_node, self.end_node = None, None
         self.prev_direction = -1
         self.inst_directions = []
         self.edge_rev = False
@@ -113,22 +113,173 @@ class MazeAgent:
         plt.show(block=True)
 
     def run_round_dumb(self, im_orig_path):
-        self.cur_node, self.cur_point, self.cur_section = self.find_start_node()
-        self.set_direction_vectors()
-        self.set_compasses(on_edge=True)
-        self.prev_direction, _ = getdir.get_direction(self.network_inputs, on_edge=True)
-        image = Image.open(im_orig_path)
+        self.start_node, cur_point, cur_section = self.find_start_node()
+        self.end_node, end_point, end_section = self.find_end_node(self.cur_node)
 
-        while not self.maze_sections.check_saturation():
-            self.walk_edge_until_exit_section()
-            self.cur_node = None
-            while self.cur_node is None:
-                self.set_direction_vectors()
-                self.set_compasses(off_edge=True)
-                direction, _ = getdir.get_direction(self.network_inputs, off_edge=True)
-                #TODO: Configure with staying power factored in
-                self.cur_node = self.check_intersect_edge_update_point(direction)
-            self.plot_path(self.path, image) #TEMPPP
+        section_path = shorty.find_shortest_path_with_coverage(self.maze_sections.dumb_nodes_weighted,
+                                                            self.maze_sections.dumb_nodes_req,
+                                                            (cur_section.y_sec, cur_section.x_sec),
+                                                            (end_section.y_sec, end_section.x_sec))
+
+        raw_path = self.draw_raw_path(section_path)
+        # self.set_direction_vectors()
+        # self.set_compasses(on_edge=True)
+        # self.prev_direction, _ = getdir.get_direction(self.network_inputs, on_edge=True)
+        # image = Image.open(im_orig_path)
+        #
+        # while not self.maze_sections.check_saturation():
+        #     self.walk_edge_until_exit_section()
+        #     self.cur_node = None
+        #     while self.cur_node is None:
+        #         self.set_direction_vectors()
+        #         self.set_compasses(off_edge=True)
+        #         direction, _ = getdir.get_direction(self.network_inputs, off_edge=True)
+        #         #TODO: Configure with staying power factored in
+        #         self.cur_node = self.check_intersect_edge_update_point(direction)
+        #     self.plot_path(self.path, image) #TEMPPP
+
+    def draw_raw_path(self, section_path: list):
+        # Get paths for each section
+        prev_section, prev_path =  self.start_node.section, self.start_node.path
+        pathified_section_path = []
+        for i in range(len(section_path)):
+            cur_section = self.maze_sections.sections[section_path[i]]
+            if i < len(section_path) - 1:
+                next_section = self.maze_sections.sections[section_path[i + 1]]
+            else:
+                next_section = None
+            cur_path = self.find_path_for_walk_section(prev_section, cur_section, next_section, prev_path)
+            pathified_section_path.append({"section": cur_section, "path_set": cur_path})
+            prev_section, prev_path = cur_section, cur_path[1]
+
+        #Walk pathified tour
+        cur_node, path_rev = self.start_node, False
+        raw_path_nodes = []
+        start_mode = True
+        for i in range(len(pathified_section_path)):
+            pathified_section = pathified_section_path[i]
+            if i < len(pathified_section_path) - 1: next_section = pathified_section_path[i + 1]["section"]
+            else: next_section = None
+            cur_section, cur_path_set = pathified_section["section"], pathified_section["path_set"]
+            cur_section_tracker = cur_node.section_tracker
+
+
+            #If start mode, find best direction from start node
+            if start_mode:
+                path_rev = self.find_path_walk_dir(cur_section_tracker, next_section)
+                start_mode = False
+
+            if cur_path_set[0] is not None and cur_path_set[0] == cur_path_set[1]:
+                #Walk the path until hit next section
+                while (next_section is None and cur_node.section == cur_section) or cur_node.section != next_section:
+                    raw_path_nodes.append(cur_node)
+                    cur_node = cur_node.walk(path_rev)
+            elif cur_path_set[0] != cur_path_set[1]:
+                #If inflection point, find best spot to jump paths
+                inflec_nodes = (None, None)
+                if cur_path_set[0] is not None:
+                    in_nodes = [n for n in cur_section.nodes if n.path == cur_path_set[0]]
+                else:
+                    in_nodes = [raw_path_nodes[-1]]
+
+                if cur_path_set[1] is not None:
+                    out_nodes = [n for n in cur_section.nodes if n.path == cur_path_set[1]]
+                elif next_section is not None:
+                    out_nodes = [n for n in next_section.nodes if n.path == cur_path_set[1]]
+                else:
+                    out_nodes = [cur_section_tracker.get_out_node(path_rev)]
+
+                inflec_nodes = list(self.find_inflection_points(in_nodes, out_nodes))
+
+                #Set none as needed so as not to double-lap next section
+                if cur_path_set[0] is None: inflec_nodes[0] = None
+                if cur_path_set[1] is None: inflec_nodes[1] = None
+
+                if cur_path_set[0] is not None:
+                    #Walk prescribed path until hit end point
+                    while cur_node is not inflec_nodes[0]:
+                        raw_path_nodes.append(cur_node)
+                        cur_node = cur_node.walk(path_rev)
+                    raw_path_nodes.append(cur_node)
+
+                if cur_path_set[1] is not None:
+                    #Lock to new path
+                    cur_node = inflec_nodes[1]
+                    cur_section_tracker = cur_node.section_tracker
+
+                    #Determine best direction
+                    path_rev = self.find_path_walk_dir(cur_section_tracker, next_section)
+
+                    #Walk the path until hit next section
+                    while (next_section is None and cur_node.section == cur_section) or cur_node.section != next_section:
+                        raw_path_nodes.append(cur_node)
+                        cur_node = cur_node.walk(path_rev)
+
+    def find_path_walk_dir(self, inst_section_tracker, next_section):
+        fwd_moves, rev_moves = 0, 0
+        for rev in [False, True]:
+            temp_tracker = inst_section_tracker
+            for m in range(10):
+                temp_tracker = temp_tracker.get_next_tracker(rev)
+                if not rev:
+                    fwd_moves += 1
+                else:
+                    rev_moves += 1
+                if temp_tracker.section == next_section: break
+        path_rev = rev_moves < fwd_moves
+        return path_rev
+
+    def find_inflection_points(self, path_1_seg, path_2_seg):
+        points_1, points_2 = np.array([n.point for n in path_1_seg]), np.array([n.point for n in path_2_seg])
+
+        if not points_1.size or not points_2.size:
+            return None, None # Handle empty paths
+
+        # Calculate distances
+        distances = np.linalg.norm(points_1[:, np.newaxis, :] - points_2[np.newaxis, :, :], axis=2)
+
+        # Find minimum distance and indices
+        min_indices = np.unravel_index(np.argmin(distances), distances.shape)
+
+        # Retrieve closest points
+        return path_1_seg[min_indices[0]], path_2_seg[min_indices[1]]
+
+
+    def find_indices(self, my_list, value):
+        """
+        Finds the indices where a value exists in a list using list comprehension.
+
+        Args:
+            my_list: The input list.
+            value: The value to search for.
+
+        Returns:
+            A list of indices where the value is found.
+        """
+        return [index for index, item in enumerate(my_list) if item == value]
+
+    def find_path_for_walk_section(self, prev_section, cur_section, next_section, prev_path):
+        in_path, out_path = None, None
+
+        #If prev_section exists, we know that prev_path exists in this section (if it exists)
+        if prev_section is not None: in_path = prev_path
+
+        #No next_section, out_path N/A
+        if next_section is None: return (in_path, self.end_node.path)
+
+        #Try to find prev_path in next section
+        if in_path is not None and in_path in next_section.paths: return (in_path, in_path)
+
+        #Otherwise find new one.  Check outers first, inners if needed for continuous path
+        for sections_type in [1, 2]:
+            if sections_type == 1:
+                cand_paths = cur_section.outer_paths & next_section.outer_paths
+            else:
+                cand_paths = cur_section.inner_paths & next_section.inner_paths
+
+            if len(cand_paths) >= 1: out_path = next(iter(cand_paths))
+
+        return (in_path, out_path)
 
     def set_compass(self, compass_type):
         instantiate = None
@@ -183,6 +334,15 @@ class MazeAgent:
         nearest_outer_point = self.find_closest_outer_edge_point(cluster_point)
         start_node = self.find_closest_node_to_edge_point(nearest_outer_point)
         return start_node, start_node.point, start_node.section
+
+    def find_end_node(self, start_node: EdgeNode):
+        #Find a point approx across
+        start_point = start_node.point
+        approx_end_point = ((self.dims[0] - 1) - start_point[0], (self.dims[1] - 1) - start_point[1])
+        nearest_outer_point = self.find_closest_outer_edge_point(approx_end_point)
+        end_node = self.find_closest_node_to_edge_point(nearest_outer_point)
+        return end_node, end_node.point, end_node.section
+
     #endregion
     #region Compassing
     def legality_check(self):

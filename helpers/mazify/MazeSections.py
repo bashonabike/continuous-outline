@@ -12,7 +12,8 @@ class MazeSections:
         self.num_sections = m * n
         self.sections_satisfied = 0
         self.sections_satisfied_pct = 0.0
-        self.sections, self.section_indices_list, self.y_grade, self.x_grade = self.count_true_pixels_in_sections(outer_edge, m, n)
+        self.sections, self.section_indices_list, self.y_grade, self.x_grade = (
+            self.count_true_pixels_in_sections(outer_edge, m, n))
         # self.dumb_nodes, self.dumb_nodes_req, self.dumb_nodes_opt, self.dumb_opt_node_start = (
         #     np.zeros((m, n), dtype=list), np.zeros((m, n), dtype=list), np.zeros((m, n), dtype=list), -1)
         self.dumb_opt_node_start = -1
@@ -118,6 +119,7 @@ class MazeSection:
         self.edge_pixels = edge_pixels
         self.attraction = 100.0
         self.nodes, self.outer_nodes = [], []
+        self.paths, self.outer_paths, self.inner_paths = set(), set(), set()
 
         self.filled_nodes = 0
         self.saturation = 0.0
@@ -163,3 +165,33 @@ class MazeSection:
                 nodes.extend(parent.sections[y_sec, x_sec].get_nodes_by_edge_number(path_number))
 
         return nodes
+
+class MazeSectionTracker:
+    def __init__(self, section:MazeSection, in_node:EdgeNode, tracker_num:int,
+                 prev_tracker=None, next_tracker=None, out_node:EdgeNode=None):
+        self.section = MazeSection
+        self.in_node = in_node
+        self.out_node = out_node
+        self.rev_in_node, self.rev_out_node = out_node, in_node
+        self.tracker_num = tracker_num
+        self.prev_tracker = prev_tracker
+        self.next_tracker = next_tracker
+
+    def get_next_tracker(self, reverse=False):
+        if reverse:
+            return self.prev_tracker
+        else:
+            return self.next_tracker
+
+    def get_in_node(self, reverse=False):
+        if reverse:
+            return self.rev_in_node
+        else:
+            return self.in_node
+
+    def get_out_node(self, reverse=False):
+        if reverse:
+            return self.rev_out_node
+        else:
+            return self.out_node
+

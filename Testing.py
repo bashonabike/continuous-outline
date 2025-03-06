@@ -126,6 +126,9 @@ for file in os.listdir("Trial-AI-Base-Images"):
       # cv2.imshow("nodes", transition_nodes.astype(np.uint8) * 255)
       # cv2.waitKey(0)
 
+      #TODO: Crop images to only include edges
+      #TODO: Eliminate tiny outer edges
+
       maze_sections = MazeSections(outer_edges, options.maze_sections_across, options.maze_sections_across)
 
       maze_agent = MazeAgent(outer_edges, outer_contours_yx, inner_edges, inner_contours_yx, maze_sections)

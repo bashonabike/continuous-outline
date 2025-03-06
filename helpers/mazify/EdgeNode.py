@@ -11,8 +11,21 @@ class EdgeNode:
         self.section = None
         self.section_tracker_num = -1
 
-    def set_section(self, section, section_tracker_num):
+    def set_section(self, section, section_tracker):
         self.section = section
-        self.section_tracker_num = section_tracker_num
+        self.section_tracker = section_tracker
+        self.section_tracker_num = section_tracker.tracker_num
+
+    def set_prev_node(self, node):
+        self.prev_node = node
+
+    def set_next_node(self, node):
+        self.next_node = node
+
+    def walk(self, reverse:bool=False):
+        if not reverse:
+            return self.next_node
+        else:
+            return self.prev_node
 
 

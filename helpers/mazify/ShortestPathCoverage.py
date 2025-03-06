@@ -139,7 +139,7 @@ def print_solution(manager, routing, solution):
 
 
 
-def find_shortest_path_with_coverage(weighted_grid, required_nodes_grid, required_nodes_list):
+def find_shortest_path_with_coverage(weighted_grid, required_nodes_grid, start_section, end_section):
     """
     Finds the shortest path on a grid that covers at least 90% of required nodes.
 
@@ -152,6 +152,7 @@ def find_shortest_path_with_coverage(weighted_grid, required_nodes_grid, require
     """
     #Build distance matrix
     required_node_coords_flat = []
+    start_node_index, end_node_index = -1, -1
     rows = len(required_nodes_grid)
     m, n = required_nodes_grid.shape
 
@@ -159,7 +160,8 @@ def find_shortest_path_with_coverage(weighted_grid, required_nodes_grid, require
         for x in range(n):
             if required_nodes_grid[y][x]:  # Check if the element is not empty
                 required_node_coords_flat.append((y, x, y*n + x, required_nodes_grid[y][x]))
-    required_node_coords_flat.sort(key=lambda x: x[2])
+                if (y, x) == start_section: start_node_index = len(required_node_coords_flat) - 1
+                if (y, x) == end_section: end_node_index = len(required_node_coords_flat) - 1
 
     #Build graph & full dist matrix
     # graph = build_grid_net(weighted_grid)
@@ -219,11 +221,12 @@ def find_shortest_path_with_coverage(weighted_grid, required_nodes_grid, require
     data = {}
     data["distance_matrix"] = distance_matrix_req
     data["num_vehicles"] = 1
-    data["depot"] = 0
+    data['starts'] = [start_node_index]  # starting node
+    data['ends'] = [end_node_index]  # end node
 
     # Create the routing index manager.
     manager = pywrapcp.RoutingIndexManager(
-        len(data["distance_matrix"]), data["num_vehicles"], data["depot"]
+        len(data["distance_matrix"]), data["num_vehicles"], data["starts"], data["ends"]
     )
 
     # Create Routing Model.
@@ -256,7 +259,7 @@ def find_shortest_path_with_coverage(weighted_grid, required_nodes_grid, require
         route_indexes = print_solution(manager, routing, solution)
 
     #Set up final path
-    path = [required_node_coords_flat[0][0:2]]
+    path = [required_node_coords_flat[route_indexes[0]][0:2]]
     for i in range(1,len(route_indexes)):
         sub_path = distance_shortest_path_matrix_req[route_indexes[i - 1]][route_indexes[i]]
         path.extend(sub_path[1:])
@@ -270,7 +273,7 @@ def find_shortest_path_with_coverage(weighted_grid, required_nodes_grid, require
     plt.show()
 
 
-    sfsd=""
+    return path
 
     #
     # m, n = len(grid), len(grid[0])

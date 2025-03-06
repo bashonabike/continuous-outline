@@ -10,7 +10,7 @@ class EdgePath:
     def __init__(self, path_num, path_raw, maze_sections: sections.MazeSections, is_outer=False):
         self.path, self.num = [], path_num
         self.outer = is_outer
-        self.section_tracker, self.section_tracker_rev = [], []
+        self.section_tracker = []
         self.parse_path(path_raw, maze_sections, is_outer)
 
 
@@ -43,16 +43,33 @@ class EdgePath:
         for i in range(len(path)):
             node = EdgeNode.EdgeNode(path[i][0], path[i][1], self, path_rev_dirs[i], path_rev_dirs_smoothed[i],
                                      path_fwd_dirs[i], path_fwd_dirs_smoothed[i], path_displs[i], is_outer)
+            if i > 0:
+                node.set_prev_node(self.path[i-1])
+                self.path[i-1].set_next_node(node)
             self.path.append(node)
             cur_section = maze_sections.get_section_from_coords(node.y, node.x)
             cur_section.add_node(node, self.outer or self.num%4==0)
+            prev_tracker, cur_tracker = None, None
             if cur_section is not prev_section:
                 section_tracker_num += 1
-                self.section_tracker.append(cur_section)
-            node.set_section(cur_section, section_tracker_num)
+                cur_tracker = sections.MazeSectionTracker(cur_section, node, section_tracker_num,
+                                                          prev_tracker=prev_tracker)
+                if section_tracker_num > 0: self.section_tracker[-1].next_tracker = cur_tracker
+                self.section_tracker.append(cur_tracker)
+                cur_section.paths.add(self)
+                if self.outer: cur_section.outer_paths.add(self)
+                else: cur_section.inner_paths.add(self)
+                #NOTE: this one lags behind by one
+                if section_tracker_num > 0: self.section_tracker[section_tracker_num - 1].out_node = self.path[i-1]
+                prev_tracker = cur_tracker
+            node.set_section(cur_section, cur_tracker)
             prev_section = cur_section
+        self.section_tracker[-1].out_node = self.path[-1]
+        self.section_tracker[-1].next_tracker = self.section_tracker[0]
+        self.section_tracker[0].prev_tracker = self.section_tracker[-1]
+        self.path[-1].set_next_node(self.path[0])
+        self.path[0].set_prev_node(self.path[-1])
 
-        self.section_tracker_rev = list(reversed(self.section_tracker))
 
     def get_next_node(self, cur_node, edge_rev:bool):
         if edge_rev:
