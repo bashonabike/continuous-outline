@@ -115,6 +115,16 @@ for file in os.listdir("Trial-AI-Base-Images"):
                                                                                           num_segments=options.slic_regions,
                                                                                           enforce_connectivity=False,
                                                                                           contour_offset = len(outer_contours_yx))
+      crop = ((min(min(outer_contours_yx[:, 0]), min(inner_contours_yx[:, 0])),
+              min(min(outer_contours_yx[:, 1]), min(inner_contours_yx[:, 1]))),
+              (max(max(outer_contours_yx[:, 0]), max(inner_contours_yx[:, 0])),
+               max(max(outer_contours_yx[:, 1]), max(inner_contours_yx[:, 1]))))
+
+      outer_edges_cropped = outer_edges[crop[0][0]:crop[1][0], crop[0][1]:crop[1][1]]
+      inner_edges_cropped = inner_edges[crop[0][0]:crop[1][0], crop[0][1]:crop[1][1]]
+      outer_contours_yx_cropped = slic.shift_contours(outer_contours_yx, (-1)*crop[0][0], (-1)*crop[0][1])
+      inner_contours_yx_cropped = slic.shift_contours(inner_contours_yx, (-1)*crop[0][0], (-1)*crop[0][1])
+
       edges = outer_edges + inner_edges
 
       # transition_nodes = slic.find_transition_nodes(segments)
@@ -129,10 +139,14 @@ for file in os.listdir("Trial-AI-Base-Images"):
       #TODO: Crop images to only include edges
       #TODO: Eliminate tiny outer edges
 
-      maze_sections = MazeSections(outer_edges, options.maze_sections_across, options.maze_sections_across)
+      maze_sections = MazeSections(outer_edges_cropped, options.maze_sections_across, options.maze_sections_across)
 
-      maze_agent = MazeAgent(outer_edges, outer_contours_yx, inner_edges, inner_contours_yx, maze_sections)
-      maze_agent.run_round_dumb(image_path)
+      maze_agent = MazeAgent(outer_edges_cropped, outer_contours_yx_cropped, inner_edges_cropped,
+                             inner_contours_yx_cropped, maze_sections)
+      raw_path_coords = maze_agent.run_round_dumb(image_path)
+      raw_path_coords_centered = slic.shift_contours([raw_path_coords], crop[0][0], crop[0][1])
+
+
 
 
       #TODO: Pass in vector segs, use compass pick dir, lock onto seg, criteria for losing seg, use dir just for between segs

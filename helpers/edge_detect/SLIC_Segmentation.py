@@ -295,6 +295,12 @@ def find_contours_near_boundaries(contours: List[np.ndarray], segments: np.ndarr
 			near_boundary_contours.append(contour)
 	return near_boundary_contours
 
+def shift_contours(contours: list, shift_x: int, shift_y: int) -> list:
+	contours_nd = np.array(contours)
+	contours_nd[:, :, 0] += shift_x
+	contours_nd[:, :, 1] += shift_y
+	return contours_nd.tolist()
+
 # def simplify_path_rdp(points, tolerance=1.0):
 # 	"""Simplifies a path using the Ramer-Douglas-Peucker algorithm."""
 # 	testt = points[:,0,:]

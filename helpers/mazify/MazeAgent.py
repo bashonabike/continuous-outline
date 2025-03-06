@@ -122,6 +122,8 @@ class MazeAgent:
                                                             (end_section.y_sec, end_section.x_sec))
 
         raw_path = self.draw_raw_path(section_path)
+        raw_path_coords = [n.point for n in raw_path]
+        return raw_path_coords
         # self.set_direction_vectors()
         # self.set_compasses(on_edge=True)
         # self.prev_direction, _ = getdir.get_direction(self.network_inputs, on_edge=True)
