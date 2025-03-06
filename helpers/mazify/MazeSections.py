@@ -3,6 +3,7 @@ from scipy.signal import convolve2d
 
 import helpers.mazify.temp_options as options
 from helpers.mazify.EdgeNode import EdgeNode
+import copy as cp
 
 class MazeSections:
     def __init__(self, outer_edge, m, n):
@@ -12,6 +13,15 @@ class MazeSections:
         self.sections_satisfied = 0
         self.sections_satisfied_pct = 0.0
         self.sections, self.section_indices_list, self.y_grade, self.x_grade = self.count_true_pixels_in_sections(outer_edge, m, n)
+        # self.dumb_nodes, self.dumb_nodes_req, self.dumb_nodes_opt, self.dumb_opt_node_start = (
+        #     np.zeros((m, n), dtype=list), np.zeros((m, n), dtype=list), np.zeros((m, n), dtype=list), -1)
+        self.dumb_opt_node_start = -1
+        self.dumb_nodes_weighted = np.zeros((m, n), dtype=np.uint8)
+        self.dumb_nodes_req = np.zeros((m, n), dtype=np.uint8)
+        # self.dumb_nodes.fill([])
+        # self.dumb_nodes_req.fill([])
+        # self.dumb_nodes_opt.fill([])
+        self.dumb_nodes_weighted.fill(options.dumb_node_blank_weight)
 
     def update_saturation(self):
         self.sections_satisfied += 1
@@ -19,6 +29,33 @@ class MazeSections:
 
     def check_saturation(self):
         return self.sections_satisfied_pct > options.saturation_termination
+
+    def set_dumb_nodes(self):
+
+        req_count = 1  # Start counting required elements from 1
+
+        # Process required elements first
+        for i in range(self.n):
+            for j in range(self.m):
+                if self.sections[i, j].dumb_req:
+                    # self.dumb_nodes[i][j].append(req_count)
+                    # self.dumb_nodes_req[i][j].append(req_count)
+                    self.dumb_nodes_weighted[i][j] = 1
+                    if self.dumb_nodes_req[i][j] == 0:
+                        self.dumb_nodes_req[i][j] = req_count
+                        req_count += 1
+
+        self.dumb_opt_node_start = opt_count = req_count  # Start optional elements from where required left off
+
+        # Process optional elements
+        for i in range(self.n):
+            for j in range(self.m):
+                if self.sections[i, j].dumb_opt:
+                    # self.dumb_nodes[i][j].append(opt_count)
+                    # self.dumb_nodes_opt[i][j].append(opt_count)
+                    if self.dumb_nodes_weighted[i][j] == options.dumb_node_blank_weight:
+                        self.dumb_nodes_weighted[i][j] = options.dumb_node_optional_weight
+                    opt_count += 1
 
 
     def count_true_pixels_in_sections(self, boolean_image, m, n):
@@ -84,6 +121,9 @@ class MazeSection:
         self.saturated = False
         self.attraction = 100.0
 
+        self.dumb_req = False
+        self.dumb_opt = False
+
 
     def setup_saturation(self, parent:MazeSections):
         #Only do this AFTER nodes are filled
@@ -102,9 +142,13 @@ class MazeSection:
             self.saturated = True
             parent.update_saturation()
 
-    def add_node(self, node: EdgeNode):
+    def add_node(self, node: EdgeNode, dumb_req=False):
         self.nodes.append(node)
         if node.outer: self.outer_nodes.append(node)
+        if dumb_req:
+            self.dumb_req = True
+        else:
+            self.dumb_opt = True
 
     def get_nodes_by_edge_number(self, path_number):
         return [node for node in self.nodes if node.path_num == path_number]

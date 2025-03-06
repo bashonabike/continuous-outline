@@ -45,7 +45,7 @@ class EdgePath:
                                      path_fwd_dirs[i], path_fwd_dirs_smoothed[i], path_displs[i], is_outer)
             self.path.append(node)
             cur_section = maze_sections.get_section_from_coords(node.y, node.x)
-            cur_section.add_node(node)
+            cur_section.add_node(node, self.outer or self.num%4==0)
             if cur_section is not prev_section:
                 section_tracker_num += 1
                 self.section_tracker.append(cur_section)

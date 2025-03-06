@@ -18,7 +18,27 @@ slic_regions = 6
 
 dir_smoothing_size, dir_smoothing_sigma = 21, 2.0
 
+dumb_node_optional_weight = 4
+dumb_node_blank_weight = 20
+
 
 #CALCULATED DO NOT TOUCH!!
 rev_max_deflect_rad = 2 * math.pi - max_deflect_rad
 #########################
+
+
+#Maybe auto-discard mask edges below certain # of nodes
+#Det sub-paths per section, set option % fill details
+#Find best path fullfilling approx % fill details and satisfying % outer path coverage, minimizing connecting path lengths
+#minimize intersections
+#Pre-determine in each section shortest path between each sub-path
+#Construct tree, options for each section+path combo
+#Just look ahead into next section over following along each indiv path
+#Node weight is cost (jump disp), weight whether outer or inner, disp deflection
+#make sure to add counter-node jumping from other path too
+#have fwd and backward defl
+#Walk each path first determine walk nodes, then go thru sections det jump nodes
+#No need to worry re intersections since paths never intersect
+#Maybe start just closes point for jump, advance to maybe factor in sum of deflection
+
+#Maybe just do shortest path, incorporate details circles as must haves

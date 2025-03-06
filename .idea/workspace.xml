@@ -4,18 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Got all stuff in place!! still need to debug">
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Debugged edge tracking, finessing magnetism etc">
+      <change afterPath="$PROJECT_DIR$/helpers/mazify/ShortestPathCoverage.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/Enums.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/Enums.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgeNode.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgeNode.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgentHelpers.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgentHelpers.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/NetworkInputs.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/NetworkInputs.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/TestGetDirection.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/TestGetDirection.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/temp_options.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/temp_options.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -336,7 +330,15 @@
       <option name="project" value="LOCAL" />
       <updated>1741138620096</updated>
     </task>
-    <option name="localTasksCounter" value="24" />
+    <task id="LOCAL-00024" summary="Debugged edge tracking, finessing magnetism etc">
+      <option name="closed" value="true" />
+      <created>1741200606551</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1741200606551</updated>
+    </task>
+    <option name="localTasksCounter" value="25" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -372,7 +374,8 @@
     <MESSAGE value="Got stuff funcitoning, perf imprv, didn't work well tho, started on path-walking use compass just to find Jumps between paths" />
     <MESSAGE value="Working on edge-snapping" />
     <MESSAGE value="Got all stuff in place!! still need to debug" />
-    <option name="LAST_COMMIT_MESSAGE" value="Got all stuff in place!! still need to debug" />
+    <MESSAGE value="Debugged edge tracking, finessing magnetism etc" />
+    <option name="LAST_COMMIT_MESSAGE" value="Debugged edge tracking, finessing magnetism etc" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -381,6 +384,36 @@
           <url>file://$PROJECT_DIR$/helpers/edge_detect/edge_detection.py</url>
           <line>212</line>
           <option name="timeStamp" value="14" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/helpers/mazify/ShortestPathCoverage.py</url>
+          <line>306</line>
+          <option name="timeStamp" value="204" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/helpers/mazify/ShortestPathCoverage.py</url>
+          <line>317</line>
+          <option name="timeStamp" value="205" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/helpers/mazify/ShortestPathCoverage.py</url>
+          <line>312</line>
+          <option name="timeStamp" value="208" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/helpers/mazify/ShortestPathCoverage.py</url>
+          <line>268</line>
+          <option name="timeStamp" value="211" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/helpers/mazify/ShortestPathCoverage.py</url>
+          <line>258</line>
+          <option name="timeStamp" value="217" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/helpers/mazify/ShortestPathCoverage.py</url>
+          <line>219</line>
+          <option name="timeStamp" value="232" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>

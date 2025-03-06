@@ -13,6 +13,7 @@ import helpers.mazify.TestGetDirection as getdir
 from helpers.Enums import CompassType, CompassDir
 from helpers.mazify.EdgePath import EdgePath
 from helpers.mazify.EdgeNode import EdgeNode
+import helpers.mazify.ShortestPathCoverage as shorty
 
 class MazeAgent:
     def __init__(self, outer_edges, outer_contours, inner_edges, inner_contours,
@@ -30,6 +31,13 @@ class MazeAgent:
         for i in range(len(self.all_contours)):
             self.all_contours_objects.append(EdgePath(i + 1, self.all_contours[i], maze_sections,
                                              i < len(self.outer_contours)))
+        maze_sections.set_dumb_nodes()
+        req_dumb_nodes = [n for n in range(1, maze_sections.dumb_opt_node_start)]
+        test_path = shorty.find_shortest_path_with_coverage(maze_sections.dumb_nodes_weighted,
+                                                            maze_sections.dumb_nodes_req,
+                                                            req_dumb_nodes)
+
+
 
         self.dims = (outer_edges.shape[0], outer_edges.shape[1])
         self.maze_sections = maze_sections
