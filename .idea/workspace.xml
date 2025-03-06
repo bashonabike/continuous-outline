@@ -4,12 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Debugged edge tracking, finessing magnetism etc">
-      <change afterPath="$PROJECT_DIR$/helpers/mazify/ShortestPathCoverage.py" afterDir="false" />
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Dumb nodes breaking into sections working, got weighted efficient djikstra going! defs a start">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/ShortestPathCoverage.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/ShortestPathCoverage.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/temp_options.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/temp_options.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -51,7 +49,7 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "Python.SLIC-Segmentation.executor": "Debug",
-    "Python.Testing.executor": "Debug",
+    "Python.Testing.executor": "Run",
     "Python.edge_detection.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
@@ -338,7 +336,15 @@
       <option name="project" value="LOCAL" />
       <updated>1741200606551</updated>
     </task>
-    <option name="localTasksCounter" value="25" />
+    <task id="LOCAL-00025" summary="Dumb nodes breaking into sections working, got weighted efficient djikstra going! defs a start">
+      <option name="closed" value="true" />
+      <created>1741224212391</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1741224212391</updated>
+    </task>
+    <option name="localTasksCounter" value="26" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -375,7 +381,8 @@
     <MESSAGE value="Working on edge-snapping" />
     <MESSAGE value="Got all stuff in place!! still need to debug" />
     <MESSAGE value="Debugged edge tracking, finessing magnetism etc" />
-    <option name="LAST_COMMIT_MESSAGE" value="Debugged edge tracking, finessing magnetism etc" />
+    <MESSAGE value="Dumb nodes breaking into sections working, got weighted efficient djikstra going! defs a start" />
+    <option name="LAST_COMMIT_MESSAGE" value="Dumb nodes breaking into sections working, got weighted efficient djikstra going! defs a start" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -387,33 +394,23 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/ShortestPathCoverage.py</url>
-          <line>306</line>
+          <line>310</line>
           <option name="timeStamp" value="204" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/ShortestPathCoverage.py</url>
-          <line>317</line>
+          <line>321</line>
           <option name="timeStamp" value="205" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/ShortestPathCoverage.py</url>
-          <line>312</line>
+          <line>316</line>
           <option name="timeStamp" value="208" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/ShortestPathCoverage.py</url>
-          <line>268</line>
+          <line>272</line>
           <option name="timeStamp" value="211" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/mazify/ShortestPathCoverage.py</url>
-          <line>258</line>
-          <option name="timeStamp" value="217" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/mazify/ShortestPathCoverage.py</url>
-          <line>219</line>
-          <option name="timeStamp" value="232" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>

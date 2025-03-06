@@ -20,6 +20,7 @@ dir_smoothing_size, dir_smoothing_sigma = 21, 2.0
 
 dumb_node_optional_weight = 4
 dumb_node_blank_weight = 20
+dumb_node_required_weight = 1
 
 
 #CALCULATED DO NOT TOUCH!!

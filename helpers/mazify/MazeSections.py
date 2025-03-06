@@ -40,7 +40,7 @@ class MazeSections:
                 if self.sections[i, j].dumb_req:
                     # self.dumb_nodes[i][j].append(req_count)
                     # self.dumb_nodes_req[i][j].append(req_count)
-                    self.dumb_nodes_weighted[i][j] = 1
+                    self.dumb_nodes_weighted[i][j] = options.dumb_node_required_weight
                     if self.dumb_nodes_req[i][j] == 0:
                         self.dumb_nodes_req[i][j] = req_count
                         req_count += 1
@@ -55,6 +55,9 @@ class MazeSections:
                     # self.dumb_nodes_opt[i][j].append(opt_count)
                     if self.dumb_nodes_weighted[i][j] == options.dumb_node_blank_weight:
                         self.dumb_nodes_weighted[i][j] = options.dumb_node_optional_weight
+                    elif self.dumb_nodes_weighted[i][j] > options.dumb_node_required_weight + 1:
+                        #Reduce impedance a bit if multiple optional paths here
+                        self.dumb_nodes_weighted[i][j] -= 1
                     opt_count += 1
 
 

@@ -158,7 +158,7 @@ def find_shortest_path_with_coverage(weighted_grid, required_nodes_grid, require
     for y in range(m):
         for x in range(n):
             if required_nodes_grid[y][x]:  # Check if the element is not empty
-                required_node_coords_flat.append((y, x, required_nodes_grid[y][x]))
+                required_node_coords_flat.append((y, x, y*n + x, required_nodes_grid[y][x]))
     required_node_coords_flat.sort(key=lambda x: x[2])
 
     #Build graph & full dist matrix
@@ -167,8 +167,7 @@ def find_shortest_path_with_coverage(weighted_grid, required_nodes_grid, require
     distance_matrix, distance_shortest_path_matrix = sparse_weighted_grid_path_lengths(weighted_grid, graph_sparse)
 
     #Build distance matrix from required nodes
-    req_nodes_muxed = [r[0]*n + r[1] for r in required_node_coords_flat]
-    req_nodes_muxed.sort()
+    req_nodes_muxed = [s[2] for s in required_node_coords_flat]
 
     def extract_subset(array_2d, rows, cols):
         """
@@ -186,7 +185,7 @@ def find_shortest_path_with_coverage(weighted_grid, required_nodes_grid, require
         return array_2d[rows, :][:, cols]
 
     distance_matrix_req = extract_subset(distance_matrix, req_nodes_muxed, req_nodes_muxed).tolist()
-    distance_shortest_path_matrix = extract_subset(distance_shortest_path_matrix, req_nodes_muxed,
+    distance_shortest_path_matrix_req = extract_subset(distance_shortest_path_matrix, req_nodes_muxed,
                                                    req_nodes_muxed).tolist()
 
     #Build distance matrix
@@ -255,8 +254,13 @@ def find_shortest_path_with_coverage(weighted_grid, required_nodes_grid, require
     route_indexes = []
     if solution:
         route_indexes = print_solution(manager, routing, solution)
-    coords = [required_node_coords_flat[i][0:2] for i in route_indexes]
-    y_coords, x_coords = zip(*coords)  # Unzip the coordinates
+
+    #Set up final path
+    path = [required_node_coords_flat[0][0:2]]
+    for i in range(1,len(route_indexes)):
+        sub_path = distance_shortest_path_matrix_req[route_indexes[i - 1]][route_indexes[i]]
+        path.extend(sub_path[1:])
+    y_coords, x_coords = zip(*path)  # Unzip the coordinates
 
     plt.plot(x_coords, y_coords, marker='o')  # Plot the line with markers
     plt.xlabel("X-coordinate")
