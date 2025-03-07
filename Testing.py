@@ -5,6 +5,7 @@ from skimage.util import img_as_float
 import numpy as np
 import time
 import svgwrite as svg
+import matplotlib.pyplot as plt
 
 from helpers.mazify.MazeAgent import MazeAgent
 import helpers.edge_detect.SLIC_Segmentation as slic
@@ -110,18 +111,17 @@ for file in os.listdir("Trial-AI-Base-Images"):
       # near_boudaries_contours, segments = slic.slic_image_test_boundaries(im_float, split_contours)
       # near_boudaries_contours, segments = slic.mask_test_boundaries(image_path, split_contours)
 
-      outer_edges, outer_contours_yx, mask = slic.mask_boundary_edges(image_path)
-      inner_edges, inner_contours_yx, segments, num_segs = slic.slic_image_boundary_edges(im_float,
+      outer_edges, outer_contours_yx, mask, bounds_outer = slic.mask_boundary_edges(image_path)
+      inner_edges, inner_contours_yx, segments, num_segs, bounds_inner = slic.slic_image_boundary_edges(im_float,
                                                                                           num_segments=options.slic_regions,
                                                                                           enforce_connectivity=False,
                                                                                           contour_offset = len(outer_contours_yx))
-      crop = ((min(min(outer_contours_yx[:, 0]), min(inner_contours_yx[:, 0])),
-              min(min(outer_contours_yx[:, 1]), min(inner_contours_yx[:, 1]))),
-              (max(max(outer_contours_yx[:, 0]), max(inner_contours_yx[:, 0])),
-               max(max(outer_contours_yx[:, 1]), max(inner_contours_yx[:, 1]))))
 
-      outer_edges_cropped = outer_edges[crop[0][0]:crop[1][0], crop[0][1]:crop[1][1]]
-      inner_edges_cropped = inner_edges[crop[0][0]:crop[1][0], crop[0][1]:crop[1][1]]
+      crop = (tuple([min(o, c) for o, c in zip(bounds_outer[0], bounds_inner[0])]),
+              tuple([max(o, c) for o, c in zip(bounds_outer[1], bounds_inner[1])]))
+
+      outer_edges_cropped = outer_edges[crop[0][0]:crop[1][0] + 1, crop[0][1]:crop[1][1] + 1]
+      inner_edges_cropped = inner_edges[crop[0][0]:crop[1][0] + 1, crop[0][1]:crop[1][1] + 1]
       outer_contours_yx_cropped = slic.shift_contours(outer_contours_yx, (-1)*crop[0][0], (-1)*crop[0][1])
       inner_contours_yx_cropped = slic.shift_contours(inner_contours_yx, (-1)*crop[0][0], (-1)*crop[0][1])
 
@@ -136,15 +136,36 @@ for file in os.listdir("Trial-AI-Base-Images"):
       # cv2.imshow("nodes", transition_nodes.astype(np.uint8) * 255)
       # cv2.waitKey(0)
 
-      #TODO: Crop images to only include edges
       #TODO: Eliminate tiny outer edges
 
-      maze_sections = MazeSections(outer_edges_cropped, options.maze_sections_across, options.maze_sections_across)
+      y_lower, y_upper, x_lower, x_upper = 500, 700, 500, 700
+      detail_req_mask = np.zeros_like(outer_edges_cropped, dtype=np.bool)
+      # Create boolean masks for y and x bounds
+      y_mask = (np.arange(detail_req_mask.shape[0]) >= y_lower) & (np.arange(detail_req_mask.shape[0]) <= y_upper)
+      x_mask = (np.arange(detail_req_mask.shape[1]) >= x_lower) & (np.arange(detail_req_mask.shape[1]) <= x_upper)
+
+      # Use meshgrid to create 2D masks
+      y_mask_2d, x_mask_2d = np.meshgrid(x_mask, y_mask)
+
+      # Apply the masks to set values to True
+      detail_req_mask[y_mask_2d & x_mask_2d] = True
+
+      maze_sections = MazeSections(outer_edges_cropped, options.maze_sections_across, options.maze_sections_across,
+                                   detail_req_mask)
 
       maze_agent = MazeAgent(outer_edges_cropped, outer_contours_yx_cropped, inner_edges_cropped,
                              inner_contours_yx_cropped, maze_sections)
       raw_path_coords = maze_agent.run_round_dumb(image_path)
-      raw_path_coords_centered = slic.shift_contours([raw_path_coords], crop[0][0], crop[0][1])
+      raw_path_coords_centered = slic.shift_contours([raw_path_coords], crop[0][0], crop[0][1])[0]
+
+      y_coords, x_coords = zip(*raw_path_coords_centered)  # Unzip the coordinates
+
+      plt.plot(x_coords, y_coords, marker='o')  # Plot the line with markers
+      plt.xlabel("X-coordinate")
+      plt.ylabel("Y-coordinate")
+      plt.title("Line Plot of Coordinates")
+      plt.grid(True)
+      plt.show()
 
 
 

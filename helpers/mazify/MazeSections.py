@@ -6,14 +6,14 @@ from helpers.mazify.EdgeNode import EdgeNode
 import copy as cp
 
 class MazeSections:
-    def __init__(self, outer_edge, m, n):
+    def __init__(self, outer_edge, m, n, req_details_mask):
         self.m, self.n = m, n
         self.outer_edge = outer_edge
         self.num_sections = m * n
         self.sections_satisfied = 0
         self.sections_satisfied_pct = 0.0
         self.sections, self.section_indices_list, self.y_grade, self.x_grade = (
-            self.count_true_pixels_in_sections(outer_edge, m, n))
+            self.count_true_pixels_in_sections(outer_edge, m, n, req_details_mask))
         # self.dumb_nodes, self.dumb_nodes_req, self.dumb_nodes_opt, self.dumb_opt_node_start = (
         #     np.zeros((m, n), dtype=list), np.zeros((m, n), dtype=list), np.zeros((m, n), dtype=list), -1)
         self.dumb_opt_node_start = -1
@@ -55,14 +55,14 @@ class MazeSections:
                     # self.dumb_nodes[i][j].append(opt_count)
                     # self.dumb_nodes_opt[i][j].append(opt_count)
                     if self.dumb_nodes_weighted[i][j] == options.dumb_node_blank_weight:
-                        self.dumb_nodes_weighted[i][j] = options.dumb_node_optional_weight
-                    elif self.dumb_nodes_weighted[i][j] > options.dumb_node_required_weight + 1:
                         #Reduce impedance a bit if multiple optional paths here
-                        self.dumb_nodes_weighted[i][j] -= 1
+                        self.dumb_nodes_weighted[i][j] = max(options.dumb_node_min_opt_weight_reduced,
+                                                            options.dumb_node_optional_weight -
+                                                             (len(self.sections[i, j].inner_paths) - 1))
                     opt_count += 1
 
 
-    def count_true_pixels_in_sections(self, boolean_image, m, n):
+    def count_true_pixels_in_sections(self, boolean_image, m, n, req_details_mask:np.ndarray):
         """
         Breaks a boolean image into m x n rectangular sections and counts the number of
         True pixels in each section.
@@ -102,7 +102,12 @@ class MazeSections:
 
                 # Count True pixels
                 count = np.count_nonzero(section)
-                sections[i, j] = MazeSection(self, (y_start, y_end, x_start, x_end), count, i, j)
+
+                #Check if in details req
+                req_section = req_details_mask[y_start:y_end, x_start:x_end]
+                dumb_req = np.any(req_section)
+
+                sections[i, j] = MazeSection(self, (y_start, y_end, x_start, x_end), count, i, j, dumb_req)
 
         return sections, section_indices_list, section_height, section_width
 
@@ -113,7 +118,7 @@ class MazeSections:
         return min(y // self.y_grade, self.m - 1), min(x // self.x_grade, self.n - 1)
 
 class MazeSection:
-    def __init__(self, parent:MazeSections, bounds, edge_pixels, y_sec, x_sec):
+    def __init__(self, parent:MazeSections, bounds, edge_pixels, y_sec, x_sec, focus_region):
         (self.ymin, self.ymax, self.xmin, self.xmax) = bounds
         self.y_sec, self.x_sec = y_sec, x_sec
         self.edge_pixels = edge_pixels
@@ -126,6 +131,7 @@ class MazeSection:
         self.saturated = False
         self.attraction = 100.0
 
+        self.focus_region = focus_region
         self.dumb_req = False
         self.dumb_opt = False
 
@@ -147,13 +153,16 @@ class MazeSection:
             self.saturated = True
             parent.update_saturation()
 
-    def add_node(self, node: EdgeNode, dumb_req=False):
+    def add_node(self, node: EdgeNode):
         self.nodes.append(node)
-        if node.outer: self.outer_nodes.append(node)
-        if dumb_req:
+        if node.outer:
+            self.outer_nodes.append(node)
+            self.dumb_req = True
+        elif self.focus_region:
             self.dumb_req = True
         else:
             self.dumb_opt = True
+
 
     def get_nodes_by_edge_number(self, path_number):
         return [node for node in self.nodes if node.path_num == path_number]
@@ -169,7 +178,8 @@ class MazeSection:
 class MazeSectionTracker:
     def __init__(self, section:MazeSection, in_node:EdgeNode, tracker_num:int,
                  prev_tracker=None, next_tracker=None, out_node:EdgeNode=None):
-        self.section = MazeSection
+        self.section = section
+        self.nodes = []
         self.in_node = in_node
         self.out_node = out_node
         self.rev_in_node, self.rev_out_node = out_node, in_node

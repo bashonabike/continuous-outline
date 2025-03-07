@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 # from shapely.geometry import LineString
 # from simplification.cutil import simplify_coords
 
+import helpers.mazify.temp_options as options
+
 
 # testimg = "C:\\Users\\liamc\\PycharmProjects\\continuous-outline\\Trial-AI-Base-Images\\image_fx_(18).jpg"
 # # construct the argument parser and parse the arguments
@@ -101,7 +103,8 @@ def mask_boundary_edges(img_path):
 	# for cnt in fill_contours:
 	cv2.drawContours(filled_mask, fill_contours, -1, (255,255,255), thickness=cv2.FILLED)  # -1 fills the contour
 	blank = np.zeros(img.shape, dtype=np.uint8)
-	edges = mark_boundaries(blank, filled_mask, color=(255, 255, 255), mode='outer').astype(np.uint8)[:,:,0]
+	edges = mark_boundaries(blank, filled_mask, color=tuple([255 for d in range(img.shape[2])]),
+							mode='outer').astype(np.uint8)[:,:,0]
 
 
 
@@ -110,6 +113,7 @@ def mask_boundary_edges(img_path):
 
 	#Set final contours contours on blank coded for reference
 	final_contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+	final_contours = [c for c in final_contours if len(c) > options.outer_contour_length_cutoff]
 	edges_final = np.zeros_like(edges).astype(np.uint16)
 	for contour_idx in range(len(final_contours)):
 		cv2.drawContours(edges_final, final_contours, contour_idx, (contour_idx + 1, contour_idx + 1,
@@ -132,13 +136,20 @@ def mask_boundary_edges(img_path):
 
 	#Flip contours to yx to conform to cv standard
 	flipped_contours = []
+	min_y, min_x, max_y, max_x = 99999, 99999, -1, -1
 	for c in final_contours:
 		if c[0].size == 1:
-			flipped_contours.append([c[1], c[0]])
+			cur_contour = [c[1], c[0]]
 		else:
-			flipped_contours.append([[p[0][1], p[0][0]] for p in c])
+			cur_contour = [[p[0][1], p[0][0]] for p in c]
 
-	return edges_final, flipped_contours,  mask
+		ys, xs = zip(*cur_contour)
+		min_y, min_x = min(min_y, min(ys)), min(min_x, min(xs))
+		max_y, max_x = max(max_y, max(ys)), max(max_x, max(xs))
+
+		flipped_contours.append(cur_contour)
+
+	return edges_final, flipped_contours,  mask, ((min_y, min_x), (max_y, max_x))
 
 def slic_image_boundary_edges(im_float, num_segments:int =2, enforce_connectivity:bool = True, contour_offset = 0):
 	segments = None
@@ -183,13 +194,20 @@ def slic_image_boundary_edges(im_float, num_segments:int =2, enforce_connectivit
 	#TODO: Constrict from 2 wide to 1 wide??
 	#Flip contours to yx to conform to cv standard
 	flipped_contours = []
+	min_y, min_x, max_y, max_x = 99999, 99999, -1, -1
 	for c in contours:
 		if c[0].size == 1:
-			flipped_contours.append([c[1], c[0]])
+			cur_contour = [c[1], c[0]]
 		else:
-			flipped_contours.append([[p[0][1], p[0][0]] for p in c])
+			cur_contour = [[p[0][1], p[0][0]] for p in c]
 
-	return edges, flipped_contours, segments, num_segs_actual
+		ys, xs = zip(*cur_contour)
+		min_y, min_x = min(min_y, min(ys)), min(min_x, min(xs))
+		max_y, max_x = max(max_y, max(ys)), max(max_x, max(xs))
+
+		flipped_contours.append(cur_contour)
+
+	return edges, flipped_contours, segments, num_segs_actual, ((min_y, min_x), (max_y, max_x))
 
 
 def slic_image_test_boundaries(im_float, split_contours, num_segments:int =2, enforce_connectivity:bool = True):
@@ -296,10 +314,13 @@ def find_contours_near_boundaries(contours: List[np.ndarray], segments: np.ndarr
 	return near_boundary_contours
 
 def shift_contours(contours: list, shift_x: int, shift_y: int) -> list:
-	contours_nd = np.array(contours)
-	contours_nd[:, :, 0] += shift_x
-	contours_nd[:, :, 1] += shift_y
-	return contours_nd.tolist()
+	contours_shifted = []
+	for contour in contours:
+		contour_nd = np.array(contour)
+		contour_nd[:, 0] += shift_x
+		contour_nd[:, 1] += shift_y
+		contours_shifted.append(contour_nd.tolist())
+	return contours_shifted
 
 # def simplify_path_rdp(points, tolerance=1.0):
 # 	"""Simplifies a path using the Ramer-Douglas-Peucker algorithm."""

@@ -10,7 +10,7 @@ class EdgePath:
     def __init__(self, path_num, path_raw, maze_sections: sections.MazeSections, is_outer=False):
         self.path, self.num = [], path_num
         self.outer = is_outer
-        self.section_tracker = []
+        self.section_tracker, self.section_tracker_red_nd_doubled = [], None
         self.parse_path(path_raw, maze_sections, is_outer)
 
 
@@ -40,6 +40,7 @@ class EdgePath:
 
         #Set up nodes
         prev_section, section_tracker_num = None, -1
+        prev_tracker, cur_tracker = None, None
         for i in range(len(path)):
             node = EdgeNode.EdgeNode(path[i][0], path[i][1], self, path_rev_dirs[i], path_rev_dirs_smoothed[i],
                                      path_fwd_dirs[i], path_fwd_dirs_smoothed[i], path_displs[i], is_outer)
@@ -48,8 +49,7 @@ class EdgePath:
                 self.path[i-1].set_next_node(node)
             self.path.append(node)
             cur_section = maze_sections.get_section_from_coords(node.y, node.x)
-            cur_section.add_node(node, self.outer or self.num%4==0)
-            prev_tracker, cur_tracker = None, None
+            cur_section.add_node(node)
             if cur_section is not prev_section:
                 section_tracker_num += 1
                 cur_tracker = sections.MazeSectionTracker(cur_section, node, section_tracker_num,
@@ -62,13 +62,17 @@ class EdgePath:
                 #NOTE: this one lags behind by one
                 if section_tracker_num > 0: self.section_tracker[section_tracker_num - 1].out_node = self.path[i-1]
                 prev_tracker = cur_tracker
+
             node.set_section(cur_section, cur_tracker)
             prev_section = cur_section
+            cur_tracker.nodes.append(node)
+
         self.section_tracker[-1].out_node = self.path[-1]
         self.section_tracker[-1].next_tracker = self.section_tracker[0]
         self.section_tracker[0].prev_tracker = self.section_tracker[-1]
         self.path[-1].set_next_node(self.path[0])
         self.path[0].set_prev_node(self.path[-1])
+        self.section_tracker_red_nd_doubled = np.array([t.section for t in (self.section_tracker + self.section_tracker)])
 
 
     def get_next_node(self, cur_node, edge_rev:bool):

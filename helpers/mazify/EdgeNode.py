@@ -9,6 +9,7 @@ class EdgeNode:
         self.filled = False
         self.outer = is_outer
         self.section = None
+        self.section_tracker = None
         self.section_tracker_num = -1
 
     def set_section(self, section, section_tracker):
