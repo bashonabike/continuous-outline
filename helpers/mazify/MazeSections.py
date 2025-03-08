@@ -28,6 +28,7 @@ class MazeSections:
                                               options.maze_sections_across**2), dtype=np.uint16)
         self.initialize_dumb_distances()
         self.dumb_nodes_distances_trackers_path = np.zeros((m * n, m * n), dtype=list)
+        self.dumb_nodes_distances_trackers_contour= np.zeros((m * n, m * n), dtype=np.uint16)
 
         self.edge_connections = []
 

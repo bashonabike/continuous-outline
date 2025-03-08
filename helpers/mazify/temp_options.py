@@ -18,7 +18,7 @@ slic_regions = 8
 
 dir_smoothing_size, dir_smoothing_sigma = 21, 2.0
 
-dumb_node_optional_weight = 4
+dumb_node_optional_weight = 2
 dumb_node_min_opt_weight_reduced = 1
 dumb_node_blank_weight = 10
 dumb_node_required_weight = 1

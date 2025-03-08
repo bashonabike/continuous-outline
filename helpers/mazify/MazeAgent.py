@@ -27,6 +27,7 @@ class MazeAgent:
         #NOTE: edges are codified numerically to correspond with outer contours
         self.outer_edges, self.outer_contours = outer_edges, outer_contours
         self.inner_edges, self.inner_contours = inner_edges, inner_contours
+        self.maze_sections = maze_sections
 
         self.all_edges_bool, self.all_contours = (np.where(self.outer_edges + self.inner_edges > 0, True, False),
                                              self.outer_contours + self.inner_contours)
@@ -37,14 +38,20 @@ class MazeAgent:
             if new_path.outer: self.outer_contours_objects.append(new_path)
             else: self.inner_contours_objects.append(new_path)
 
-        self.update_distances_by_contour()
+        # self.update_distances_by_contour()
 
-        maze_sections.set_dumb_nodes()
+        i_indices, j_indices = np.indices(self.maze_sections.dumb_nodes_distances.shape)
+        i_col, i_row = i_indices//options.maze_sections_across, i_indices%options.maze_sections_across
+        j_col, j_ow = j_indices//options.maze_sections_across, j_indices%options.maze_sections_across
+
+        mask = (self.maze_sections.dumb_nodes_distances > 20) & abs(i_col - j_col) + abs(i_row - j_ow) < 8
+        test = np.count_nonzero(mask)
+
+        self.maze_sections.set_dumb_nodes()
 
 
 
         self.dims = (outer_edges.shape[0], outer_edges.shape[1])
-        self.maze_sections = maze_sections
         self.helper = helpers.MazeAgentHelpers()
         self.cur_section = None
         self.cur_point, self.cur_node = (0, 0), None
@@ -149,62 +156,32 @@ class MazeAgent:
         for path in self.all_contours_objects:
             #Determine dist from all points
             num_trackers = len(path.section_tracker)
-            all_dists = np.zeros((num_trackers, num_trackers), dtype=np.uint16)
+            all_dists_coded = np.zeros((num_trackers, num_trackers), dtype=np.uint32)
+            num_trackers_sqrd = num_trackers**2
             dumb_weight = options.dumb_node_required_weight if path.outer else options.dumb_node_optional_weight
             mid_point = len(path.section_tracker)//2
-            rows, cols = all_dists.shape
+            rows, cols = all_dists_coded.shape
             i_indices, j_indices = np.indices((rows, cols))
             #Shift around midpoint since items can at most be 1/2 apart (it loops around)
-            all_dists[:] = (dumb_weight*(mid_point - np.abs(i_indices - j_indices - mid_point)%num_trackers))
-            direct_paths = (path.section_tracker[i_indices], path.section_tracker[j_indices])
+            #Encode by dist, then i, then j
+            all_dists_coded[:] = (num_trackers_sqrd*(dumb_weight*(abs(mid_point -
+                                                                 np.abs(i_indices - j_indices - mid_point)%num_trackers)))
+                                  + num_trackers*i_indices + j_indices)
 
             #Coalesce to find min dist for each section
             all_sections_coded = [options.maze_sections_across*t.section.y_sec + t.section.x_sec
                                   for t in path.section_tracker]
-            df_dists = pd.DataFrame(all_dists, index=all_sections_coded, columns=all_sections_coded)
-            df_paths = pd.DataFrame(direct_paths, index=all_sections_coded, columns=all_sections_coded)
+            all_dists_coded_df = pd.DataFrame(all_dists_coded, index=all_sections_coded, columns=all_sections_coded)
 
-            #NOTE!!!! This stores ALL paths need to match on the min
-
-            def min_coalesce(group):
-                return group.min()
-
-            def concatenate_tuples(series):
-                """Concatenates tuples in a Pandas Series into a list."""
-                result = []
-                for item in series:
-                    if isinstance(item, tuple):
-                        result.append(item)
-                return result
-
-            coalesced_dists_df = df_dists.groupby(level=0).apply(lambda x: x.groupby(level=1, axis=1).
-                                                                 apply(min_coalesce))
-            coalesced_paths_df = df_paths.groupby(level=0).apply(lambda x: x.groupby(level=1, axis=1).
-                                                                 apply(concatenate_tuples))
-
-
+            coalesced_dists_coded_df = all_dists_coded_df.groupby(level=0).min().groupby(lambda x: x, axis=1).min()
             # Reorder rows and columns by label order
-            coalesced_dists_df = coalesced_dists_df.sort_index().sort_index(axis=1)
-            coalesced_paths_df = coalesced_paths_df.sort_index().sort_index(axis=1)
+            coalesced_dists_coded_df = coalesced_dists_coded_df.sort_index().sort_index(axis=1)
 
             # Extract sorted labels and data as ndarray
-            #TODO: Make sure sorting by int not string!!  May need to prepad with 0's of digits of max val
-            sorted_sections_coded = coalesced_dists_df.index.to_numpy()
-            coalesced_dists_nd = coalesced_dists_df.to_numpy()
-            coalesced_paths_nd = coalesced_paths_df.to_numpy()
-
-            #
-            # unique_labels = sorted(list(set(path.section_tracker)))
-            # label_to_index = {label: i for i, label in enumerate(unique_labels)}
-            #
-            # num_unique = len(unique_labels)
-            # coalesced_weights = np.full((num_unique, num_unique), np.inf)  # Initialize with infinity
-            #
-            # for i, row_label in enumerate(path.section_tracker):
-            #     for j, col_label in enumerate(path.section_tracker):
-            #         row_idx = label_to_index[row_label]
-            #         col_idx = label_to_index[col_label]
-            #         coalesced_weights[row_idx, col_idx] = min(coalesced_weights[row_idx, col_idx], all_dists[i, j])
+            sorted_sections_coded = coalesced_dists_coded_df.index.to_numpy()
+            coalesced_dists_coded_nd = coalesced_dists_coded_df.to_numpy()
+            coalesced_dists_nd = coalesced_dists_coded_nd//num_trackers_sqrd
+            coalesced_paths_coded_nd = coalesced_dists_coded_nd%num_trackers_sqrd
 
             # Calculate boolean mask of updates
             update_mask = (coalesced_dists_nd <
@@ -217,8 +194,17 @@ class MazeAgent:
             )
 
             #Update paths where neccessary
+            path_selection = self.maze_sections.dumb_nodes_distances_trackers_path[sorted_sections_coded[:, None],
+                sorted_sections_coded]
+            path_selection[update_mask] = coalesced_paths_coded_nd[update_mask]
             self.maze_sections.dumb_nodes_distances_trackers_path[sorted_sections_coded[:, None],
-            sorted_sections_coded][update_mask] = coalesced_paths_nd[update_mask]
+                sorted_sections_coded] = path_selection
+
+            path_num_selection = self.maze_sections.dumb_nodes_distances_trackers_contour[sorted_sections_coded[:, None],
+                sorted_sections_coded]
+            path_num_selection[update_mask] = path.num
+            self.maze_sections.dumb_nodes_distances_trackers_contour[sorted_sections_coded[:, None],
+                sorted_sections_coded] = path_num_selection
 
     def draw_raw_path(self, section_path: list):
         #TODO: use path bits for connections even if doesnt connect to any other seg, just use part of path look at proxim
