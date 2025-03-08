@@ -24,12 +24,28 @@ class MazeSections:
         # self.dumb_nodes_opt.fill([])
         self.dumb_nodes_weighted.fill(options.dumb_node_blank_weight)
 
+        self.dumb_nodes_distances = np.zeros((options.maze_sections_across**2,
+                                              options.maze_sections_across**2), dtype=np.uint16)
+        self.initialize_dumb_distances()
+        self.dumb_nodes_distances_trackers_path = np.zeros((m * n, m * n), dtype=list)
+
+        self.edge_connections = []
+
     def update_saturation(self):
         self.sections_satisfied += 1
         self.sections_satisfied_pct = self.sections_satisfied / self.num_sections
 
     def check_saturation(self):
         return self.sections_satisfied_pct > options.saturation_termination
+
+    def initialize_dumb_distances(self):
+        rows, cols = self.dumb_nodes_distances.shape
+        i_indices, j_indices = np.indices((rows, cols))
+        self.dumb_nodes_distances [:] = (
+                options.dumb_node_blank_weight*np.abs(i_indices % options.maze_sections_across -
+                                                      j_indices % options.maze_sections_across) +
+                options.dumb_node_blank_weight*np.abs(i_indices // options.maze_sections_across -
+                                                      j_indices // options.maze_sections_across))
 
     def set_dumb_nodes(self):
 
@@ -182,10 +198,56 @@ class MazeSectionTracker:
         self.nodes = []
         self.in_node = in_node
         self.out_node = out_node
+        self.path, self.path_num = in_node.path, in_node.path.num
         self.rev_in_node, self.rev_out_node = out_node, in_node
         self.tracker_num = tracker_num
         self.prev_tracker = prev_tracker
         self.next_tracker = next_tracker
+
+    def __hash__(self):
+        return hash((self.section.y_sec, self.section.x_sec, self.path_num, self.tracker_num))
+
+    def __eq__(self, other):
+        if not isinstance(other, MazeSectionTracker):
+            return False
+        return (self.section.y_sec == other.section.y_sec and
+                self.section.x_sec == other.section.x_sec and
+                self.path_num == other.path_num and
+                self.tracker_num == other.tracker_num)
+
+    def __lt__(self, other):
+        if not isinstance(other, MazeSectionTracker):
+            return NotImplemented
+        if self.section.y_sec < other.section.y_sec:
+            return True
+        elif self.section.y_sec > other.section.y_sec:
+            return False
+        if self.section.x_sec < other.section.x_sec:
+            return True
+        elif self.section.x_sec > other.section.x_sec:
+            return False
+        if self.path_num < other.path_num:
+            return True
+        elif self.path_num > other.path_num:
+            return False
+        return self.tracker_num < other.tracker_num
+
+    def __gt__(self, other):
+        if not isinstance(other, MazeSectionTracker):
+            return NotImplemented
+        if self.section.y_sec > other.section.y_sec:
+            return True
+        elif self.section.y_sec < other.section.y_sec:
+            return False
+        if self.section.x_sec > other.section.x_sec:
+            return True
+        elif self.section.x_sec < other.section.x_sec:
+            return False
+        if self.path_num > other.path_num:
+            return True
+        elif self.path_num < other.path_num:
+            return False
+        return self.tracker_num > other.tracker_num
 
     def get_next_tracker(self, reverse=False):
         if reverse:
@@ -204,4 +266,3 @@ class MazeSectionTracker:
             return self.rev_out_node
         else:
             return self.out_node
-

@@ -6,6 +6,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import time
 from scipy.signal import convolve2d
+import pandas as pd
 
 import helpers.mazify.temp_options as options
 import helpers.mazify.MazeAgentHelpers as helpers
@@ -35,6 +36,8 @@ class MazeAgent:
             self.all_contours_objects.append(new_path)
             if new_path.outer: self.outer_contours_objects.append(new_path)
             else: self.inner_contours_objects.append(new_path)
+
+        self.update_distances_by_contour()
 
         maze_sections.set_dumb_nodes()
 
@@ -142,9 +145,102 @@ class MazeAgent:
         #         self.cur_node = self.check_intersect_edge_update_point(direction)
         #     self.plot_path(self.path, image) #TEMPPP
 
+    def update_distances_by_contour(self):
+        for path in self.all_contours_objects:
+            #Determine dist from all points
+            num_trackers = len(path.section_tracker)
+            all_dists = np.zeros((num_trackers, num_trackers), dtype=np.uint16)
+            dumb_weight = options.dumb_node_required_weight if path.outer else options.dumb_node_optional_weight
+            mid_point = len(path.section_tracker)//2
+            rows, cols = all_dists.shape
+            i_indices, j_indices = np.indices((rows, cols))
+            #Shift around midpoint since items can at most be 1/2 apart (it loops around)
+            all_dists[:] = (dumb_weight*(mid_point - np.abs(i_indices - j_indices - mid_point)%num_trackers))
+            direct_paths = (path.section_tracker[i_indices], path.section_tracker[j_indices])
+
+            #Coalesce to find min dist for each section
+            all_sections_coded = [options.maze_sections_across*t.section.y_sec + t.section.x_sec
+                                  for t in path.section_tracker]
+            df_dists = pd.DataFrame(all_dists, index=all_sections_coded, columns=all_sections_coded)
+            df_paths = pd.DataFrame(direct_paths, index=all_sections_coded, columns=all_sections_coded)
+
+            #NOTE!!!! This stores ALL paths need to match on the min
+
+            def min_coalesce(group):
+                return group.min()
+
+            def concatenate_tuples(series):
+                """Concatenates tuples in a Pandas Series into a list."""
+                result = []
+                for item in series:
+                    if isinstance(item, tuple):
+                        result.append(item)
+                return result
+
+            coalesced_dists_df = df_dists.groupby(level=0).apply(lambda x: x.groupby(level=1, axis=1).
+                                                                 apply(min_coalesce))
+            coalesced_paths_df = df_paths.groupby(level=0).apply(lambda x: x.groupby(level=1, axis=1).
+                                                                 apply(concatenate_tuples))
+
+
+            # Reorder rows and columns by label order
+            coalesced_dists_df = coalesced_dists_df.sort_index().sort_index(axis=1)
+            coalesced_paths_df = coalesced_paths_df.sort_index().sort_index(axis=1)
+
+            # Extract sorted labels and data as ndarray
+            #TODO: Make sure sorting by int not string!!  May need to prepad with 0's of digits of max val
+            sorted_sections_coded = coalesced_dists_df.index.to_numpy()
+            coalesced_dists_nd = coalesced_dists_df.to_numpy()
+            coalesced_paths_nd = coalesced_paths_df.to_numpy()
+
+            #
+            # unique_labels = sorted(list(set(path.section_tracker)))
+            # label_to_index = {label: i for i, label in enumerate(unique_labels)}
+            #
+            # num_unique = len(unique_labels)
+            # coalesced_weights = np.full((num_unique, num_unique), np.inf)  # Initialize with infinity
+            #
+            # for i, row_label in enumerate(path.section_tracker):
+            #     for j, col_label in enumerate(path.section_tracker):
+            #         row_idx = label_to_index[row_label]
+            #         col_idx = label_to_index[col_label]
+            #         coalesced_weights[row_idx, col_idx] = min(coalesced_weights[row_idx, col_idx], all_dists[i, j])
+
+            # Calculate boolean mask of updates
+            update_mask = (coalesced_dists_nd <
+                           self.maze_sections.dumb_nodes_distances[sorted_sections_coded[:, None], sorted_sections_coded])
+
+            # Use advanced indexing and minimum update
+            self.maze_sections.dumb_nodes_distances[sorted_sections_coded[:, None], sorted_sections_coded] = np.minimum(
+                self.maze_sections.dumb_nodes_distances[sorted_sections_coded[:, None], sorted_sections_coded],
+                coalesced_dists_nd
+            )
+
+            #Update paths where neccessary
+            self.maze_sections.dumb_nodes_distances_trackers_path[sorted_sections_coded[:, None],
+            sorted_sections_coded][update_mask] = coalesced_paths_nd[update_mask]
+
     def draw_raw_path(self, section_path: list):
         #TODO: use path bits for connections even if doesnt connect to any other seg, just use part of path look at proxim
         #to others
+
+        #TODO: compute distance between sections when doing path walk! check each grouping if shortest then update matrix,
+        #also update matrix of paths (do paths as list of sectioon_trackers)
+        #Make sure to do flip version across identity line each time, reverse section_tracker path
+
+        #Then for each node with an edge (outer or inner) that has no path defined or path weight > euclidian dist*factor,
+        #Need to join together, do divide and conquer search for nearest neighbour that has a distance (if 3 squares away there is
+        # a node with a short dist to the given node, use it, else break up into multiple segments)
+        #MAYBE TRY TO FIND C/C++ LIB THAT WILL BUILD DIST FROM PARTIAL DIST MATRIX
+        #I guess only need to find dists between req nodes.  if doing divide n conquer may need full matrix pop tho
+        #find all connecties within bounding box formed as 1 outside each point, maybe have min width & height
+        #Store all connecties as weighted edges, then push all connectie-end points into ND array, linalg with self,
+        # find all 0 < dist < 2, make sure filter out dupl since bi-directional (ndarray way do this?? combinatorics?)
+        #Push them in as weight of bridging, djikstra it all
+        #Use these section_trackers to find path from start to end
+        #If not inflection, can block-copy nodes from section-tracker to path (may need to reverse it, pre-cache reversed nodes)
+        #If inflection, block-copy portions of nodes list
+
         # Get paths for each section
         prev_section, prev_path =  self.start_node.section, self.start_node.path
         pathified_section_path = []

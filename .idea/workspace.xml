@@ -4,18 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Configured cropping for your efficiency">
-      <change afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/image_fx_(5)_isnet-general-use.png" afterDir="false" />
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Working!  ISh, still a bit rough but it's something">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/image_fx_(5).jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgeNode.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgeNode.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/temp_options.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/temp_options.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test2.svg" beforeDir="false" afterPath="$PROJECT_DIR$/test2.svg" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -375,7 +369,15 @@
       <option name="project" value="LOCAL" />
       <updated>1741297064923</updated>
     </task>
-    <option name="localTasksCounter" value="29" />
+    <task id="LOCAL-00029" summary="Working!  ISh, still a bit rough but it's something">
+      <option name="closed" value="true" />
+      <created>1741387866890</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1741387866890</updated>
+    </task>
+    <option name="localTasksCounter" value="30" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -390,7 +392,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Initial create" />
     <MESSAGE value="Initial sub image gen function, working but dimensioning all off" />
     <MESSAGE value="Scaling &amp; shifting working for rect &amp; ellipse crop" />
     <MESSAGE value="Got isolated edge detection working, sorta working, scaling is off, crashing unsure why" />
@@ -415,7 +416,8 @@
     <MESSAGE value="Dumb nodes breaking into sections working, got weighted efficient djikstra going! defs a start" />
     <MESSAGE value="Got start/end going for travelling salesman, nodes walking etc coded for walk not tested yet tho" />
     <MESSAGE value="Configured cropping for your efficiency" />
-    <option name="LAST_COMMIT_MESSAGE" value="Configured cropping for your efficiency" />
+    <MESSAGE value="Working!  ISh, still a bit rough but it's something" />
+    <option name="LAST_COMMIT_MESSAGE" value="Working!  ISh, still a bit rough but it's something" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -432,18 +434,23 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>274</line>
+          <line>370</line>
           <option name="timeStamp" value="278" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>212</line>
+          <line>308</line>
           <option name="timeStamp" value="284" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>181</line>
+          <line>277</line>
           <option name="timeStamp" value="285" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
+          <line>148</line>
+          <option name="timeStamp" value="289" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

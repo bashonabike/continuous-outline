@@ -44,6 +44,7 @@ class EdgePath:
         for i in range(len(path)):
             node = EdgeNode.EdgeNode(path[i][0], path[i][1], self, path_rev_dirs[i], path_rev_dirs_smoothed[i],
                                      path_fwd_dirs[i], path_fwd_dirs_smoothed[i], path_displs[i], is_outer)
+
             if i > 0:
                 node.set_prev_node(self.path[i-1])
                 self.path[i-1].set_next_node(node)
@@ -61,6 +62,7 @@ class EdgePath:
                 else: cur_section.inner_paths.add(self)
                 #NOTE: this one lags behind by one
                 if section_tracker_num > 0: self.section_tracker[section_tracker_num - 1].out_node = self.path[i-1]
+
                 prev_tracker = cur_tracker
 
             node.set_section(cur_section, cur_tracker)
