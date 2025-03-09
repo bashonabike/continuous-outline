@@ -6,6 +6,7 @@ import numpy as np
 import time
 import svgwrite as svg
 import matplotlib.pyplot as plt
+from datetime import date
 
 from helpers.mazify.MazeAgent import MazeAgent
 import helpers.edge_detect.SLIC_Segmentation as slic
@@ -132,13 +133,11 @@ for file in os.listdir("Trial-AI-Base-Images"):
       edges_show = edges.astype(np.uint8) * 255
       # cv2.imshow("outer", outer_edges.astype(np.uint8) * 255)
       # cv2.imshow("inner", inner_edges.astype(np.uint8) * 255)
-      # cv2.imshow("all", edges_show)
+      cv2.imshow("all", edges_show)
       # cv2.imshow("nodes", transition_nodes.astype(np.uint8) * 255)
-      # cv2.waitKey(0)
+      cv2.waitKey(0)
 
-      #TODO: Eliminate tiny outer edges
-
-      y_lower, y_upper, x_lower, x_upper = 500, 700, 500, 700
+      y_lower, y_upper, x_lower, x_upper = 400, 600, 200, 400
       detail_req_mask = np.zeros_like(outer_edges_cropped, dtype=np.bool)
       # Create boolean masks for y and x bounds
       y_mask = (np.arange(detail_req_mask.shape[0]) >= y_lower) & (np.arange(detail_req_mask.shape[0]) <= y_upper)
@@ -160,11 +159,12 @@ for file in os.listdir("Trial-AI-Base-Images"):
 
       y_coords, x_coords = zip(*raw_path_coords_centered)  # Unzip the coordinates
 
-      plt.plot(x_coords, y_coords, marker='o')  # Plot the line with markers
+      plt.plot(x_coords, y_coords, marker='o', markersize=1)  # Plot the line with markers
       plt.xlabel("X-coordinate")
       plt.ylabel("Y-coordinate")
       plt.title("Line Plot of Coordinates")
       plt.grid(True)
+      plt.savefig(str(date.today()) + ".png" , dpi=600)
       plt.show()
 
 

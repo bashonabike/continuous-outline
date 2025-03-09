@@ -40,12 +40,14 @@ class MazeAgent:
 
         # self.update_distances_by_contour()
 
-        i_indices, j_indices = np.indices(self.maze_sections.dumb_nodes_distances.shape)
-        i_col, i_row = i_indices//options.maze_sections_across, i_indices%options.maze_sections_across
-        j_col, j_ow = j_indices//options.maze_sections_across, j_indices%options.maze_sections_across
+        # i_indices, j_indices = np.indices(self.maze_sections.dumb_nodes_distances.shape)
+        # i_col, i_row = i_indices//options.maze_sections_across, i_indices%options.maze_sections_across
+        # j_col, j_ow = j_indices//options.maze_sections_across, j_indices%options.maze_sections_across
+        #
+        # mask = (self.maze_sections.dumb_nodes_distances > 20) & abs(i_col - j_col) + abs(i_row - j_ow) < 8
+        # test = np.count_nonzero(mask)
 
-        mask = (self.maze_sections.dumb_nodes_distances > 20) & abs(i_col - j_col) + abs(i_row - j_ow) < 8
-        test = np.count_nonzero(mask)
+        #TODO: If still iffy jumping, Maybe tweak weights, apply over rough dist calc if better route, add path too
 
         self.maze_sections.set_dumb_nodes()
 
@@ -247,7 +249,7 @@ class MazeAgent:
         raw_path_nodes = []
         start_mode = True
         for i in range(len(pathified_section_path)):
-            if i == 24:
+            if i == 45:
                 sdfd=""
             pathified_section = pathified_section_path[i]
             if i < len(pathified_section_path) - 1: next_section = pathified_section_path[i + 1]["section"]
@@ -281,24 +283,28 @@ class MazeAgent:
                     walk_counter = 0
                     while cur_node is not path_jump_nodes[0]:
                         raw_path_nodes.append(cur_node)
+                        if cur_node.x == 0:
+                            sfds=""
                         cur_node = cur_node.walk(path_rev)
                         walk_counter += 1
                         if walk_counter > 10000: raise exception("Dead loop walkin")
                     raw_path_nodes.append(cur_node)
+                    if cur_node.x == 0:
+                        sfds=""
 
                     # Set up 2nd part of path
                     cur_node = path_jump_nodes[1]
                     cur_section_tracker = cur_node.section_tracker
-                    try:
-                        path_rev = self.find_path_walk_dir(cur_section_tracker, next_section)
-                    except:
-                        sdf=""
 
                 #Walk the path until hit next section
+                #TODO: Examine, may need more graceful way handle this if dips into seciton just 1st point then backs out
+                path_rev = self.find_path_walk_dir(cur_section_tracker, next_section)
                 walk_counter = 0
                 while ((next_section is None and (cur_node.section == cur_section and cur_node is not self.end_node)) or
                        (next_section is not None and cur_node.section != next_section)):
                     raw_path_nodes.append(cur_node)
+                    if cur_node.x == 0:
+                        sfds=""
                     cur_node = cur_node.walk(path_rev)
                     walk_counter += 1
                     if walk_counter > 10000: raise exception("Dead loop walkin")
@@ -340,10 +346,14 @@ class MazeAgent:
                     walk_counter = 0
                     while cur_node is not inflec_nodes[0]:
                         raw_path_nodes.append(cur_node)
+                        if cur_node.x == 0:
+                            sfds=""
                         cur_node = cur_node.walk(path_rev)
                         walk_counter += 1
                         if walk_counter > 10000: raise exception("Dead loop walkin")
                     raw_path_nodes.append(cur_node)
+                    if cur_node.x == 0:
+                        sfds=""
 
                 if cur_path_set[1] is not None:
                     #Lock to new path
@@ -361,6 +371,8 @@ class MazeAgent:
                     while ((next_section is None and (cur_node.section == cur_section and cur_node is not self.end_node))
                            or (next_section is not None and cur_node.section != next_section)):
                         raw_path_nodes.append(cur_node)
+                        if cur_node.x == 0:
+                            sfds=""
                         cur_node = cur_node.walk(path_rev)
                         walk_counter += 1
                         if walk_counter > 10000: raise exception("Dead loop walkin")
@@ -423,6 +435,7 @@ class MazeAgent:
 
         if len(suitable_walks) > 0:
             # Retrieve closest tracker section nums
+
             return ([(path.section_tracker[w[0]],path.section_tracker[w[1]], w[2])
                      for w in suitable_walks])
         else:

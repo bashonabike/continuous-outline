@@ -14,18 +14,19 @@ need_to_steer_off_edge = 2*math.pi/3
 edge_magnetism_look_ahead_sections = maze_sections_across//2
 edge_magnetism_cutoff = 0.5
 
-slic_regions = 8
+slic_regions = 5
 
 dir_smoothing_size, dir_smoothing_sigma = 21, 2.0
 
-dumb_node_optional_weight = 2
+dumb_node_optional_weight = 1
 dumb_node_min_opt_weight_reduced = 1
-dumb_node_blank_weight = 10
+dumb_node_blank_weight = 200
 dumb_node_required_weight = 1
 
-section_tracker_max_walk = 6
+section_tracker_max_walk = 20
 
-outer_contour_length_cutoff = 100
+outer_contour_length_cutoff = 200
+inner_contour_length_cutoff = 160
 
 
 #CALCULATED DO NOT TOUCH!!

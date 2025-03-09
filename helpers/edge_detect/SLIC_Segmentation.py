@@ -169,6 +169,8 @@ def slic_image_boundary_edges(im_float, num_segments:int =2, enforce_connectivit
 		partial_contours, _ = cv2.findContours(finder, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 		contours.extend(partial_contours)
 
+	contours = [c for c in contours if len(c) > options.inner_contour_length_cutoff]
+
 	#Plot contours on blank coded for reference
 	edges = np.zeros_like(segments).astype(np.uint16)
 	for contour_idx in range(len(contours)):

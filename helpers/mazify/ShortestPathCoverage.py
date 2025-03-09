@@ -271,6 +271,7 @@ def find_shortest_path_with_coverage(weighted_grid, required_nodes_grid, start_s
     plt.title("Line Plot of Coordinates")
     plt.grid(True)
     plt.show()
+    #TODO: FLIP Y COORDS
 
 
     return path
