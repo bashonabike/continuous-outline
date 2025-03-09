@@ -28,3 +28,10 @@ class CompassType(Enum):
      deflection_compass = 6
      inner_attraction = 7
      edge_magnetism = 8
+
+class NodeType(Enum):
+     section_req = 1
+     section_opt = 2
+     section_blank = 3
+     section_tracker_req = 4
+     section_tracker_opt = 5

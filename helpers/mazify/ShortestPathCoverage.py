@@ -276,6 +276,13 @@ def find_shortest_path_with_coverage(weighted_grid, required_nodes_grid, start_s
 
     return path
 
+    #TODO: try set edges between section trackers, set edge with "jump cost" between secition and each section tracker
+    #Set edge cost jumping to neighbouring nodes
+    #Based on some pattern set up by collection of req nodes (MAKE SURE only include edge-populated sections in req region)
+    #Do a series of shortest paths from section to section, if path goes from tracker to section back to same tracker remove dupl
+    #Maybe set up neural net to figure out how best set up jumping?? Test out theory first
+    #Can maybe trial diff methods (typewriter, snake, etc) dep on format of outer vs req
+
     #
     # m, n = len(grid), len(grid[0])
     # required_nodes = set(required_nodes)

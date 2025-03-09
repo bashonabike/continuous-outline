@@ -5,6 +5,7 @@ from scipy.ndimage import convolve1d
 import helpers.mazify.temp_options as options
 import helpers.mazify.EdgeNode as EdgeNode
 import helpers.mazify.MazeSections as sections
+from helpers.Enums import NodeType
 
 class EdgePath:
     def __init__(self, path_num, path_raw, maze_sections: sections.MazeSections, is_outer=False):
@@ -41,6 +42,8 @@ class EdgePath:
         #Set up nodes
         prev_section, section_tracker_num = None, -1
         prev_tracker, cur_tracker = None, None
+        first_graph_node, prev_graph_node, last_graph_node = None, None, None
+        edge_weight = options.dumb_node_required_weight if is_outer else options.dumb_node_optional_weight
         for i in range(len(path)):
             node = EdgeNode.EdgeNode(path[i][0], path[i][1], self, path_rev_dirs[i], path_rev_dirs_smoothed[i],
                                      path_fwd_dirs[i], path_fwd_dirs_smoothed[i], path_displs[i], is_outer)
@@ -63,12 +66,26 @@ class EdgePath:
                 #NOTE: this one lags behind by one
                 if section_tracker_num > 0: self.section_tracker[section_tracker_num - 1].out_node = self.path[i-1]
 
+                #Set graph nodes in
+                cur_graph_node = (cur_section.y_sec, cur_section.x_sec, self.num, section_tracker_num)
+                graph_node_type = NodeType.section_tracker_req if cur_section.dumb_req else NodeType.section_tracker_opt
+                maze_sections.path_graph.add_node(cur_graph_node, category=graph_node_type)
+                if first_graph_node is None:
+                    first_graph_node = cur_graph_node
+                else:
+                    maze_sections.path_graph.add_edge(prev_graph_node, cur_graph_node, weight=edge_weight)
+
+                maze_sections.path_graph.add_edge(cur_graph_node, (cur_section.y_sec, cur_section.x_sec),
+                                                      weight=options.dumb_node_blank_weight)
+
                 prev_tracker = cur_tracker
+                prev_section = cur_section
+                last_graph_node = prev_graph_node = cur_graph_node
 
             node.set_section(cur_section, cur_tracker)
-            prev_section = cur_section
             cur_tracker.nodes.append(node)
 
+        maze_sections.path_graph.add_edge(last_graph_node, first_graph_node, weight=edge_weight)
         self.section_tracker[-1].out_node = self.path[-1]
         self.section_tracker[-1].next_tracker = self.section_tracker[0]
         self.section_tracker[0].prev_tracker = self.section_tracker[-1]

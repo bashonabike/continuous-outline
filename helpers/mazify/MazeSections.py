@@ -1,9 +1,11 @@
 import numpy as np
 from scipy.signal import convolve2d
+import networkx as nx
+import copy as cp
 
 import helpers.mazify.temp_options as options
 from helpers.mazify.EdgeNode import EdgeNode
-import copy as cp
+from helpers.Enums import NodeType
 
 class MazeSections:
     def __init__(self, outer_edge, m, n, req_details_mask):
@@ -32,6 +34,9 @@ class MazeSections:
 
         self.edge_connections = []
 
+        self.path_graph = nx.Graph()
+        self.set_section_jumps_in_graph()
+
     def update_saturation(self):
         self.sections_satisfied += 1
         self.sections_satisfied_pct = self.sections_satisfied / self.num_sections
@@ -47,6 +52,36 @@ class MazeSections:
                                                       j_indices % options.maze_sections_across) +
                 options.dumb_node_blank_weight*np.abs(i_indices // options.maze_sections_across -
                                                       j_indices // options.maze_sections_across))
+
+    def set_section_jumps_in_graph(self):
+        #Set sections as nodes into graph
+        for i in range(self.m):
+            for j in range(self.n):
+                if self.sections[i, j].dumb_req:
+                    self.path_graph.add_node((i, j), category=NodeType.section_req)
+                elif self.sections[i, j].dumb_opt:
+                    self.path_graph.add_node((i, j), category=NodeType.section_opt)
+                else:
+                    self.path_graph.add_node((i, j), category=NodeType.section_blank)
+
+        #Set jumps as edges into graph
+        for i in range(self.m):
+            for j in range(self.n):
+                current_node = (i, j)
+                neighbors = [
+                    (i - 1, j - 1), (i - 1, j), (i - 1, j + 1),
+                    (i, j - 1), (i, j + 1),
+                    (i + 1, j - 1), (i + 1, j), (i + 1, j + 1)
+                ]
+
+                for ni, nj in neighbors:
+                    if 0 <= ni < self.m and 0 <= nj < self.n:
+                        neighbor_node = (ni, nj)
+                        # Add edge only if it doesn't already exist (undirected)
+                        if not self.path_graph.has_edge(current_node, neighbor_node):
+                            self.path_graph.add_edge(current_node, neighbor_node, weight=options.dumb_node_blank_weight)
+
+
 
     def set_dumb_nodes(self):
 
