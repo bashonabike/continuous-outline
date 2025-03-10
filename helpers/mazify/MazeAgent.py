@@ -130,7 +130,7 @@ class MazeAgent:
     def run_round_trace(self, technique:TraceTechnique):
         match technique:
             case TraceTechnique.snake:
-                self.find_trace_section_tour_snake()
+                return self.find_trace_section_tour_snake()
 
             case TraceTechnique.typewriter:
                 return []
@@ -180,7 +180,7 @@ class MazeAgent:
         inflection_points = []
         for focus_region in self.maze_sections.focus_region_sections:
             sections_coords = np.array([s.coords_sec for s in focus_region])
-            closest_indices_outer, closest_indices_focus, closest_pairings_outer, closest_pairings_focus = (
+            closest_indices_outer, closest_indices_focus = (
                 self.find_focus_region_incision_point(outer_coords, sections_coords))
             inflection_points.append({"outer_index_midpoint": sum(closest_indices_outer)//2,
                                       "outer_in_index": closest_indices_outer[0],
@@ -188,7 +188,7 @@ class MazeAgent:
                                       "outer_in_tracker": outer_path[closest_indices_outer[0]],
                                       "focus_in_section": focus_region[closest_indices_focus[0]],
                                       "outer_out_tracker": outer_path[closest_indices_outer[1]],
-                                      "focus_out_section": focus_region[closest_indices_focus[0]],
+                                      "focus_out_section": focus_region[closest_indices_focus[1]],
                                       "focus_sections": sections_coords})
 
         inflection_points.sort(key=lambda p: p['outer_index_midpoint'])
@@ -202,7 +202,7 @@ class MazeAgent:
         prev_point_idx = 0
         for p in inflection_points:
             sections_nodes_path.extend([(t.section.coords_sec[0], t.section.coords_sec[1], t.path_num, t.tracker_num)
-                                        for t in outer_path[prev_point_idx:p['outer_in_index']]])
+                                        for t in outer_path[prev_point_idx:p['outer_in_index'] + 1]])
 
             sections_nodes_path.extend(nx.shortest_path(self.maze_sections.path_graph,
                                          p['outer_in_tracker'].section.coords_sec, p['focus_in_section'].coords_sec,
@@ -218,8 +218,9 @@ class MazeAgent:
                                                   weight='weight')[:-1])
             sections_nodes_path.extend(nx.shortest_path(self.maze_sections.path_graph, focus_end2,
                                                   p['focus_out_section'].coords_sec, weight='weight')[:-1])
+            #NOTE: we want to include the last node this time, do not discount
             sections_nodes_path.extend(nx.shortest_path(self.maze_sections.path_graph, p['focus_out_section'].coords_sec,
-                                                  p['outer_out_tracker'].section.coords_sec, weight='weight')[:-1])
+                                                  p['outer_out_tracker'].section.coords_sec, weight='weight')[:])
 
             prev_point_idx = p['outer_out_index']
 
@@ -233,7 +234,7 @@ class MazeAgent:
         return raw_path_coords
 
     def set_node_path_from_sec_path(self, sections_nodes_path):
-        nodes_path = []
+        nodes_path = [] #TODO: If dupl on same tracker skip
         jump_path = False
         prev_sect, cur_sect, next_sect = None, None, None
         cur_tracker = None
@@ -242,24 +243,27 @@ class MazeAgent:
         inflection_out = None
         for i in range(len(sections_nodes_path)):
             cur_sect = sections_nodes_path[i]
-            if i < len(sections_nodes_path) - 1: next_sect = sections_nodes_path[i + 1]
+            if i < len(sections_nodes_path) - 1:
+                next_sect = sections_nodes_path[i + 1]
+            else:
+                next_sect = None
 
             if len(cur_sect) == 4:
                 if inflection_out is not None:
-                    cur_tracker_idx = inflection_out['sections_path_idx']
+                    cur_tracker_idx = inflection_out['tracker_path_idx']
                 else:
                     cur_tracker_idx = 0
                 inflection_out = None
-                cur_tracker = self.all_contours_objects[cur_sect[2]].section_tracker[cur_sect[3]]
+                cur_tracker = self.all_contours_objects[cur_sect[2] - 1].section_tracker[cur_sect[3]]
                 if next_sect is not None and len(next_sect) == 4:
                 #Tracker identified, check if prev sect lines up
                     if next_sect[2] != cur_sect[2] or abs(next_sect[3] - cur_sect[3]) != 1:
                         raise exception("Something screwy with tracking")
                     path_rev = next_sect[3] < cur_sect[3]
                     if path_rev:
-                        nodes_path.extend(list(reversed(cur_tracker.path[:cur_tracker_idx + 1])))
+                        nodes_path.extend(list(reversed(cur_tracker.nodes[:cur_tracker_idx + 1])))
                     else:
-                        nodes_path.extend(cur_tracker.path[cur_tracker_idx:])
+                        nodes_path.extend(cur_tracker.nodes[cur_tracker_idx:])
                 elif next_sect is not None:
                     #Entering into the abyss, look for next insersection
                     next_trackerized_sect, sections_path_idx = None, -1
@@ -270,21 +274,27 @@ class MazeAgent:
                             break
 
                     if next_trackerized_sect is not None:
-                        #Find best intersection point
-                        inflec_nodes = list(self.find_inflection_points(cur_tracker.path, next_trackerized_sect.path,
-                                                                        retrieve_idxs=True))
-                        if path_rev:
-                            nodes_path.extend(list(reversed(cur_tracker.path[inflec_nodes[0]:cur_tracker_idx + 1])))
-                        else:
-                            nodes_path.extend(cur_tracker.path[cur_tracker_idx:inflec_nodes[0] + 1])
+                        if next_trackerized_sect != cur_sect:
+                            #Find best intersection point
+                            next_tracker = self.all_contours_objects[next_trackerized_sect[2] - 1]. \
+                                section_tracker[next_trackerized_sect[3]]
+                            inflec_nodes = list(self.find_inflection_points(cur_tracker.nodes,
+                                                                            next_tracker.nodes,
+                                                                            retrieve_idxs=True))
+                            if path_rev:
+                                nodes_path.extend(list(reversed(cur_tracker.nodes[inflec_nodes[0]:cur_tracker_idx + 1])))
+                            else:
+                                nodes_path.extend(cur_tracker.nodes[cur_tracker_idx:inflec_nodes[0] + 1])
 
-                        inflection_out = {"sections_path_idx": sections_path_idx, "path_idx": inflec_nodes[1]}
+                            inflection_out = {"sections_path_idx": sections_path_idx, "tracker_path_idx": inflec_nodes[1]}
+
+                            #TODO: Figure out something more graceful when dupl trackers
                 else:
                     #Run out the last section
                     if path_rev:
-                        nodes_path.extend(list(reversed(cur_tracker.path[:cur_tracker_idx + 1])))
+                        nodes_path.extend(list(reversed(cur_tracker.nodes[:cur_tracker_idx + 1])))
                     else:
-                        nodes_path.extend(cur_tracker.path[cur_tracker_idx:])
+                        nodes_path.extend(cur_tracker.nodes[cur_tracker_idx:])
 
                 #MAKE SURE set dir when non tracker (shouldn't be issue but maybe check)
 
@@ -293,10 +303,10 @@ class MazeAgent:
         return nodes_path
 
     def find_maximal_quadrilateral_optimized(self, coords, start1, start2):
-        coords = set(coords)
-        coords.remove(start1)
-        coords.remove(start2)
-        coords_array = np.array(list(coords))
+        coords_s = set([tuple(row) for row in coords])
+        coords_s.remove(start1)
+        coords_s.remove(start2)
+        coords_array = np.array(list(coords_s))
 
         hull = ConvexHull(coords_array)
         hull_points = coords_array[hull.vertices]
@@ -642,7 +652,7 @@ class MazeAgent:
         if not retrieve_idxs:
             return path_1_seg[min_indices[0]], path_2_seg[min_indices[1]]
         else:
-            min_indices[0], min_indices[1]
+            return min_indices[0], min_indices[1]
 
     def find_focus_region_incision_point(self, outer_sections, focus_sections):
         """
@@ -660,33 +670,31 @@ class MazeAgent:
             """
 
         # Calculate all pairwise distances using broadcasting
+        # outer_distinct = np.unique(outer_sections, axis=0)
         distances = np.linalg.norm(outer_sections[:, None, :] - focus_sections[None, :, :], axis=2)
 
         # Find pairings within the distance threshold
         outer_indices, focus_indices = np.where(distances < options.snake_trace_max_jump_from_outer)
+        if outer_indices.size == 0:
+            return None, None
+        #TODO: Figure out some way sort by asc distance first
 
-        pairings = [(outer_indices[i], focus_indices[i], tuple(outer_sections[outer_indices[i]]),
-                    tuple(focus_sections[focus_indices[i]])) for i in range(len(outer_indices))]
+        #Find closest indexes that are not the same
+        outer_disps = np.abs(outer_indices[:, None] - outer_indices[None, :])
+        outer_disps[outer_disps == 0] = 9999
+        focus_simult = focus_indices[:, None] == focus_indices[None, :]
+        outer_disps[focus_simult] = 9999
+        closest_indices = np.unravel_index(np.argmin(outer_disps), outer_disps.shape)
 
-        if len(pairings) < 2:
-            return pairings, None
+        #Return pairings
+        if outer_indices[closest_indices[0]] < outer_indices[closest_indices[1]]:
+            closest_outer = (outer_indices[closest_indices[0]], outer_indices[closest_indices[1]])
+            closest_focus = (focus_indices[closest_indices[0]], focus_indices[closest_indices[1]])
+        else:
+            closest_outer = (outer_indices[closest_indices[1]], outer_indices[closest_indices[0]])
+            closest_focus = (focus_indices[closest_indices[1]], focus_indices[closest_indices[0]])
 
-        # Find closest pairings by outer_index difference (still requires loops)
-        min_distance = float('inf')
-        closest_indices_outer, closest_indices_focus, closest_pairings_outer, closest_pairings_focus =\
-            None, None, None, None
-
-        for i in range(len(pairings)):
-            for j in range(i + 1, len(pairings)):
-                diff = abs(pairings[i][0] - pairings[j][0])
-                if diff < min_distance:
-                    min_distance = diff
-                    closest_indices_outer = (pairings[i][0], pairings[j][0])
-                    closest_indices_focus = (pairings[i][1], pairings[j][1])
-                    closest_pairings_outer = (pairings[i][2], pairings[j][2])
-                    closest_pairings_focus = (pairings[i][3], pairings[j][3])
-
-        return closest_indices_outer, closest_indices_focus, closest_pairings_outer, closest_pairings_focus
+        return closest_outer, closest_focus
 
 
     def find_indices(self, my_list, value):

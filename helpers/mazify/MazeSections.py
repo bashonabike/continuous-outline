@@ -14,9 +14,9 @@ class MazeSections:
         self.num_sections = m * n
         self.sections_satisfied = 0
         self.sections_satisfied_pct = 0.0
+        self.focus_region_sections = []
         self.sections, self.section_indices_list, self.y_grade, self.x_grade = (
             self.count_true_pixels_in_sections(outer_edge, m, n, req_details_mask))
-        self.focus_region_sections = []
         # self.dumb_nodes, self.dumb_nodes_req, self.dumb_nodes_opt, self.dumb_opt_node_start = (
         #     np.zeros((m, n), dtype=list), np.zeros((m, n), dtype=list), np.zeros((m, n), dtype=list), -1)
         self.dumb_opt_node_start = -1
@@ -167,14 +167,14 @@ class MazeSections:
 
                 #Check if in details req
                 focus_region_nums = []
-                for i in range(len(req_details_masks)):
-                    req_section = req_details_masks[i][y_start:y_end, x_start:x_end]
+                for k in range(len(req_details_masks)):
+                    req_section = req_details_masks[k][y_start:y_end, x_start:x_end]
                     if np.any(req_section):
-                        focus_region_nums.append(i)
+                        focus_region_nums.append(k)
 
                 sections[i, j] = MazeSection(self, (y_start, y_end, x_start, x_end), count, i, j,
                                              len(focus_region_nums) > 0, focus_region_nums)
-                for i in focus_region_nums: self.focus_region_sections[i].append(sections[i, j])
+                for k in focus_region_nums: self.focus_region_sections[k].append(sections[i, j])
 
         return sections, section_indices_list, section_height, section_width
 

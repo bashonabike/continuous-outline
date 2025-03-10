@@ -132,12 +132,12 @@ for file in os.listdir("Trial-AI-Base-Images"):
       #
       edges_show = edges.astype(np.uint8) * 255
       # cv2.imshow("outer", outer_edges.astype(np.uint8) * 255)
-      # cv2.imshow("inner", inner_edges.astype(np.uint8) * 255)
-      cv2.imshow("outer", outer_edges.astype(np.uint8) * 255)
+      cv2.imshow("inner", inner_edges.astype(np.uint8) * 255)
+      # cv2.imshow("outer", outer_edges.astype(np.uint8) * 255)
       # cv2.imshow("nodes", transition_nodes.astype(np.uint8) * 255)
       cv2.waitKey(0)
 
-      y_lower, y_upper, x_lower, x_upper = 400, 600, 200, 400
+      y_lower, y_upper, x_lower, x_upper = 400, 600, 400, 700
       detail_req_mask = np.zeros_like(outer_edges_cropped, dtype=np.bool)
       # Create boolean masks for y and x bounds
       y_mask = (np.arange(detail_req_mask.shape[0]) >= y_lower) & (np.arange(detail_req_mask.shape[0]) <= y_upper)
@@ -160,9 +160,14 @@ for file in os.listdir("Trial-AI-Base-Images"):
 
       raw_path_coords_centered = slic.shift_contours([raw_path_coords], crop[0][0], crop[0][1])[0]
 
+      # flipped_coords_nd = np.array(raw_path_coords_centered)
+      # flipped_coords_nd[:, 0] = outer_edges.shape[0] - 1 - flipped_coords_nd[:, 0]
+      # flipped_coords = flipped_coords_nd.tolist()  # Flip y-coordinates
+
       y_coords, x_coords = zip(*raw_path_coords_centered)  # Unzip the coordinates
 
       plt.plot(x_coords, y_coords, marker='o', markersize=1)  # Plot the line with markers
+      plt.gca().invert_yaxis()
       plt.xlabel("X-coordinate")
       plt.ylabel("Y-coordinate")
       plt.title("Line Plot of Coordinates")
