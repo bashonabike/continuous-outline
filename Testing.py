@@ -1,21 +1,21 @@
 import os
 import cv2
-from skimage.segmentation import mark_boundaries
+# from skimage.segmentation import mark_boundaries
 from skimage.util import img_as_float
 import numpy as np
 import time
-import svgwrite as svg
+# import svgwrite as svg
 import matplotlib.pyplot as plt
 from datetime import date
 
 from helpers.mazify.MazeAgent import MazeAgent
 import helpers.edge_detect.SLIC_Segmentation as slic
-import helpers.edge_detect.edge_detection as edge
-import helpers.old_method.DrawingAgent as draw
+# import helpers.edge_detect.edge_detection as edge
+# import helpers.old_method.DrawingAgent as draw
 import helpers.Enums as Enums
-import helpers.old_method.ParsePathsIntoObjects as parse
-from helpers.old_method import TourConstraints as constr
-import helpers.old_method.NodeSet as NodeSet
+# import helpers.old_method.ParsePathsIntoObjects as parse
+# from helpers.old_method import TourConstraints as constr
+# import helpers.old_method.NodeSet as NodeSet
 from helpers.mazify.MazeSections import MazeSections, MazeSection
 import helpers.mazify.temp_options as options
 
@@ -76,8 +76,9 @@ def draw_object_node_path(image, object_path, color=(0, 0, 255), thickness=2):
 
 for file in os.listdir("Trial-AI-Base-Images"):
     if file.endswith(".jpg") or file.endswith(".png"):
+      start_pre = time.time_ns()
       image_path = os.path.join("Trial-AI-Base-Images", file)
-      postedge, split_contours = edge.detect_edges(image_path)
+      # postedge, split_contours = edge.detect_edges(image_path)
 
       #TODO: maybe just run edge detect on details regions spec by user
       #use SLIC  for tracing, maybe build agent so it follows line lke maze then jumps to next as needed
@@ -117,7 +118,7 @@ for file in os.listdir("Trial-AI-Base-Images"):
                                                                                           num_segments=options.slic_regions,
                                                                                           enforce_connectivity=False,
                                                                                           contour_offset = len(outer_contours_yx))
-
+      start = time.time_ns()
       crop = (tuple([min(o, c) for o, c in zip(bounds_outer[0], bounds_inner[0])]),
               tuple([max(o, c) for o, c in zip(bounds_outer[1], bounds_inner[1])]))
 
@@ -131,6 +132,11 @@ for file in os.listdir("Trial-AI-Base-Images"):
       # transition_nodes = slic.find_transition_nodes(segments)
       #
       edges_show = edges.astype(np.uint8) * 255
+      end = time.time_ns()
+      print(str((end - start)/1e6) + " ms to do crop stuff")
+
+      end_pre = time.time_ns()
+      print(str((end_pre - start_pre)/1e6) + " ms to do all pre-processing")
       # cv2.imshow("outer", outer_edges.astype(np.uint8) * 255)
       cv2.imshow("inner", inner_edges.astype(np.uint8) * 255)
       # cv2.imshow("outer", outer_edges.astype(np.uint8) * 255)

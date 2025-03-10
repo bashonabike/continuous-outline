@@ -3,7 +3,7 @@ from logging import exception
 import itertools
 import numpy as np
 from scipy.spatial import ConvexHull
-from PIL import Image
+# from PIL import Image
 import matplotlib.pyplot as plt
 import time
 from scipy.signal import convolve2d
@@ -208,16 +208,19 @@ class MazeAgent:
                                          p['outer_in_tracker'].section.coords_sec, p['focus_in_section'].coords_sec,
                                                   weight='weight')[:-1])
 
-            focus_end1, focus_end2 = self.find_maximal_quadrilateral_optimized(p['focus_sections'],
-                                                                   p['focus_in_section'].coords_sec,
-                                                                   p['focus_out_section'].coords_sec)
+            # focus_poly_points = self.find_maximal_quadrilateral_optimized(p['focus_sections'],
+            #                                                        p['focus_in_section'].coords_sec,
+            #                                                        p['focus_out_section'].coords_sec)
 
-            sections_nodes_path.extend(nx.shortest_path(self.maze_sections.path_graph, p['focus_in_section'].coords_sec,
-                                    focus_end1, weight='weight')[:-1])
-            sections_nodes_path.extend(nx.shortest_path(self.maze_sections.path_graph, focus_end1, focus_end2,
-                                                  weight='weight')[:-1])
-            sections_nodes_path.extend(nx.shortest_path(self.maze_sections.path_graph, focus_end2,
-                                                  p['focus_out_section'].coords_sec, weight='weight')[:-1])
+            focus_poly_points = self.find_maximal_polygon_optimized(p['focus_sections'],
+                                                                   p['focus_in_section'].coords_sec,
+                                                                   p['focus_out_section'].coords_sec,
+                                                                    options.snake_details_polygon_faces)
+            for h in range(len(focus_poly_points) - 1):
+                sections_nodes_path.extend(
+                    nx.shortest_path(self.maze_sections.path_graph, focus_poly_points[h], focus_poly_points[h + 1],
+                                     weight='weight')[:-1])
+
             #NOTE: we want to include the last node this time, do not discount
             sections_nodes_path.extend(nx.shortest_path(self.maze_sections.path_graph, p['focus_out_section'].coords_sec,
                                                   p['outer_out_tracker'].section.coords_sec, weight='weight')[:])
@@ -238,7 +241,7 @@ class MazeAgent:
         jump_path = False
         prev_sect, cur_sect, next_sect = None, None, None
         cur_tracker = None
-        cur_tracker_idx = 0
+        cur_tracker_idx = -1
         path_rev = False
         inflection_out = None
         for i in range(len(sections_nodes_path)):
@@ -252,18 +255,26 @@ class MazeAgent:
                 if inflection_out is not None:
                     cur_tracker_idx = inflection_out['tracker_path_idx']
                 else:
-                    cur_tracker_idx = 0
+                    cur_tracker_idx = -1
                 inflection_out = None
                 cur_tracker = self.all_contours_objects[cur_sect[2] - 1].section_tracker[cur_sect[3]]
                 if next_sect is not None and len(next_sect) == 4:
-                #Tracker identified, check if prev sect lines up
-                    if next_sect[2] != cur_sect[2] or abs(next_sect[3] - cur_sect[3]) != 1:
+                    #Tracker identified, check if prev sect lines up
+                    trackers_in_path = len(cur_tracker.path.section_tracker)
+                    if (next_sect[2] != cur_sect[2] or cur_sect[3] not in
+                        ((next_sect[3] + 1)%trackers_in_path, (next_sect[3] - 1)%trackers_in_path)):
                         raise exception("Something screwy with tracking")
-                    path_rev = next_sect[3] < cur_sect[3]
+                    path_rev = (cur_sect[3] - 1)%trackers_in_path == next_sect[3]
                     if path_rev:
-                        nodes_path.extend(list(reversed(cur_tracker.nodes[:cur_tracker_idx + 1])))
+                        if cur_tracker_idx == -1:
+                            nodes_path.extend(list(reversed(cur_tracker.nodes)))
+                        else:
+                            nodes_path.extend(list(reversed(cur_tracker.nodes[:cur_tracker_idx + 1])))
                     else:
-                        nodes_path.extend(cur_tracker.nodes[cur_tracker_idx:])
+                        if cur_tracker_idx == -1:
+                            nodes_path.extend(cur_tracker.nodes)
+                        else:
+                            nodes_path.extend(cur_tracker.nodes[cur_tracker_idx:])
                 elif next_sect is not None:
                     #Entering into the abyss, look for next insersection
                     next_trackerized_sect, sections_path_idx = None, -1
@@ -282,19 +293,47 @@ class MazeAgent:
                                                                             next_tracker.nodes,
                                                                             retrieve_idxs=True))
                             if path_rev:
-                                nodes_path.extend(list(reversed(cur_tracker.nodes[inflec_nodes[0]:cur_tracker_idx + 1])))
+                                if cur_tracker_idx == -1:
+                                    nodes_path.extend(list(reversed(cur_tracker.nodes[inflec_nodes[0]:])))
+                                else:
+                                    nodes_path.extend(list(reversed(cur_tracker.nodes[inflec_nodes[0]:cur_tracker_idx + 1])))
                             else:
-                                nodes_path.extend(cur_tracker.nodes[cur_tracker_idx:inflec_nodes[0] + 1])
+                                if cur_tracker_idx == -1:
+                                    nodes_path.extend(cur_tracker.nodes[:inflec_nodes[0]:])
+                                else:
+                                    nodes_path.extend(cur_tracker.nodes[cur_tracker_idx:inflec_nodes[0] + 1])
 
                             inflection_out = {"sections_path_idx": sections_path_idx, "tracker_path_idx": inflec_nodes[1]}
 
-                            #TODO: Figure out something more graceful when dupl trackers
+                        else:
+                            midpoint = len(cur_tracker.nodes)//2
+                            if path_rev:
+                                if cur_tracker_idx == -1:
+                                    nodes_path.extend(list(reversed(cur_tracker.nodes[midpoint:])))
+                                else:
+                                    if midpoint >= cur_tracker_idx: midpoint = max(0, cur_tracker_idx - 1)
+                                    nodes_path.extend(list(reversed(cur_tracker.nodes[midpoint:cur_tracker_idx + 1])))
+                            else:
+                                if cur_tracker_idx == -1:
+                                    nodes_path.extend(cur_tracker.nodes[:midpoint])
+                                else:
+                                    if midpoint <= cur_tracker_idx: midpoint = min(len(cur_tracker.nodes) - 1,
+                                                                                   cur_tracker_idx + 1)
+                                    nodes_path.extend(cur_tracker.nodes[cur_tracker_idx:midpoint + 1])
+
+                            inflection_out = {"sections_path_idx": sections_path_idx, "tracker_path_idx": midpoint}
                 else:
                     #Run out the last section
                     if path_rev:
-                        nodes_path.extend(list(reversed(cur_tracker.nodes[:cur_tracker_idx + 1])))
+                        if cur_tracker_idx == -1:
+                            nodes_path.extend(list(reversed(cur_tracker.nodes)))
+                        else:
+                            nodes_path.extend(list(reversed(cur_tracker.nodes[:cur_tracker_idx + 1])))
                     else:
-                        nodes_path.extend(cur_tracker.nodes[cur_tracker_idx:])
+                        if cur_tracker_idx == -1:
+                            nodes_path.extend(cur_tracker.nodes)
+                        else:
+                            nodes_path.extend(cur_tracker.nodes[cur_tracker_idx:])
 
                 #MAKE SURE set dir when non tracker (shouldn't be issue but maybe check)
 
@@ -322,7 +361,72 @@ class MazeAgent:
                 max_end1 = tuple(end1)
                 max_end2 = tuple(end2)
 
-        return max_end1, max_end2
+        return [start1, max_end1, max_end2, start2]
+
+    def find_maximal_polygon_optimized(self, coords, start1, start2, faces):
+        coords_s = set([tuple(row) for row in coords])
+        coords_s.remove(start1)
+        coords_s.remove(start2)
+        coords_array = np.array(list(coords_s))
+
+        hull = ConvexHull(coords_array)
+        hull_points = coords_array[hull.vertices]
+
+        max_area = 0
+        largest_polygon_nd = None
+        start1_nd, start2_nd = np.array(start1), np.array(start2)
+
+        for combination in itertools.combinations(hull_points, faces - 2):
+            polygon_points = list(combination) + [start1_nd, start2_nd]
+            for poly_perm in itertools.permutations(polygon_points):
+                poly_perm_nd = np.array(poly_perm)
+                # check that the start points are next to one another.
+                matches = np.all(poly_perm_nd == start1_nd, axis=1)
+                start1_index = np.where(matches)[0]
+                matches = np.all(poly_perm_nd == start2_nd, axis=1)
+                start2_index = np.where(matches)[0]
+
+                # start1_index, start2_index = -1, -1
+                # for i in range(len(poly_perm)):
+                #     if np.array_equal(poly_perm[i], start1_nd): start1_index = i
+                #     elif np.array_equal(poly_perm[i], start2_nd): start2_index = i
+                #     if start1_index > -1 and start2_index > -1: break
+                # start1_index = poly_perm.index(start1_nd)
+                # start2_index = poly_perm.index(start2_nd)
+
+                if abs(start1_index - start2_index) == 1 or abs(start1_index - start2_index) == faces - 1:
+
+                    area = self.calculate_polygon_area(poly_perm)
+                    if area > max_area:
+                        max_area = area
+                        largest_polygon_nd = poly_perm_nd
+
+        if largest_polygon_nd is None:
+            return None
+
+        # Reorder the largest polygon to start from start1 and end with start2
+        matches = np.all(largest_polygon_nd == start1_nd, axis=1)
+        start1_index = np.where(matches)[0][0]
+        matches = np.all(largest_polygon_nd == start2_nd, axis=1)
+        start2_index = np.where(matches)[0][0]
+        largest_polygon = largest_polygon_nd.tolist()
+
+        #Flip around, we need start2 in front to bring around to end of tour
+        if (start1_index + 1)%faces == start2_index:
+            largest_polygon = list(reversed(largest_polygon))
+            start1_index = faces - 1 - start1_index
+            start2_index = faces - 1 - start2_index
+
+        ordered_polygon = largest_polygon[start1_index:] + largest_polygon[:start1_index]
+
+        return [tuple(p) for p in ordered_polygon]
+
+    def calculate_polygon_area(self, points):
+        """Calculates the area of a polygon using the shoelace formula."""
+        points = np.array(points)
+        x = points[:, 0]
+        y = points[:, 1]
+        return 0.5 * np.abs(np.sum(x[:-1] * y[1:] - y[:-1] * x[1:]) + x[-1] * y[0] - y[-1] * x[0])
 
     def calculate_quadrilateral_area(self, p1, p2, p3, p4):
         """

@@ -9,6 +9,7 @@ import math
 import matplotlib.pyplot as plt
 # from shapely.geometry import LineString
 # from simplification.cutil import simplify_coords
+import time
 
 import helpers.mazify.temp_options as options
 
@@ -77,6 +78,7 @@ def mask_test_boundaries(img_path, split_contours):
 	return find_contours_near_boundaries(split_contours, mask, tolerance=2), mask
 
 def mask_boundary_edges(img_path):
+	start = time.time_ns()
 	#NOTE: only work PNG with transparent bg, or where background is all white
 	img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
 	mask = None
@@ -150,11 +152,14 @@ def mask_boundary_edges(img_path):
 
 		flipped_contours.append(cur_contour)
 
+	end = time.time_ns()
+	print(str((end - start)/1e6) + " ms to do mask stuff")
 	return edges_final, flipped_contours,  mask, ((min_y, min_x), (max_y, max_x))
 
 def slic_image_boundary_edges(im_float, num_segments:int =2, enforce_connectivity:bool = True, contour_offset = 0):
 	segments = None
 	num_segs_actual = -1
+	start = time.time_ns()
 	for num_segs in range(num_segments, num_segments+20):
 		segments_trial = slic(im_float, n_segments=num_segs, sigma=5, enforce_connectivity=enforce_connectivity)
 		if np.max(segments_trial) > 1:
@@ -162,8 +167,11 @@ def slic_image_boundary_edges(im_float, num_segments:int =2, enforce_connectivit
 			num_segs_actual = num_segs
 			break
 	if segments is None: raise Exception("Segmentation failed, image too disparate for outlining")
+	end = time.time_ns()
+	print(str((end - start)/1e6) + " ms to segment image with " + str(num_segs_actual) + " segments")
 
 	#Determine contours
+	start = time.time_ns()
 	contours = []
 	for segment_val in range(1, np.max(segments)+1):
 		finder = np.where(segments == segment_val, 255, 0).astype(np.uint8)
@@ -178,6 +186,8 @@ def slic_image_boundary_edges(im_float, num_segments:int =2, enforce_connectivit
 		cv2.drawContours(edges, contours, contour_idx, (contour_idx + 1 + contour_offset,
 														contour_idx + 1 + contour_offset,
 														contour_idx + 1 + contour_offset))
+	end = time.time_ns()
+	print(str((end - start)/1e6) + " ms to find contours with " + str(len(contours)) + " contours")
 
 	#Wipe outside edge, false contours
 	perimeter_mask = np.zeros_like(edges, dtype=bool)

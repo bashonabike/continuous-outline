@@ -1,7 +1,7 @@
 import numpy as np
-from scipy.signal import convolve2d
+# from scipy.signal import convolve2d
 import networkx as nx
-import copy as cp
+# import copy as cp
 
 import helpers.mazify.temp_options as options
 from helpers.mazify.EdgeNode import EdgeNode
