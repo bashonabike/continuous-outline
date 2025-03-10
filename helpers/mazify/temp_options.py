@@ -21,12 +21,15 @@ dir_smoothing_size, dir_smoothing_sigma = 21, 2.0
 dumb_node_optional_weight = 1
 dumb_node_min_opt_weight_reduced = 1
 dumb_node_blank_weight = 200
+dumb_node_jump_weight = 5
 dumb_node_required_weight = 1
 
 section_tracker_max_walk = 20
 
 outer_contour_length_cutoff = 200
 inner_contour_length_cutoff = 160
+
+snake_trace_max_jump_from_outer = 4
 
 
 #CALCULATED DO NOT TOUCH!!

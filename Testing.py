@@ -133,7 +133,7 @@ for file in os.listdir("Trial-AI-Base-Images"):
       edges_show = edges.astype(np.uint8) * 255
       # cv2.imshow("outer", outer_edges.astype(np.uint8) * 255)
       # cv2.imshow("inner", inner_edges.astype(np.uint8) * 255)
-      cv2.imshow("all", edges_show)
+      cv2.imshow("outer", outer_edges.astype(np.uint8) * 255)
       # cv2.imshow("nodes", transition_nodes.astype(np.uint8) * 255)
       cv2.waitKey(0)
 
@@ -150,11 +150,14 @@ for file in os.listdir("Trial-AI-Base-Images"):
       detail_req_mask[y_mask_2d & x_mask_2d] = True
 
       maze_sections = MazeSections(outer_edges_cropped, options.maze_sections_across, options.maze_sections_across,
-                                   detail_req_mask)
+                                   [detail_req_mask])
 
       maze_agent = MazeAgent(outer_edges_cropped, outer_contours_yx_cropped, inner_edges_cropped,
                              inner_contours_yx_cropped, maze_sections)
-      raw_path_coords = maze_agent.run_round_dumb(image_path)
+
+      # raw_path_coords = maze_agent.run_round_dumb(image_path)
+      raw_path_coords =  maze_agent.run_round_trace(Enums.TraceTechnique.snake)
+
       raw_path_coords_centered = slic.shift_contours([raw_path_coords], crop[0][0], crop[0][1])[0]
 
       y_coords, x_coords = zip(*raw_path_coords_centered)  # Unzip the coordinates

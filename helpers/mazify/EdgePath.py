@@ -76,7 +76,11 @@ class EdgePath:
                     maze_sections.path_graph.add_edge(prev_graph_node, cur_graph_node, weight=edge_weight)
 
                 maze_sections.path_graph.add_edge(cur_graph_node, (cur_section.y_sec, cur_section.x_sec),
-                                                      weight=options.dumb_node_blank_weight)
+                                                      weight=options.dumb_node_jump_weight)
+                if is_outer or cur_section.focus_region:
+                    cur_section.dumb_req = True
+                else:
+                    cur_section.dumb_opt = True
 
                 prev_tracker = cur_tracker
                 prev_section = cur_section

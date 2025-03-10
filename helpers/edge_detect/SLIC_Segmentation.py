@@ -114,6 +114,7 @@ def mask_boundary_edges(img_path):
 	#Set final contours contours on blank coded for reference
 	final_contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 	final_contours = [c for c in final_contours if len(c) > options.outer_contour_length_cutoff]
+	final_contours.sort(key=len, reverse=True)
 	edges_final = np.zeros_like(edges).astype(np.uint16)
 	for contour_idx in range(len(final_contours)):
 		cv2.drawContours(edges_final, final_contours, contour_idx, (contour_idx + 1, contour_idx + 1,

@@ -16,6 +16,7 @@ class MazeSections:
         self.sections_satisfied_pct = 0.0
         self.sections, self.section_indices_list, self.y_grade, self.x_grade = (
             self.count_true_pixels_in_sections(outer_edge, m, n, req_details_mask))
+        self.focus_region_sections = []
         # self.dumb_nodes, self.dumb_nodes_req, self.dumb_nodes_opt, self.dumb_opt_node_start = (
         #     np.zeros((m, n), dtype=list), np.zeros((m, n), dtype=list), np.zeros((m, n), dtype=list), -1)
         self.dumb_opt_node_start = -1
@@ -35,7 +36,7 @@ class MazeSections:
         self.edge_connections = []
 
         self.path_graph = nx.Graph()
-        self.set_section_jumps_in_graph()
+        self.set_section_blank_overs_in_graph()
 
     def update_saturation(self):
         self.sections_satisfied += 1
@@ -53,16 +54,11 @@ class MazeSections:
                 options.dumb_node_blank_weight*np.abs(i_indices // options.maze_sections_across -
                                                       j_indices // options.maze_sections_across))
 
-    def set_section_jumps_in_graph(self):
+    def set_section_blank_overs_in_graph(self):
         #Set sections as nodes into graph
         for i in range(self.m):
             for j in range(self.n):
-                if self.sections[i, j].dumb_req:
-                    self.path_graph.add_node((i, j), category=NodeType.section_req)
-                elif self.sections[i, j].dumb_opt:
-                    self.path_graph.add_node((i, j), category=NodeType.section_opt)
-                else:
-                    self.path_graph.add_node((i, j), category=NodeType.section_blank)
+                self.path_graph.add_node((i, j))
 
         #Set jumps as edges into graph
         for i in range(self.m):
@@ -81,7 +77,19 @@ class MazeSections:
                         if not self.path_graph.has_edge(current_node, neighbor_node):
                             self.path_graph.add_edge(current_node, neighbor_node, weight=options.dumb_node_blank_weight)
 
+    def set_section_node_cats(self):
+        for i in range(self.m):
+            for j in range(self.n):
+                if self.sections[i, j].dumb_req:
+                    self.path_graph.nodes[(i, j)]['category'] = NodeType.section_req
+                elif self.sections[i, j].dumb_opt:
+                    self.path_graph.nodes[(i, j)]['category'] = NodeType.section_opt
+                else:
+                    self.path_graph.nodes[(i, j)]['category'] = NodeType.section_blank
 
+        for i in range(len(self.focus_region_sections)):
+            self.focus_region_sections[i] = [s for s in self.focus_region_sections[i] if s is not None
+                                             and (s.dumb_req or s.dumb_opt)]
 
     def set_dumb_nodes(self):
 
@@ -114,7 +122,7 @@ class MazeSections:
                     opt_count += 1
 
 
-    def count_true_pixels_in_sections(self, boolean_image, m, n, req_details_mask:np.ndarray):
+    def count_true_pixels_in_sections(self, boolean_image, m, n, req_details_masks:list[np.ndarray]):
         """
         Breaks a boolean image into m x n rectangular sections and counts the number of
         True pixels in each section.
@@ -140,6 +148,8 @@ class MazeSections:
         sections = np.zeros((m, n), dtype=MazeSection)
         section_indices_list = []
 
+        self.focus_region_sections = [[] for _ in range(len(req_details_masks))]
+
         for i in range(m):
             for j in range(n):
                 # Calculate section boundaries, handling remainders
@@ -156,10 +166,15 @@ class MazeSections:
                 count = np.count_nonzero(section)
 
                 #Check if in details req
-                req_section = req_details_mask[y_start:y_end, x_start:x_end]
-                dumb_req = np.any(req_section)
+                focus_region_nums = []
+                for i in range(len(req_details_masks)):
+                    req_section = req_details_masks[i][y_start:y_end, x_start:x_end]
+                    if np.any(req_section):
+                        focus_region_nums.append(i)
 
-                sections[i, j] = MazeSection(self, (y_start, y_end, x_start, x_end), count, i, j, dumb_req)
+                sections[i, j] = MazeSection(self, (y_start, y_end, x_start, x_end), count, i, j,
+                                             len(focus_region_nums) > 0, focus_region_nums)
+                for i in focus_region_nums: self.focus_region_sections[i].append(sections[i, j])
 
         return sections, section_indices_list, section_height, section_width
 
@@ -170,9 +185,10 @@ class MazeSections:
         return min(y // self.y_grade, self.m - 1), min(x // self.x_grade, self.n - 1)
 
 class MazeSection:
-    def __init__(self, parent:MazeSections, bounds, edge_pixels, y_sec, x_sec, focus_region):
+    def __init__(self, parent:MazeSections, bounds, edge_pixels, y_sec, x_sec, focus_region, focus_region_nums=None):
         (self.ymin, self.ymax, self.xmin, self.xmax) = bounds
         self.y_sec, self.x_sec = y_sec, x_sec
+        self.coords_sec = (y_sec, x_sec)
         self.edge_pixels = edge_pixels
         self.attraction = 100.0
         self.nodes, self.outer_nodes = [], []
@@ -184,6 +200,7 @@ class MazeSection:
         self.attraction = 100.0
 
         self.focus_region = focus_region
+        self.focus_region_nums = focus_region_nums
         self.dumb_req = False
         self.dumb_opt = False
 

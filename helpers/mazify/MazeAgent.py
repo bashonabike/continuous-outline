@@ -1,22 +1,24 @@
 import math
 from logging import exception
-
+import itertools
 import numpy as np
+from scipy.spatial import ConvexHull
 from PIL import Image
 import matplotlib.pyplot as plt
 import time
 from scipy.signal import convolve2d
 import pandas as pd
+import networkx as nx
 
 import helpers.mazify.temp_options as options
 import helpers.mazify.MazeAgentHelpers as helpers
 import helpers.mazify.NetworkInputs as inputs
 import helpers.mazify.MazeSections as sections
 import helpers.mazify.TestGetDirection as getdir
-from helpers.Enums import CompassType, CompassDir
+from helpers.Enums import CompassType, CompassDir, TraceTechnique
 from helpers.mazify.EdgePath import EdgePath
 from helpers.mazify.EdgeNode import EdgeNode
-import helpers.mazify.ShortestPathCoverage as shorty
+# import helpers.mazify.ShortestPathCoverage as shorty
 
 class MazeAgent:
     def __init__(self, outer_edges, outer_contours, inner_edges, inner_contours,
@@ -49,9 +51,8 @@ class MazeAgent:
 
         #TODO: If still iffy jumping, Maybe tweak weights, apply over rough dist calc if better route, add path too
 
-        self.maze_sections.set_dumb_nodes()
-
-
+        # self.maze_sections.set_dumb_nodes()
+        self.maze_sections.set_section_node_cats()
 
         self.dims = (outer_edges.shape[0], outer_edges.shape[1])
         self.helper = helpers.MazeAgentHelpers()
@@ -126,18 +127,32 @@ class MazeAgent:
         plt.axis('off')  # Turn off axis labels and ticks
         plt.show(block=True)
 
+    def run_round_trace(self, technique:TraceTechnique):
+        match technique:
+            case TraceTechnique.snake:
+                self.find_trace_section_tour_snake()
+
+            case TraceTechnique.typewriter:
+                return []
+            case _:
+                return []
+
     def run_round_dumb(self, im_orig_path):
         self.start_node, cur_point, cur_section = self.find_start_node()
         self.end_node, end_point, end_section = self.find_end_node(self.start_node)
 
-        section_path = shorty.find_shortest_path_with_coverage(self.maze_sections.dumb_nodes_weighted,
-                                                            self.maze_sections.dumb_nodes_req,
-                                                            (cur_section.y_sec, cur_section.x_sec),
-                                                            (end_section.y_sec, end_section.x_sec))
+        # section_path = shorty.find_shortest_path_with_coverage(self.maze_sections.dumb_nodes_weighted,
+        #                                                     self.maze_sections.dumb_nodes_req,
+        #                                                     (cur_section.y_sec, cur_section.x_sec),
+        #                                                     (end_section.y_sec, end_section.x_sec))
 
-        raw_path = self.draw_raw_path(section_path)
-        raw_path_coords = [n.point for n in raw_path]
-        return raw_path_coords
+        # raw_path = self.draw_raw_path(section_path)
+        # raw_path_coords = [n.point for n in raw_path]
+        # return raw_path_coords
+
+
+
+
         # self.set_direction_vectors()
         # self.set_compasses(on_edge=True)
         # self.prev_direction, _ = getdir.get_direction(self.network_inputs, on_edge=True)
@@ -153,6 +168,175 @@ class MazeAgent:
         #         #TODO: Configure with staying power factored in
         #         self.cur_node = self.check_intersect_edge_update_point(direction)
         #     self.plot_path(self.path, image) #TEMPPP
+
+    def find_trace_section_tour_snake(self):
+        #TODO: Implement this, need to wrap around
+        #Find start track
+        # start_node, cur_point, cur_section = self.find_start_node()
+
+        #Find inflection points for each detail chunk
+        outer_path = self.all_contours_objects[0].section_tracker
+        outer_coords = np.array([t.section.coords_sec for t in outer_path])
+        inflection_points = []
+        for focus_region in self.maze_sections.focus_region_sections:
+            sections_coords = np.array([s.coords_sec for s in focus_region])
+            closest_indices_outer, closest_indices_focus, closest_pairings_outer, closest_pairings_focus = (
+                self.find_focus_region_incision_point(outer_coords, sections_coords))
+            inflection_points.append({"outer_index_midpoint": sum(closest_indices_outer)//2,
+                                      "outer_in_index": closest_indices_outer[0],
+                                      "outer_out_index": closest_indices_outer[1],
+                                      "outer_in_tracker": outer_path[closest_indices_outer[0]],
+                                      "focus_in_section": focus_region[closest_indices_focus[0]],
+                                      "outer_out_tracker": outer_path[closest_indices_outer[1]],
+                                      "focus_out_section": focus_region[closest_indices_focus[0]],
+                                      "focus_sections": sections_coords})
+
+        inflection_points.sort(key=lambda p: p['outer_index_midpoint'])
+        prev_out_idx = -1
+        for p in inflection_points:
+            if p['outer_in_index'] <= prev_out_idx: raise exception("Overlapping focus regions, investigate")
+            prev_out_idx = p['outer_out_index']
+
+        #Figure out best path for each details chunk
+        sections_nodes_path = []
+        prev_point_idx = 0
+        for p in inflection_points:
+            sections_nodes_path.extend([(t.section.coords_sec[0], t.section.coords_sec[1], t.path_num, t.tracker_num)
+                                        for t in outer_path[prev_point_idx:p['outer_in_index']]])
+
+            sections_nodes_path.extend(nx.shortest_path(self.maze_sections.path_graph,
+                                         p['outer_in_tracker'].section.coords_sec, p['focus_in_section'].coords_sec,
+                                                  weight='weight')[:-1])
+
+            focus_end1, focus_end2 = self.find_maximal_quadrilateral_optimized(p['focus_sections'],
+                                                                   p['focus_in_section'].coords_sec,
+                                                                   p['focus_out_section'].coords_sec)
+
+            sections_nodes_path.extend(nx.shortest_path(self.maze_sections.path_graph, p['focus_in_section'].coords_sec,
+                                    focus_end1, weight='weight')[:-1])
+            sections_nodes_path.extend(nx.shortest_path(self.maze_sections.path_graph, focus_end1, focus_end2,
+                                                  weight='weight')[:-1])
+            sections_nodes_path.extend(nx.shortest_path(self.maze_sections.path_graph, focus_end2,
+                                                  p['focus_out_section'].coords_sec, weight='weight')[:-1])
+            sections_nodes_path.extend(nx.shortest_path(self.maze_sections.path_graph, p['focus_out_section'].coords_sec,
+                                                  p['outer_out_tracker'].section.coords_sec, weight='weight')[:-1])
+
+            prev_point_idx = p['outer_out_index']
+
+        #NOTE: we want to include the last node this time, do not discount
+        sections_nodes_path.extend([(t.section.coords_sec[0], t.section.coords_sec[1], t.path_num, t.tracker_num)
+                                    for t in outer_path[prev_point_idx:len(outer_path)]])
+
+        #Trace path from tracker path
+        nodes_path = self.set_node_path_from_sec_path(sections_nodes_path)
+        raw_path_coords = [n.point for n in nodes_path]
+        return raw_path_coords
+
+    def set_node_path_from_sec_path(self, sections_nodes_path):
+        nodes_path = []
+        jump_path = False
+        prev_sect, cur_sect, next_sect = None, None, None
+        cur_tracker = None
+        cur_tracker_idx = 0
+        path_rev = False
+        inflection_out = None
+        for i in range(len(sections_nodes_path)):
+            cur_sect = sections_nodes_path[i]
+            if i < len(sections_nodes_path) - 1: next_sect = sections_nodes_path[i + 1]
+
+            if len(cur_sect) == 4:
+                if inflection_out is not None:
+                    cur_tracker_idx = inflection_out['sections_path_idx']
+                else:
+                    cur_tracker_idx = 0
+                inflection_out = None
+                cur_tracker = self.all_contours_objects[cur_sect[2]].section_tracker[cur_sect[3]]
+                if next_sect is not None and len(next_sect) == 4:
+                #Tracker identified, check if prev sect lines up
+                    if next_sect[2] != cur_sect[2] or abs(next_sect[3] - cur_sect[3]) != 1:
+                        raise exception("Something screwy with tracking")
+                    path_rev = next_sect[3] < cur_sect[3]
+                    if path_rev:
+                        nodes_path.extend(list(reversed(cur_tracker.path[:cur_tracker_idx + 1])))
+                    else:
+                        nodes_path.extend(cur_tracker.path[cur_tracker_idx:])
+                elif next_sect is not None:
+                    #Entering into the abyss, look for next insersection
+                    next_trackerized_sect, sections_path_idx = None, -1
+                    for j in range(i + 2, len(sections_nodes_path)):
+                        if len(sections_nodes_path[j]) == 4:
+                            next_trackerized_sect = sections_nodes_path[j]
+                            sections_path_idx = j
+                            break
+
+                    if next_trackerized_sect is not None:
+                        #Find best intersection point
+                        inflec_nodes = list(self.find_inflection_points(cur_tracker.path, next_trackerized_sect.path,
+                                                                        retrieve_idxs=True))
+                        if path_rev:
+                            nodes_path.extend(list(reversed(cur_tracker.path[inflec_nodes[0]:cur_tracker_idx + 1])))
+                        else:
+                            nodes_path.extend(cur_tracker.path[cur_tracker_idx:inflec_nodes[0] + 1])
+
+                        inflection_out = {"sections_path_idx": sections_path_idx, "path_idx": inflec_nodes[1]}
+                else:
+                    #Run out the last section
+                    if path_rev:
+                        nodes_path.extend(list(reversed(cur_tracker.path[:cur_tracker_idx + 1])))
+                    else:
+                        nodes_path.extend(cur_tracker.path[cur_tracker_idx:])
+
+                #MAKE SURE set dir when non tracker (shouldn't be issue but maybe check)
+
+            prev_sect = cur_sect
+
+        return nodes_path
+
+    def find_maximal_quadrilateral_optimized(self, coords, start1, start2):
+        coords = set(coords)
+        coords.remove(start1)
+        coords.remove(start2)
+        coords_array = np.array(list(coords))
+
+        hull = ConvexHull(coords_array)
+        hull_points = coords_array[hull.vertices]
+
+        max_area = 0
+        max_end1 = None
+        max_end2 = None
+
+        for end1, end2 in itertools.permutations(hull_points, 2):
+            area = self.calculate_quadrilateral_area(start1, tuple(end1), tuple(end2), start2)
+            if area > max_area:
+                max_area = area
+                max_end1 = tuple(end1)
+                max_end2 = tuple(end2)
+
+        return max_end1, max_end2
+
+    def calculate_quadrilateral_area(self, p1, p2, p3, p4):
+        """
+        Calculates the area of a quadrilateral using the shoelace formula.
+
+        Args:
+            p1: Tuple (y, x) of vertex 1.
+            p2: Tuple (y, x) of vertex 2.
+            p3: Tuple (y, x) of vertex 3.
+            p4: Tuple (y, x) of vertex 4.
+
+        Returns:
+            The area of the quadrilateral.
+        """
+        p1 = np.array(p1)
+        p2 = np.array(p2)
+        p3 = np.array(p3)
+        p4 = np.array(p4)
+
+        area = 0.5 * abs(
+            (p1[0] * p2[1] + p2[0] * p3[1] + p3[0] * p4[1] + p4[0] * p1[1]) -
+            (p1[1] * p2[0] + p2[1] * p3[0] + p3[1] * p4[0] + p4[1] * p1[0])
+        )
+        return area
 
     def update_distances_by_contour(self):
         for path in self.all_contours_objects:
@@ -442,7 +626,7 @@ class MazeAgent:
             return None
 
 
-    def find_inflection_points(self, path_1_seg, path_2_seg):
+    def find_inflection_points(self, path_1_seg, path_2_seg, retrieve_idxs=False):
         points_1, points_2 = np.array([n.point for n in path_1_seg]), np.array([n.point for n in path_2_seg])
 
         if not points_1.size or not points_2.size:
@@ -455,7 +639,54 @@ class MazeAgent:
         min_indices = np.unravel_index(np.argmin(distances), distances.shape)
 
         # Retrieve closest points
-        return path_1_seg[min_indices[0]], path_2_seg[min_indices[1]]
+        if not retrieve_idxs:
+            return path_1_seg[min_indices[0]], path_2_seg[min_indices[1]]
+        else:
+            min_indices[0], min_indices[1]
+
+    def find_focus_region_incision_point(self, outer_sections, focus_sections):
+        """
+            Finds pairings of coords where an outer_sections coord is within a distance
+            threshold from a focus_sections coord, and finds the closest two pairings.
+
+            Args:
+                outer_sections: NumPy array of outer coordinates (n x 2).
+                focus_sections: NumPy array of focus coordinates (m x 2).
+
+            Returns:
+                A tuple: (list of pairings, closest_pair_indices)
+                    pairings: List of tuples (outer_index, focus_coord).
+                    closest_pair_indices: Tuple of two outer indices.
+            """
+
+        # Calculate all pairwise distances using broadcasting
+        distances = np.linalg.norm(outer_sections[:, None, :] - focus_sections[None, :, :], axis=2)
+
+        # Find pairings within the distance threshold
+        outer_indices, focus_indices = np.where(distances < options.snake_trace_max_jump_from_outer)
+
+        pairings = [(outer_indices[i], focus_indices[i], tuple(outer_sections[outer_indices[i]]),
+                    tuple(focus_sections[focus_indices[i]])) for i in range(len(outer_indices))]
+
+        if len(pairings) < 2:
+            return pairings, None
+
+        # Find closest pairings by outer_index difference (still requires loops)
+        min_distance = float('inf')
+        closest_indices_outer, closest_indices_focus, closest_pairings_outer, closest_pairings_focus =\
+            None, None, None, None
+
+        for i in range(len(pairings)):
+            for j in range(i + 1, len(pairings)):
+                diff = abs(pairings[i][0] - pairings[j][0])
+                if diff < min_distance:
+                    min_distance = diff
+                    closest_indices_outer = (pairings[i][0], pairings[j][0])
+                    closest_indices_focus = (pairings[i][1], pairings[j][1])
+                    closest_pairings_outer = (pairings[i][2], pairings[j][2])
+                    closest_pairings_focus = (pairings[i][3], pairings[j][3])
+
+        return closest_indices_outer, closest_indices_focus, closest_pairings_outer, closest_pairings_focus
 
 
     def find_indices(self, my_list, value):

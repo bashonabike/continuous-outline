@@ -35,3 +35,7 @@ class NodeType(Enum):
      section_blank = 3
      section_tracker_req = 4
      section_tracker_opt = 5
+
+class TraceTechnique(Enum):
+     typewriter = 1
+     snake = 2
