@@ -14,7 +14,7 @@ need_to_steer_off_edge = 2*math.pi/3
 edge_magnetism_look_ahead_sections = maze_sections_across//2
 edge_magnetism_cutoff = 0.5
 
-slic_regions = 7
+slic_regions = 12
 
 dir_smoothing_size, dir_smoothing_sigma = 21, 2.0
 
@@ -33,13 +33,17 @@ outer_contour_length_cutoff = 200
 inner_contour_length_cutoff = 20
 inner_contour_variable_weights = True #Shorter contours get higher weight, so less preferable
 
+scorched_earth = True
+scorched_earth_weight_multiplier = 2
+
 snake_trace_max_jump_from_outer = 2
 snake_details_polygon_faces = 7
 
 typewriter_lines = 9 #MUST BE AT LEAST 2!!!
 typewriter_traverse_threshold = 0.5 #Ratio of region height to typewriter line height
 
-zigzag_typewriter_lines = 4 #MUST BE AT LEAST 2!!!
+zigzag_typewriter_lines = 8 #MUST BE AT LEAST 2!!!
+zigzag_typewriter_traverse_threshold = 0.3 #Ratio of region height to typewriter line height
 
 simplify_tolerance = 0.7
 

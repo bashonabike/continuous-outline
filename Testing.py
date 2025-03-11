@@ -139,10 +139,10 @@ for file in os.listdir("Trial-AI-Base-Images"):
       end_pre = time.time_ns()
       print(str((end_pre - start_pre)/1e6) + " ms to do all pre-processing")
       # cv2.imshow("outer", outer_edges.astype(np.uint8) * 255)
-      cv2.imshow("inner", inner_edges.astype(np.uint8) * 255)
+      # cv2.imshow("inner", inner_edges.astype(np.uint8) * 255)
       # cv2.imshow("outer", outer_edges.astype(np.uint8) * 255)
       # cv2.imshow("nodes", transition_nodes.astype(np.uint8) * 255)
-      cv2.waitKey(0)
+      # cv2.waitKey(0)
 
       y_lower, y_upper, x_lower, x_upper = 400, 600, 400, 700
       detail_req_mask = np.zeros_like(outer_edges_cropped, dtype=np.bool)
@@ -163,7 +163,7 @@ for file in os.listdir("Trial-AI-Base-Images"):
                              inner_contours_yx_cropped, maze_sections)
 
       # raw_path_coords = maze_agent.run_round_dumb(image_path)
-      raw_path_coords =  maze_agent.run_round_trace(Enums.TraceTechnique.typewriter)
+      raw_path_coords =  maze_agent.run_round_trace(Enums.TraceTechnique.zigzag_typewriter)
 
       raw_path_coords_centered = slic.shift_contours([raw_path_coords], crop[0][0], crop[0][1])[0]
 

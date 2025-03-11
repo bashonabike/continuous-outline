@@ -18,6 +18,7 @@ import helpers.mazify.TestGetDirection as getdir
 from helpers.Enums import CompassType, CompassDir, TraceTechnique
 from helpers.mazify.EdgePath import EdgePath
 from helpers.mazify.EdgeNode import EdgeNode
+import helpers.mazify.NetworkxExtension as nxex
 # import helpers.mazify.ShortestPathCoverage as shorty
 
 class MazeAgent:
@@ -135,6 +136,8 @@ class MazeAgent:
                 return self.find_trace_section_tour_snake()
             case TraceTechnique.typewriter:
                 return self.find_trace_section_tour_typewriter()
+            case TraceTechnique.zigzag_typewriter:
+                return self.find_trace_section_tour_zigzag_typewriter()
             case _:
                 return []
 
@@ -205,7 +208,7 @@ class MazeAgent:
             sections_nodes_path.extend([(t.section.coords_sec[0], t.section.coords_sec[1], t.path_num, t.tracker_num)
                                         for t in outer_path[prev_point_idx:p['outer_in_index'] + 1]])
 
-            sections_nodes_path.extend(nx.shortest_path(self.maze_sections.path_graph,
+            sections_nodes_path.extend(nxex.shortest_path(self.maze_sections.path_graph,
                                          p['outer_in_tracker'].section.coords_sec, p['focus_in_section'].coords_sec,
                                                   weight='weight')[:-1])
 
@@ -215,11 +218,11 @@ class MazeAgent:
                                                                     options.snake_details_polygon_faces)
             for h in range(len(focus_poly_points) - 1):
                 sections_nodes_path.extend(
-                    nx.shortest_path(self.maze_sections.path_graph, focus_poly_points[h], focus_poly_points[h + 1],
+                    nxex.shortest_path(self.maze_sections.path_graph, focus_poly_points[h], focus_poly_points[h + 1],
                                      weight='weight')[:-1])
 
             #NOTE: we want to include the last node this time, do not discount
-            sections_nodes_path.extend(nx.shortest_path(self.maze_sections.path_graph, p['focus_out_section'].coords_sec,
+            sections_nodes_path.extend(nxex.shortest_path(self.maze_sections.path_graph, p['focus_out_section'].coords_sec,
                                                   p['outer_out_tracker'].section.coords_sec, weight='weight')[:])
 
             prev_point_idx = p['outer_out_index']
@@ -309,12 +312,107 @@ class MazeAgent:
         #Determine best path for typewriter
         section_path = []
         for t in range(len(typewriter_points_final) - 1):
-            section_path.extend(nx.shortest_path(self.maze_sections.path_graph,
+            section_path.extend(nxex.shortest_path(self.maze_sections.path_graph,
                                                  typewriter_points_final[t], typewriter_points_final[t + 1],
                              weight='weight')[:-1])
         section_path.append(typewriter_points_final[-1])
 
         #Trace path from tracker path
+        nodes_path = self.set_node_path_from_sec_path(section_path)
+        raw_path_coords = [n.point for n in nodes_path]
+        return raw_path_coords
+
+    def find_trace_section_tour_zigzag_typewriter(self):
+        # Find typewriter set points
+        outer_path = self.all_contours_objects[0].section_tracker
+        outer_sects = list(set([t.section.coords_sec for t in outer_path]))
+        typewriter_points = []
+        line_height_sects = options.maze_sections_across // (options.zigzag_typewriter_lines - 1)
+        for l in range(options.zigzag_typewriter_lines):
+            # Find line start & end points
+            left_sect = self.find_closest_sect((l * line_height_sects, 0), outer_sects)
+            right_sect = self.find_closest_sect((l * line_height_sects + line_height_sects//2,
+                                                 options.maze_sections_across - 1),
+                                                outer_sects)
+            typewriter_points.extend([left_sect, right_sect])
+
+        # Determine focus section inclusion
+        main_zigzags_straights = [[] for _ in range(2*options.zigzag_typewriter_lines)]
+        main_zigzags_subzigzags = [[] for _ in range(2*options.zigzag_typewriter_lines)]
+        for focus_region in self.maze_sections.focus_region_sections:
+            sections_coords = np.array([s.coords_sec for s in focus_region])
+
+            # Determine method of traversal
+            min_y, max_y = np.min(sections_coords[:, 0]), np.max(sections_coords[:, 0])
+            min_x, max_x = np.min(sections_coords[:, 1]), np.max(sections_coords[:, 1])
+            reg_height, reg_width = max_y - min_y, max_x - min_x
+
+            # Find closest zig or zag
+            mid_height = (max_y + min_y) // 2
+            zig_or_zag = mid_height // (line_height_sects//2)
+            is_zig, is_zag = zig_or_zag % 2 == 0, zig_or_zag % 2 == 1
+
+            if reg_height / line_height_sects < options.zigzag_typewriter_traverse_threshold:
+                # Traverse in line with typewriting,
+                right_insert, left_insert = (min_y, max_x), (max_y, min_x)
+                if is_zig:
+                    main_zigzags_straights[zig_or_zag].extend([left_insert, right_insert])
+                else:
+                    main_zigzags_straights[zig_or_zag].extend([right_insert, left_insert])
+            else:
+                # Zigzag within carriage return
+                subzigzag, section_coords_ls = [], [tuple(s) for s in sections_coords.tolist()]
+                if is_zig:
+                    left_1, right_1  = (min_y, min_x), self.find_closest_sect((min_y, max_x), section_coords_ls)
+                    left_2, right_2  = self.find_closest_sect((max_y, min_x), section_coords_ls), (max_y, max_x)
+                    subzigzag = (left_1, right_1, left_2, right_2)
+                else:
+                    right_1, left_1 = self.find_closest_sect((min_y, min_x), section_coords_ls), (min_y, max_x)
+                    right_2, left_2 = (max_y, min_x), self.find_closest_sect((max_y, max_x), section_coords_ls)
+                    subzigzag = (right_1, left_1, right_2, left_2)
+
+                # NOTE: append since need to preserve order
+                main_zigzags_subzigzags[zig_or_zag].append(subzigzag)
+
+        # Build focus regions into typewriter points
+        zigzag_typewriter_points_final = []
+        for l in range(2*options.zigzag_typewriter_lines):
+            zigzag_typewriter_points_final.extend(typewriter_points[l:l + 1])
+            straights, zigs = main_zigzags_straights[l], main_zigzags_subzigzags[l]
+            main_zigorzag_line = []
+
+            # Sort by x of leftmost desc
+            if len(straights) > 0: straights.sort(key=lambda p: p[1], reverse=True)
+            if len(zigs) > 0:
+                zigs.sort(key=lambda z: z[0][1], reverse=True)
+
+                # Determine best ordering of focus region inclusion
+                zig_ends_flat = [p for z in zigs for p in (z[0], z[-1])]
+                zigs_aug = [list(z) for z in zigs]
+                for s in straights:
+                    closest_end = self.find_closest_sect(s, zig_ends_flat, return_idx=True)
+                    zig, at_end = closest_end // 2, closest_end % 2 == 1
+                    if not at_end:
+                        zigs_aug[zig] = s + zigs_aug[zig]
+                    else:
+                        zigs_aug[zig] = zigs_aug[zig] + s
+
+                # Formulate final line
+                main_zigorzag_line = [p for z in zigs_aug for p in z]
+            elif len(straights) > 0:
+                main_zigorzag_line = straights
+
+            zigzag_typewriter_points_final.extend(main_zigorzag_line)
+
+        # Determine best path for typewriter
+        section_path = []
+        for t in range(len(zigzag_typewriter_points_final) - 1):
+            section_path.extend(nxex.shortest_path(self.maze_sections.path_graph,
+                                                 zigzag_typewriter_points_final[t], zigzag_typewriter_points_final[t + 1],
+                                                 weight='weight')[:-1])
+        section_path.append(zigzag_typewriter_points_final[-1])
+
+        # Trace path from tracker path
         nodes_path = self.set_node_path_from_sec_path(section_path)
         raw_path_coords = [n.point for n in nodes_path]
         return raw_path_coords

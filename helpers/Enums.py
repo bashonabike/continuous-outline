@@ -39,3 +39,4 @@ class NodeType(Enum):
 class TraceTechnique(Enum):
      typewriter = 1
      snake = 2
+     zigzag_typewriter = 3
