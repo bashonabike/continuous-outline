@@ -34,8 +34,10 @@ class MazeAgent:
         self.all_edges_bool, self.all_contours = (np.where(self.outer_edges + self.inner_edges > 0, True, False),
                                              self.outer_contours + self.inner_contours)
         self.all_contours_objects, self.outer_contours_objects, self.inner_contours_objects  = [], [], []
+        max_inner_contour_len = max([len(contour) for contour in self.inner_contours])
         for i in range(len(self.all_contours)):
-            new_path = EdgePath(i + 1, self.all_contours[i], maze_sections, i < len(self.outer_contours))
+            new_path = EdgePath(i + 1, self.all_contours[i], maze_sections, i < len(self.outer_contours),
+                                max_inner_contour_len)
             self.all_contours_objects.append(new_path)
             if new_path.outer: self.outer_contours_objects.append(new_path)
             else: self.inner_contours_objects.append(new_path)
@@ -345,7 +347,7 @@ class MazeAgent:
                 if next_sect is not None and len(next_sect) == 4:
                     #Tracker identified, check if prev sect lines up
                     trackers_in_path = len(cur_tracker.path.section_tracker)
-                    tracker_modulo = trackers_in_path if path_closed else 99999
+                    tracker_modulo = trackers_in_path if path_closed else 999999
                     if (next_sect[2] != cur_sect[2] or cur_sect[3] not in
                         ((next_sect[3] + 1)%tracker_modulo, (next_sect[3] - 1)%tracker_modulo)):
                         raise exception("Something screwy with tracking")

@@ -9,15 +9,24 @@ import helpers.mazify.MazeSections as sections
 from helpers.Enums import NodeType
 
 class EdgePath:
-    def __init__(self, path_num, path_raw, maze_sections: sections.MazeSections, is_outer=False):
+    def __init__(self, path_num, path_raw, maze_sections: sections.MazeSections, is_outer=False,
+                 max_inner_contour_len=0):
         self.path, self.num = [], path_num
         self.outer = is_outer
         self.closed = True #assert closed
         self.section_tracker, self.section_tracker_red_nd_doubled = [], None
-        self.parse_path(path_raw, maze_sections, is_outer)
+        if options.inner_contour_variable_weights and not is_outer and max_inner_contour_len > 0:
+            #Set custom weight based on contour length
+            custom_weight = options.dumb_node_optional_weight + ((max_inner_contour_len - len(path_raw))//
+                      (max_inner_contour_len//
+                       (options.dumb_node_optional_max_variable_weight - options.dumb_node_optional_weight + 1)))
+            self.parse_path(path_raw, maze_sections, is_outer, custom_weight)
+        else:
+            self.parse_path(path_raw, maze_sections, is_outer)
 
 
-    def parse_path(self, path, maze_sections: sections.MazeSections, is_outer=False):
+    def parse_path(self, path, maze_sections: sections.MazeSections, is_outer=False,
+                   custom_weight=0):
         #Determine explicit directions
         dys,dxs = [],[]
         for i in range(len(path)):
@@ -46,6 +55,7 @@ class EdgePath:
         prev_tracker, cur_tracker = None, None
         first_graph_node, prev_graph_node, last_graph_node = None, None, None
         edge_weight = options.dumb_node_required_weight if is_outer else options.dumb_node_optional_weight
+        if custom_weight > 0: edge_weight = custom_weight
         for i in range(len(path)):
             node = EdgeNode.EdgeNode(path[i][0], path[i][1], self, path_rev_dirs[i], path_rev_dirs_smoothed[i],
                                      path_fwd_dirs[i], path_fwd_dirs_smoothed[i], path_displs[i], is_outer)

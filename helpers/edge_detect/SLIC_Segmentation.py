@@ -223,6 +223,9 @@ def slic_image_boundary_edges(im_float, num_segments:int =2, enforce_connectivit
 
 		flipped_contours.extend(processed_contours)
 
+	flipped_contours = [c for c in flipped_contours if len(c) > options.inner_contour_length_cutoff]
+	flipped_contours.sort(key=lambda p: len(p), reverse=True)
+
 	return edges, flipped_contours, segments, num_segs_actual, ((min_y, min_x), (max_y, max_x))
 
 def remove_perimeter_ghosting(points_list, max_y, max_x):

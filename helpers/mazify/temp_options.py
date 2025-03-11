@@ -19,9 +19,10 @@ slic_regions = 7
 dir_smoothing_size, dir_smoothing_sigma = 21, 2.0
 
 dumb_node_optional_weight = 1
+dumb_node_optional_max_variable_weight = 6 #Turn on with inner_contour_variable_weights
 dumb_node_min_opt_weight_reduced = 1
 dumb_node_blank_weight = 200
-dumb_node_jump_weight = 2
+dumb_node_jump_weight = 3 #NOTE: should be 1/2 cost of jump, since always jumps 2x to get to next path in section
 dumb_node_required_weight = 1
 
 section_tracker_max_walk = 20
@@ -29,12 +30,13 @@ section_tracker_max_walk = 20
 max_inner_path_seg_manhatten_length = 50
 
 outer_contour_length_cutoff = 200
-inner_contour_length_cutoff = 60
+inner_contour_length_cutoff = 20
+inner_contour_variable_weights = True #Shorter contours get higher weight, so less preferable
 
 snake_trace_max_jump_from_outer = 2
 snake_details_polygon_faces = 7
 
-typewriter_lines = 4 #MUST BE AT LEAST 2!!!
+typewriter_lines = 9 #MUST BE AT LEAST 2!!!
 typewriter_traverse_threshold = 0.5 #Ratio of region height to typewriter line height
 
 zigzag_typewriter_lines = 4 #MUST BE AT LEAST 2!!!
