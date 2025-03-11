@@ -1,9 +1,34 @@
+import importlib
+import sys
+import time
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+original_import = __import__
+
+imports_time = []
+
+def verbose_import(name, globals=None, locals=None, fromlist=(), level=0):
+    """
+    A verbose version of the built-in __import__ function.
+    """
+    # logging.info(f"Loading library: {name}")
+    start_time = time.time()
+    module = original_import(name, globals, locals, fromlist, level)
+    end_time = time.time()
+    # logging.info(f"Loaded library: {name} in {end_time - start_time:.4f} seconds")
+    imports_time.append({"name": name, "time": end_time - start_time})
+    return module
+
+# Replace the built-in __import__ with our verbose version
+__builtins__.__import__ = verbose_import
+
 import os
 import cv2
 # from skimage.segmentation import mark_boundaries
 from skimage.util import img_as_float
 import numpy as np
-import time
 # import svgwrite as svg
 import matplotlib.pyplot as plt
 from datetime import date
@@ -18,7 +43,8 @@ import helpers.Enums as Enums
 # import helpers.old_method.NodeSet as NodeSet
 from helpers.mazify.MazeSections import MazeSections, MazeSection
 import helpers.mazify.temp_options as options
-import helpers.post_proc.SmoothPath as smooth
+import helpers.post_proc.smooth_path as smooth
+
 
 def draw_open_paths(image, paths, color=(0, 0, 255), thickness=2):
   """
@@ -73,15 +99,23 @@ def draw_object_node_path(image, object_path, color=(0, 0, 255), thickness=2):
 
 # remover = spr.StrayPixelRemover(1, 10)
 
+imports_time.sort(key=lambda x: x["time"], reverse=True)
 
+for i in range(min(len(imports_time), 20)):
+    logging.info(f"Loaded library: {imports_time[i]['name']} in {imports_time[i]['time']:.4f} seconds")
 
-for file in os.listdir("Trial-AI-Base-Images"):
+  #TODO: Make sep ext for batch bgrem, return popup window "bgrem imgs located here" with button to open in explorer/finder etc
+
+  #TODO: Actual unit tests!  Log images done for project, log what tested, log if failed, log if passed, log fails!
+# Configure logging to output to console
+for file in os.listdir("Trial-AI-Base-Images\\bg_removed"):
     if file.endswith(".jpg") or file.endswith(".png"):
       start_pre = time.time_ns()
-      image_path = os.path.join("Trial-AI-Base-Images", file)
+      image_path = os.path.join("Trial-AI-Base-Images\\bg_removed", file)
       # postedge, split_contours = edge.detect_edges(image_path)
 
-      #TODO: maybe just run edge detect on details regions spec by user
+      #TODO: maybe just run edge detect on details regions spec by user, see if can just call a given function wtihout importing
+      #Dump cached info to temp files, import as needed
       #use SLIC  for tracing, maybe build agent so it follows line lke maze then jumps to next as needed
       #try to do this intelligently? prioritize maximizing coverage (length)
       #Think where place node, maybe track deflection once gets past certain amt then nodify
@@ -102,9 +136,18 @@ for file in os.listdir("Trial-AI-Base-Images"):
       #   im_float = img_as_float(clahe_image)  # If it does not have an alpha channel, just use the image directly.
 
 
-      im_unch = cv2.imread(image_path, cv2.IMREAD_COLOR)
+      im_unch = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+
+      # im_bgrem = bgrem.remove_background(im_unch, "jit")
+
       if im_unch.shape[2] == 4:  # Check if it has an alpha channel
-        im_float = img_as_float(cv2.cvtColor(im_unch, cv2.COLOR_BGRA2BGR)) # Convert from BGRA to BGR
+        im_float = img_as_float(cv2.cvtColor(im_unch, cv2.COLOR_BGRA2BGR))  # Convert from BGRA to BGR
+        alpha_mask = im_unch[:, :, 3] == 0
+        im_float[alpha_mask] = [0.0, 0.0, 0.0]
+      elif im_unch.shape[2] == 2:
+        im_float = img_as_float(cv2.cvtColor(im_unch, cv2.COLOR_GRAY2BGR)) #Greyscale PNG
+        alpha_mask = im_unch[:, :, 1] == 0
+        im_float[alpha_mask] = [0.0, 0.0, 0.0]
       else:
         im_float = img_as_float(im_unch)  # If it does not have an alpha channel, just use the image directly.
 
@@ -114,7 +157,7 @@ for file in os.listdir("Trial-AI-Base-Images"):
       # near_boudaries_contours, segments = slic.slic_image_test_boundaries(im_float, split_contours)
       # near_boudaries_contours, segments = slic.mask_test_boundaries(image_path, split_contours)
 
-      outer_edges, outer_contours_yx, mask, bounds_outer = slic.mask_boundary_edges(image_path)
+      outer_edges, outer_contours_yx, mask, bounds_outer = slic.mask_boundary_edges(im_unch)
       inner_edges, inner_contours_yx, segments, num_segs, bounds_inner = slic.slic_image_boundary_edges(im_float,
                                                                                           num_segments=options.slic_regions,
                                                                                           enforce_connectivity=False,
@@ -144,7 +187,11 @@ for file in os.listdir("Trial-AI-Base-Images"):
       # cv2.imshow("nodes", transition_nodes.astype(np.uint8) * 255)
       # cv2.waitKey(0)
 
-      y_lower, y_upper, x_lower, x_upper = 400, 600, 400, 700
+      # plt.imshow(inner_edges, cmap='gray', interpolation='bicubic')
+      # plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
+      # plt.show()
+
+      y_lower, y_upper, x_lower, x_upper = 400, 600, 500, 700
       detail_req_mask = np.zeros_like(outer_edges_cropped, dtype=np.bool)
       # Create boolean masks for y and x bounds
       y_mask = (np.arange(detail_req_mask.shape[0]) >= y_lower) & (np.arange(detail_req_mask.shape[0]) <= y_upper)
@@ -163,7 +210,7 @@ for file in os.listdir("Trial-AI-Base-Images"):
                              inner_contours_yx_cropped, maze_sections)
 
       # raw_path_coords = maze_agent.run_round_dumb(image_path)
-      raw_path_coords =  maze_agent.run_round_trace(Enums.TraceTechnique.zigzag_typewriter)
+      raw_path_coords =  maze_agent.run_round_trace(Enums.TraceTechnique.back_forth)
 
       raw_path_coords_centered = slic.shift_contours([raw_path_coords], crop[0][0], crop[0][1])[0]
 

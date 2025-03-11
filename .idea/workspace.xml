@@ -4,14 +4,24 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Set up variable inner weights">
-      <change afterPath="$PROJECT_DIR$/helpers/mazify/NetworkxExtension.py" afterDir="false" />
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Zigzag typewriter n scorched earth func going woooo gettin stooookd">
+      <change afterPath="$PROJECT_DIR$/ProcessTestImages.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/image_fx_(12).jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helpers/edge_detect/bg_rem.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/2025-03-10.png" beforeDir="false" afterPath="$PROJECT_DIR$/2025-03-10.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PERSONAL WEBSITE BLURB STUFF/NOTES.txt" beforeDir="false" afterPath="$PROJECT_DIR$/PERSONAL WEBSITE BLURB STUFF/NOTES.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Trial-AI-Base-Images/image_fx_(5)_isnet-general-use.png" beforeDir="false" afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/bg_removed/image_fx_(5)_isnet-general-use.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/Enums.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/Enums.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgentHelpers.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgentHelpers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/ShortestPathCoverage.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/ShortestPathCoverage.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/temp_options.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/temp_options.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/post_proc/SmoothPath.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/post_proc/smooth_path.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -51,6 +61,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Python.ProcessTestImages.executor": "Run",
     "Python.SLIC-Segmentation.executor": "Debug",
     "Python.Testing.executor": "Run",
     "Python.edge_detection.executor": "Run",
@@ -59,12 +70,13 @@
     "com.codeium.enabled": "true",
     "git-widget-placeholder": "master",
     "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "C:/Users/liamc/PycharmProjects/continuous-outline/Trial-AI-Base-Images",
+    "last_opened_file_path": "C:/Users/liamc/PycharmProjects/continuous-outline/Trial-AI-Base-Images/bg_removed",
     "settings.editor.selected.configurable": "preferences.pluginManager"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\Trial-AI-Base-Images\bg_removed" />
       <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\Trial-AI-Base-Images" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
@@ -76,6 +88,28 @@
     </key>
   </component>
   <component name="RunManager" selected="Python.Testing">
+    <configuration name="ProcessTestImages" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="continuous-outline" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/ProcessTestImages.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="SLIC_Segmentation" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="continuous-outline" />
       <option name="ENV_FILES" value="" />
@@ -121,12 +155,14 @@
       <method v="2" />
     </configuration>
     <list>
+      <item itemvalue="Python.ProcessTestImages" />
       <item itemvalue="Python.SLIC_Segmentation" />
       <item itemvalue="Python.Testing" />
     </list>
     <recent_temporary>
       <list>
         <item itemvalue="Python.Testing" />
+        <item itemvalue="Python.ProcessTestImages" />
         <item itemvalue="Python.SLIC_Segmentation" />
       </list>
     </recent_temporary>
@@ -451,7 +487,15 @@
       <option name="project" value="LOCAL" />
       <updated>1741655155039</updated>
     </task>
-    <option name="localTasksCounter" value="39" />
+    <task id="LOCAL-00039" summary="Zigzag typewriter n scorched earth func going woooo gettin stooookd">
+      <option name="closed" value="true" />
+      <created>1741657091942</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1741657091942</updated>
+    </task>
+    <option name="localTasksCounter" value="40" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -466,7 +510,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="WOrking on it, probably need to switch to diff method grr" />
     <MESSAGE value="start" />
     <MESSAGE value="screenshots n notes for story" />
     <MESSAGE value="consolidate compass funcitons, did legality" />
@@ -491,7 +534,8 @@
     <MESSAGE value="Improved snake, better poly fill, perf trimming down to &lt;2 seconds woo!" />
     <MESSAGE value="Typewriter working!!  Configured discard phantom edges, non-closed contours working" />
     <MESSAGE value="Set up variable inner weights" />
-    <option name="LAST_COMMIT_MESSAGE" value="Set up variable inner weights" />
+    <MESSAGE value="Zigzag typewriter n scorched earth func going woooo gettin stooookd" />
+    <option name="LAST_COMMIT_MESSAGE" value="Zigzag typewriter n scorched earth func going woooo gettin stooookd" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -503,58 +547,38 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Testing.py</url>
-          <line>200</line>
+          <line>247</line>
           <option name="timeStamp" value="268" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>763</line>
-          <option name="timeStamp" value="278" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>662</line>
+          <line>892</line>
           <option name="timeStamp" value="285" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>683</line>
+          <line>913</line>
           <option name="timeStamp" value="301" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>689</line>
+          <line>919</line>
           <option name="timeStamp" value="302" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>703</line>
-          <option name="timeStamp" value="303" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>746</line>
-          <option name="timeStamp" value="304" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>752</line>
-          <option name="timeStamp" value="305" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>771</line>
-          <option name="timeStamp" value="306" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>450</line>
+          <line>680</line>
           <option name="timeStamp" value="325" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/ProcessTestImages.py</url>
+          <line>25</line>
+          <option name="timeStamp" value="335" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>333</line>
-          <option name="timeStamp" value="330" />
+          <line>270</line>
+          <option name="timeStamp" value="343" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

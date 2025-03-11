@@ -1,1 +1,18 @@
 Screensnips of first attempt edge detection results diff types, slic, attempts tracing edges close to slic some images also number of nodes too complex loses gist of trying to get overview of shape, realized bg mask plus slic does much better jorb of that than edge detect 
+
+
+Compass just got lost alot, squiglly ugly, just not working, mention insp by reading math AI book (rep it!) wanting to try out NN
+	Interesting xrcise in setting up as inputs, inspired doing compass (Jack Sparrow stylee ) good thought experiment at lest
+
+Travelling Salesman did sections for Compass, realized could reduce to node graph simpler problem
+	Suits travelling salesman!  Hard problem O(N^2) but fortunately Google has good method already compiled!
+	Doing distnacces, NetworkX too slow, used scipy.sparse much faster still all considered hella slow
+	Not great results
+	Lotta work! ughhhh not as bad as last time tho, i am learning
+	Should probably have tested out more dumb way before coding in whole cords finding thing for sub-scale path finding
+
+Finally realised don't need to infer path to cover, already know it: the outer mask shell!
+	Capitalize on this, hard-set variety of methods always preferring outer and req spec details
+	Realized can set nodes section and section-path as diff types, define edge weight between!
+	Then just shortest-path between a few known points particular to the method of choice, much faster since small  ish direct dist and only a few calcs
+	Workign woo!

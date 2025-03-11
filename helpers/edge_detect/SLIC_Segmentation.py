@@ -77,17 +77,19 @@ def mask_test_boundaries(img_path, split_contours):
 
 	return find_contours_near_boundaries(split_contours, mask, tolerance=2), mask
 
-def mask_boundary_edges(img_path):
+def mask_boundary_edges(img_unchanged):
 	start = time.time_ns()
 	#NOTE: only work PNG with transparent bg, or where background is all white
-	img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
 	mask = None
-	if img.shape[2] == 4:  # Check if it has an alpha channel
-		alpha = img[:, :, 3]  # Get the alpha channel
+	if img_unchanged.shape[2] == 4:  # Check if it has an alpha channel
+		alpha = img_unchanged[:, :, 3]  # Get the alpha channel
+		mask = np.where(alpha > 0, 255, 0).astype(np.uint8)  # Create binary mask
+	elif img_unchanged.shape[2] == 2:  # Check if it has an alpha channel
+		alpha = img_unchanged[:, :, 1]  # Get the alpha channel
 		mask = np.where(alpha > 0, 255, 0).astype(np.uint8)  # Create binary mask
 	else:
 		# Image has no alpha channel, treat white as background
-		grey = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+		grey = cv2.cvtColor(img_unchanged, cv2.COLOR_BGR2GRAY)
 		_, inverted = cv2.threshold(grey, 0.9*np.max(grey), 1, cv2.THRESH_BINARY)
 		mask = np.where(inverted == 0, 255, 0).astype(np.uint8)  # Create binary mask
 
@@ -104,8 +106,8 @@ def mask_boundary_edges(img_path):
 	# Fill contours (holes)
 	# for cnt in fill_contours:
 	cv2.drawContours(filled_mask, fill_contours, -1, (255,255,255), thickness=cv2.FILLED)  # -1 fills the contour
-	blank = np.zeros(img.shape, dtype=np.uint8)
-	edges = mark_boundaries(blank, filled_mask, color=tuple([255 for d in range(img.shape[2])]),
+	blank = np.zeros(img_unchanged.shape, dtype=np.uint8)
+	edges = mark_boundaries(blank, filled_mask, color=tuple([255 for d in range(img_unchanged.shape[2])]),
 							mode='outer').astype(np.uint8)[:,:,0]
 
 

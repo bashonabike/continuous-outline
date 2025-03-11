@@ -367,7 +367,7 @@ class MazeAgentHelpers:
             inst_section_tracker[0:(-1)*section_tracker_split])
 
         distinct_sections = list(set(look_ahead_sections))
-        magnetism = sum([s.attraction for s in distinct_sections if not s.saturated])
+        magnetism = sum([s.section.attraction for s in distinct_sections if not s.section.saturated])
 
         return magnetism
 

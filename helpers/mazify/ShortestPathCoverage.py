@@ -224,6 +224,7 @@ def find_shortest_path_with_coverage(weighted_grid, required_nodes_grid, start_s
     data['starts'] = [start_node_index]  # starting node
     data['ends'] = [end_node_index]  # end node
 
+
     # Create the routing index manager.
     manager = pywrapcp.RoutingIndexManager(
         len(data["distance_matrix"]), data["num_vehicles"], data["starts"], data["ends"]
