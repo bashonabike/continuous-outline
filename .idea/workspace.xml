@@ -4,14 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Snake working!! Super fast woohoo">
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Improved snake, better poly fill, perf trimming down to &lt;2 seconds woo!">
+      <change afterPath="$PROJECT_DIR$/helpers/post_proc/SmoothPath.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/2025-03-10.png" beforeDir="false" afterPath="$PROJECT_DIR$/2025-03-10.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testing.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgentHelpers.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgentHelpers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/temp_options.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/temp_options.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -37,8 +37,8 @@
 }</component>
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/bashonabike/continuous-outline&quot;,
-    &quot;accountId&quot;: &quot;5bb13a72-640e-4370-a31b-398c259cc1b1&quot;
+    &quot;url&quot;: &quot;https://github.com/bashonabike/continuous-outline.git&quot;,
+    &quot;accountId&quot;: &quot;58e94c20-7d39-4b4a-93e7-7d4618e59941&quot;
   }
 }</component>
   <component name="ProjectColorInfo">{
@@ -61,7 +61,7 @@
     "git-widget-placeholder": "master",
     "ignore.virus.scanning.warn.message": "true",
     "last_opened_file_path": "C:/Users/liamc/PycharmProjects/continuous-outline/Trial-AI-Base-Images",
-    "settings.editor.selected.configurable": "com.intellij.pycharm.community.ide.impl.configuration.PythonContentEntriesConfigurable"
+    "settings.editor.selected.configurable": "preferences.pluginManager"
   }
 }]]></component>
   <component name="RecentsManager">
@@ -135,7 +135,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-975db3bf15a3-31b6be0877a2-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-241.18034.82" />
+        <option value="bundled-python-sdk-495700d161d3-aa17d162503b-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-243.22562.220" />
       </set>
     </attachedChunks>
   </component>
@@ -428,7 +428,15 @@
       <option name="project" value="LOCAL" />
       <updated>1741630927425</updated>
     </task>
-    <option name="localTasksCounter" value="36" />
+    <task id="LOCAL-00036" summary="Improved snake, better poly fill, perf trimming down to &lt;2 seconds woo!">
+      <option name="closed" value="true" />
+      <created>1741638170527</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1741638170527</updated>
+    </task>
+    <option name="localTasksCounter" value="37" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -443,7 +451,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Add SLIC starter" />
     <MESSAGE value="Working on slic, drawing alg" />
     <MESSAGE value="Basic working agentic alg going woohoo!" />
     <MESSAGE value="WOrking on it, probably need to switch to diff method grr" />
@@ -468,7 +475,8 @@
     <MESSAGE value="Working on making edge map for new technique" />
     <MESSAGE value="Got ssssnake path coded!  need to test tho" />
     <MESSAGE value="Snake working!! Super fast woohoo" />
-    <option name="LAST_COMMIT_MESSAGE" value="Snake working!! Super fast woohoo" />
+    <MESSAGE value="Improved snake, better poly fill, perf trimming down to &lt;2 seconds woo!" />
+    <option name="LAST_COMMIT_MESSAGE" value="Improved snake, better poly fill, perf trimming down to &lt;2 seconds woo!" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -480,53 +488,58 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Testing.py</url>
-          <line>191</line>
+          <line>200</line>
           <option name="timeStamp" value="268" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>664</line>
+          <line>663</line>
           <option name="timeStamp" value="278" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>563</line>
+          <line>562</line>
           <option name="timeStamp" value="285" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>584</line>
+          <line>583</line>
           <option name="timeStamp" value="301" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>590</line>
+          <line>589</line>
           <option name="timeStamp" value="302" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>604</line>
+          <line>603</line>
           <option name="timeStamp" value="303" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>647</line>
+          <line>646</line>
           <option name="timeStamp" value="304" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>653</line>
+          <line>652</line>
           <option name="timeStamp" value="305" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>672</line>
+          <line>671</line>
           <option name="timeStamp" value="306" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Testing.py</url>
+          <line>167</line>
+          <option name="timeStamp" value="314" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>236</line>
-          <option name="timeStamp" value="360" />
+          <line>350</line>
+          <option name="timeStamp" value="325" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

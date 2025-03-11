@@ -6,7 +6,7 @@ proximity_search_radius = 40
 segment_length = 10
 parallel_search_radius = 5
 max_deflect_rad = 2*math.pi/3
-maze_sections_across = 30
+maze_sections_across = 40
 cluster_start_point_size = 11
 section_saturation_satisfied = 0.5
 saturation_termination = 0.4 #NOTE: all paths are double-counted due to nature of contours
@@ -21,16 +21,25 @@ dir_smoothing_size, dir_smoothing_sigma = 21, 2.0
 dumb_node_optional_weight = 1
 dumb_node_min_opt_weight_reduced = 1
 dumb_node_blank_weight = 200
-dumb_node_jump_weight = 4
+dumb_node_jump_weight = 2
 dumb_node_required_weight = 1
 
 section_tracker_max_walk = 20
+
+max_inner_path_seg_manhatten_length = 50
 
 outer_contour_length_cutoff = 200
 inner_contour_length_cutoff = 60
 
 snake_trace_max_jump_from_outer = 2
 snake_details_polygon_faces = 7
+
+typewriter_lines = 4 #MUST BE AT LEAST 2!!!
+typewriter_traverse_threshold = 0.5 #Ratio of region height to typewriter line height
+
+zigzag_typewriter_lines = 4 #MUST BE AT LEAST 2!!!
+
+simplify_tolerance = 0.7
 
 
 #CALCULATED DO NOT TOUCH!!

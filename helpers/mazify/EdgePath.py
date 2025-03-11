@@ -1,6 +1,7 @@
 import math
 import numpy as np
 from scipy.ndimage import convolve1d
+import matplotlib.pyplot as plt
 
 import helpers.mazify.temp_options as options
 import helpers.mazify.EdgeNode as EdgeNode
@@ -11,6 +12,7 @@ class EdgePath:
     def __init__(self, path_num, path_raw, maze_sections: sections.MazeSections, is_outer=False):
         self.path, self.num = [], path_num
         self.outer = is_outer
+        self.closed = True #assert closed
         self.section_tracker, self.section_tracker_red_nd_doubled = [], None
         self.parse_path(path_raw, maze_sections, is_outer)
 
@@ -89,14 +91,23 @@ class EdgePath:
             node.set_section(cur_section, cur_tracker)
             cur_tracker.nodes.append(node)
 
-        maze_sections.path_graph.add_edge(last_graph_node, first_graph_node, weight=edge_weight)
         self.section_tracker[-1].out_node = self.path[-1]
-        self.section_tracker[-1].next_tracker = self.section_tracker[0]
-        self.section_tracker[0].prev_tracker = self.section_tracker[-1]
-        self.path[-1].set_next_node(self.path[0])
-        self.path[0].set_prev_node(self.path[-1])
-        self.section_tracker_red_nd_doubled = np.array([t.section for t in (self.section_tracker + self.section_tracker)])
 
+        #Check if contour is closed
+        circ_dist = 0
+        circ_dist += abs(self.path[0].y - self.path[-1].y)
+        circ_dist += abs(self.path[0].x - self.path[-1].x)
+        if circ_dist > options.max_inner_path_seg_manhatten_length + 1:
+            self.closed = False
+        else:
+            self.section_tracker[-1].next_tracker = self.section_tracker[0]
+            self.section_tracker[0].prev_tracker = self.section_tracker[-1]
+            self.path[-1].set_next_node(self.path[0])
+            self.path[0].set_prev_node(self.path[-1])
+
+            maze_sections.path_graph.add_edge(last_graph_node, first_graph_node, weight=edge_weight)
+
+        self.section_tracker_red_nd_doubled = np.array([t.section for t in (self.section_tracker + self.section_tracker)])
 
     def get_next_node(self, cur_node, edge_rev:bool):
         if edge_rev:

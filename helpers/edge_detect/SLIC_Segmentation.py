@@ -218,9 +218,73 @@ def slic_image_boundary_edges(im_float, num_segments:int =2, enforce_connectivit
 		min_y, min_x = min(min_y, min(ys)), min(min_x, min(xs))
 		max_y, max_x = max(max_y, max(ys)), max(max_x, max(xs))
 
-		flipped_contours.append(cur_contour)
+		#Remove portion of contours along perimeter
+		processed_contours = remove_perimeter_ghosting(cur_contour, edges.shape[0] - 1, edges.shape[1] - 1)
+
+		flipped_contours.extend(processed_contours)
 
 	return edges, flipped_contours, segments, num_segs_actual, ((min_y, min_x), (max_y, max_x))
+
+def remove_perimeter_ghosting(points_list, max_y, max_x):
+	"""
+	Eliminates points where x or y is 0 or 1023 from a NumPy array.
+
+	Args:
+		points_array: A 2D NumPy array of (y, x) points.
+
+	Returns:
+		A new NumPy array containing the filtered points.
+	"""
+	# points_array = np.array(points_list)
+	# y_coords = points_array[:, 0]
+	# x_coords = points_array[:, 1]
+	#
+	# # Create boolean masks
+	# y_mask = np.logical_and(y_coords != 0, y_coords != max_y)
+	# x_mask = np.logical_and(x_coords != 0, x_coords != max_x)
+	#
+	# # Combine masks
+	# combined_mask = np.logical_and(y_mask, x_mask)
+	#
+	# # Apply the mask
+	# filtered_points = points_array[combined_mask]
+
+	points_array = np.array(points_list)
+
+	#Check for long flat stretches, may be ghosting
+	#Pad with first point so distance array shape conforms
+	diffs = np.diff(np.vstack((points_array, points_array[0])), axis=0)
+	# Calculate the Manhattan distances
+	distances = np.sum(np.abs(diffs), axis=1)
+	valid_distances_mask = distances <= options.max_inner_path_seg_manhatten_length
+	#If just last one fails, assume unclosed negate
+	if not valid_distances_mask[-1] and valid_distances_mask[-2]: valid_distances_mask[-1] = True
+
+	#Find splits in contour
+	false_indices = np.where(valid_distances_mask == False)[0]
+
+	if not false_indices.size:
+		return [points_list]  # No False values found
+
+	diffs = np.diff(false_indices)
+	split_indices = np.where(diffs != 1)[0] + 1
+	false_segments = [(seg[0], seg[-1]) for seg in np.split(false_indices, split_indices)]
+
+	segments = []
+	#Build true segs, don't include if only 1 point
+	if false_segments[0][0] > 1:
+		segments.append(points_list[0:false_segments[0][0]])
+
+	for f in range(len(false_segments) - 1):
+		if false_segments[f + 1][0] - false_segments[f][1] > 1:
+			segments.append(points_list[false_segments[f][1] + 1:false_segments[f + 1][0]])
+
+	if len(points_list) - 1 - false_segments[-1][-1] > 1:
+		segments.append(points_list[false_segments[-1][1] + 1:len(points_list) - 1])
+
+
+
+	return segments
 
 
 def slic_image_test_boundaries(im_float, split_contours, num_segments:int =2, enforce_connectivity:bool = True):

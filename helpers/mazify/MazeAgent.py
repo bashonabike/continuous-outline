@@ -131,9 +131,8 @@ class MazeAgent:
         match technique:
             case TraceTechnique.snake:
                 return self.find_trace_section_tour_snake()
-
             case TraceTechnique.typewriter:
-                return []
+                return self.find_trace_section_tour_typewriter()
             case _:
                 return []
 
@@ -170,7 +169,7 @@ class MazeAgent:
         #     self.plot_path(self.path, image) #TEMPPP
 
     def find_trace_section_tour_snake(self):
-        #TODO: Implement this, need to wrap around
+        #TODO: Implement start, need to wrap around
         #Find start track
         # start_node, cur_point, cur_section = self.find_start_node()
 
@@ -208,10 +207,6 @@ class MazeAgent:
                                          p['outer_in_tracker'].section.coords_sec, p['focus_in_section'].coords_sec,
                                                   weight='weight')[:-1])
 
-            # focus_poly_points = self.find_maximal_quadrilateral_optimized(p['focus_sections'],
-            #                                                        p['focus_in_section'].coords_sec,
-            #                                                        p['focus_out_section'].coords_sec)
-
             focus_poly_points = self.find_maximal_polygon_optimized(p['focus_sections'],
                                                                    p['focus_in_section'].coords_sec,
                                                                    p['focus_out_section'].coords_sec,
@@ -236,12 +231,99 @@ class MazeAgent:
         raw_path_coords = [n.point for n in nodes_path]
         return raw_path_coords
 
+    def find_trace_section_tour_typewriter(self):
+        #Find typewriter set points
+        outer_path = self.all_contours_objects[0].section_tracker
+        outer_sects = list(set([t.section.coords_sec for t in outer_path]))
+        typewriter_points = []
+        line_height_sects = options.maze_sections_across//(options.typewriter_lines - 1)
+        for l in range(options.typewriter_lines):
+            #Find line start & end points
+            left_sect = self.find_closest_sect((l*line_height_sects, 0), outer_sects)
+            right_sect = self.find_closest_sect((l*line_height_sects, options.maze_sections_across - 1),
+                                                outer_sects)
+            typewriter_points.extend([left_sect, right_sect])
+
+        #Determine focus section inclusion
+        carriage_returns = [[] for _ in range(options.typewriter_lines)]
+        carriage_return_zigzags = [[] for _ in range(options.typewriter_lines)]
+        for focus_region in self.maze_sections.focus_region_sections:
+            sections_coords = np.array([s.coords_sec for s in focus_region])
+
+            #Determine method of traversal
+            min_y, max_y = np.min(sections_coords[:, 0]), np.max(sections_coords[:, 0])
+            min_x, max_x = np.min(sections_coords[:, 1]), np.max(sections_coords[:, 1])
+            reg_height, reg_width = max_y - min_y, max_x - min_x
+
+            #Find closest carriage return
+            mid_height = (max_y + min_y)//2
+            carriage_return = mid_height//line_height_sects
+
+            if reg_height/line_height_sects < options.typewriter_traverse_threshold:
+                #Traverse in line with typewriting,
+                right_insert, left_insert = (min_y, max_x), (max_y, min_x)
+                carriage_returns[carriage_return].extend([right_insert, left_insert])
+                # typewriter_points = typewriter_points[:2*(carriage_return + 1)] + [right_insert, left_insert] + \
+                #                      typewriter_points[2*(carriage_return + 1):]
+            else:
+                #Zigzag within carriage return
+                zigzag, section_coords_ls = [], [tuple(s) for s in sections_coords.tolist()]
+                right_1, left_1 = (min_y, max_x), self.find_closest_sect((min_y, min_x), section_coords_ls)
+                right_2, left_2 = self.find_closest_sect((max_y, max_x), section_coords_ls), (max_y, min_x)
+                zigzag = (right_1, left_1, right_2, left_2)
+                #NOTE: append since need to preserve order
+                carriage_return_zigzags[carriage_return].append(zigzag)
+
+        #Build focus regions into typewriter points
+        typewriter_points_final = []
+        for l in range(options.typewriter_lines):
+            typewriter_points_final.extend(typewriter_points[2*l:2*(l + 1)])
+            straights, zigs = carriage_returns[l], carriage_return_zigzags[l]
+            return_line = []
+
+            #Sort by x of leftmost desc
+            if len(straights) > 0: straights.sort(key=lambda p: p[1], reverse=True)
+            if len(zigs) > 0:
+                zigs.sort(key=lambda z: z[0][1], reverse=True)
+
+                #Determine best ordering of focus region inclusion
+                zig_ends_flat = [p for z in zigs for p in (z[0], z[-1])]
+                zigs_aug = [list(z) for z in zigs]
+                for s in straights:
+                    closest_end = self.find_closest_sect(s, zig_ends_flat, return_idx=True)
+                    zig, at_end = closest_end//2, closest_end%2 == 1
+                    if not at_end:
+                        zigs_aug[zig] = s + zigs_aug[zig]
+                    else:
+                        zigs_aug[zig] = zigs_aug[zig] + s
+
+                #Formulate final line
+                return_line = [p for z in zigs_aug for p in z]
+            elif len(straights) > 0:
+                return_line = straights
+
+            typewriter_points_final.extend(return_line)
+
+        #Determine best path for typewriter
+        section_path = []
+        for t in range(len(typewriter_points_final) - 1):
+            section_path.extend(nx.shortest_path(self.maze_sections.path_graph,
+                                                 typewriter_points_final[t], typewriter_points_final[t + 1],
+                             weight='weight')[:-1])
+        section_path.append(typewriter_points_final[-1])
+
+        #Trace path from tracker path
+        nodes_path = self.set_node_path_from_sec_path(section_path)
+        raw_path_coords = [n.point for n in nodes_path]
+        return raw_path_coords
+
     def set_node_path_from_sec_path(self, sections_nodes_path):
-        nodes_path = [] #TODO: If dupl on same tracker skip
+        nodes_path = []
         jump_path = False
         prev_sect, cur_sect, next_sect = None, None, None
         cur_tracker = None
         cur_tracker_idx = -1
+        prev_len = 0
         path_rev = False
         inflection_out = None
         for i in range(len(sections_nodes_path)):
@@ -258,13 +340,16 @@ class MazeAgent:
                     cur_tracker_idx = -1
                 inflection_out = None
                 cur_tracker = self.all_contours_objects[cur_sect[2] - 1].section_tracker[cur_sect[3]]
+                path_closed = cur_tracker.path.closed
+
                 if next_sect is not None and len(next_sect) == 4:
                     #Tracker identified, check if prev sect lines up
                     trackers_in_path = len(cur_tracker.path.section_tracker)
+                    tracker_modulo = trackers_in_path if path_closed else 99999
                     if (next_sect[2] != cur_sect[2] or cur_sect[3] not in
-                        ((next_sect[3] + 1)%trackers_in_path, (next_sect[3] - 1)%trackers_in_path)):
+                        ((next_sect[3] + 1)%tracker_modulo, (next_sect[3] - 1)%tracker_modulo)):
                         raise exception("Something screwy with tracking")
-                    path_rev = (cur_sect[3] - 1)%trackers_in_path == next_sect[3]
+                    path_rev = (cur_sect[3] - 1)%tracker_modulo == next_sect[3]
                     if path_rev:
                         if cur_tracker_idx == -1:
                             nodes_path.extend(list(reversed(cur_tracker.nodes)))
@@ -339,29 +424,33 @@ class MazeAgent:
 
             prev_sect = cur_sect
 
+#             cur_len = len(nodes_path)
+#             for problem in [555
+# ,556
+# ,607
+# ,608
+# ,627
+# ,628
+# ,1919
+# ,1920
+# ,1939
+# ,1940
+# ,1942
+# ,2044
+# ,2045
+# ,2046
+# ,2048
+# ,2049
+# ,2560
+# ,2561]:
+#                 if prev_len < problem <= cur_len:
+#                     problemmm = ""
+
+
+            # prev_len = cur_len
+
+
         return nodes_path
-
-    def find_maximal_quadrilateral_optimized(self, coords, start1, start2):
-        coords_s = set([tuple(row) for row in coords])
-        coords_s.remove(start1)
-        coords_s.remove(start2)
-        coords_array = np.array(list(coords_s))
-
-        hull = ConvexHull(coords_array)
-        hull_points = coords_array[hull.vertices]
-
-        max_area = 0
-        max_end1 = None
-        max_end2 = None
-
-        for end1, end2 in itertools.permutations(hull_points, 2):
-            area = self.calculate_quadrilateral_area(start1, tuple(end1), tuple(end2), start2)
-            if area > max_area:
-                max_area = area
-                max_end1 = tuple(end1)
-                max_end2 = tuple(end2)
-
-        return [start1, max_end1, max_end2, start2]
 
     def find_maximal_polygon_optimized(self, coords, start1, start2, faces):
         coords_s = set([tuple(row) for row in coords])
@@ -375,8 +464,10 @@ class MazeAgent:
         max_area = 0
         largest_polygon_nd = None
         start1_nd, start2_nd = np.array(start1), np.array(start2)
+        #Max out if convex hull smaller than req # faces
+        eff_faces = min(faces, hull_points.shape[0] + 2)
 
-        for combination in itertools.combinations(hull_points, faces - 2):
+        for combination in itertools.combinations(hull_points, eff_faces - 2):
             polygon_points = list(combination) + [start1_nd, start2_nd]
             for poly_perm in itertools.permutations(polygon_points):
                 poly_perm_nd = np.array(poly_perm)
@@ -386,16 +477,7 @@ class MazeAgent:
                 matches = np.all(poly_perm_nd == start2_nd, axis=1)
                 start2_index = np.where(matches)[0]
 
-                # start1_index, start2_index = -1, -1
-                # for i in range(len(poly_perm)):
-                #     if np.array_equal(poly_perm[i], start1_nd): start1_index = i
-                #     elif np.array_equal(poly_perm[i], start2_nd): start2_index = i
-                #     if start1_index > -1 and start2_index > -1: break
-                # start1_index = poly_perm.index(start1_nd)
-                # start2_index = poly_perm.index(start2_nd)
-
-                if abs(start1_index - start2_index) == 1 or abs(start1_index - start2_index) == faces - 1:
-
+                if abs(start1_index - start2_index) == 1 or abs(start1_index - start2_index) == eff_faces - 1:
                     area = self.calculate_polygon_area(poly_perm)
                     if area > max_area:
                         max_area = area
@@ -412,10 +494,10 @@ class MazeAgent:
         largest_polygon = largest_polygon_nd.tolist()
 
         #Flip around, we need start2 in front to bring around to end of tour
-        if (start1_index + 1)%faces == start2_index:
+        if (start1_index + 1)%eff_faces == start2_index:
             largest_polygon = list(reversed(largest_polygon))
-            start1_index = faces - 1 - start1_index
-            start2_index = faces - 1 - start2_index
+            start1_index = eff_faces - 1 - start1_index
+            start2_index = eff_faces - 1 - start2_index
 
         ordered_polygon = largest_polygon[start1_index:] + largest_polygon[:start1_index]
 
@@ -757,6 +839,24 @@ class MazeAgent:
             return path_1_seg[min_indices[0]], path_2_seg[min_indices[1]]
         else:
             return min_indices[0], min_indices[1]
+
+    def find_closest_sect(self, match_point, cand_sects, return_idx=False):
+        points_1, points_2 = np.array([match_point]), np.array(cand_sects)
+
+        if not points_1.size or not points_2.size:
+            return None  # Handle empty paths
+
+        # Calculate distances
+        distances = np.linalg.norm(points_1[:, np.newaxis, :] - points_2[np.newaxis, :, :], axis=2)
+
+        # Find minimum distance and indices
+        min_indices = np.unravel_index(np.argmin(distances), distances.shape)
+
+        # Retrieve closest points
+        if not return_idx:
+            return cand_sects[min_indices[1]]
+        else:
+            return min_indices[1]
 
     def find_focus_region_incision_point(self, outer_sections, focus_sections):
         """

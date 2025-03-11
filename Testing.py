@@ -18,6 +18,7 @@ import helpers.Enums as Enums
 # import helpers.old_method.NodeSet as NodeSet
 from helpers.mazify.MazeSections import MazeSections, MazeSection
 import helpers.mazify.temp_options as options
+import helpers.post_proc.SmoothPath as smooth
 
 def draw_open_paths(image, paths, color=(0, 0, 255), thickness=2):
   """
@@ -162,16 +163,24 @@ for file in os.listdir("Trial-AI-Base-Images"):
                              inner_contours_yx_cropped, maze_sections)
 
       # raw_path_coords = maze_agent.run_round_dumb(image_path)
-      raw_path_coords =  maze_agent.run_round_trace(Enums.TraceTechnique.snake)
+      raw_path_coords =  maze_agent.run_round_trace(Enums.TraceTechnique.typewriter)
 
       raw_path_coords_centered = slic.shift_contours([raw_path_coords], crop[0][0], crop[0][1])[0]
 
       # flipped_coords_nd = np.array(raw_path_coords_centered)
       # flipped_coords_nd[:, 0] = outer_edges.shape[0] - 1 - flipped_coords_nd[:, 0]
       # flipped_coords = flipped_coords_nd.tolist()  # Flip y-coordinates
+      start= time.time_ns()
+      simplified = smooth.simplify_line(raw_path_coords_centered, tolerance=options.simplify_tolerance)
+
+
+
+
+
+      end = time.time_ns()
+      print(str((end - start)/1e6) + " ms to do post proc")
 
       y_coords, x_coords = zip(*raw_path_coords_centered)  # Unzip the coordinates
-
       plt.plot(x_coords, y_coords, marker='o', markersize=1)  # Plot the line with markers
       plt.gca().invert_yaxis()
       plt.xlabel("X-coordinate")
