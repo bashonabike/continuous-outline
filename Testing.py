@@ -44,6 +44,7 @@ import helpers.Enums as Enums
 from helpers.mazify.MazeSections import MazeSections, MazeSection
 import helpers.mazify.temp_options as options
 import helpers.post_proc.smooth_path as smooth
+import helpers.post_proc.path_cleanup as clean
 
 
 def draw_open_paths(image, paths, color=(0, 0, 255), thickness=2):
@@ -191,6 +192,7 @@ for file in os.listdir("Trial-AI-Base-Images\\bg_removed"):
       # plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
       # plt.show()
 
+      start = time.time_ns()
       y_lower, y_upper, x_lower, x_upper = 400, 600, 500, 700
       detail_req_mask = np.zeros_like(outer_edges_cropped, dtype=np.bool)
       # Create boolean masks for y and x bounds
@@ -203,22 +205,32 @@ for file in os.listdir("Trial-AI-Base-Images\\bg_removed"):
       # Apply the masks to set values to True
       detail_req_mask[y_mask_2d & x_mask_2d] = True
 
+      end = time.time_ns()
+      print(str((end - start)/1e6) + " ms to do shifting")
+      start = time.time_ns()
       maze_sections = MazeSections(outer_edges_cropped, options.maze_sections_across, options.maze_sections_across,
                                    [detail_req_mask])
 
       maze_agent = MazeAgent(outer_edges_cropped, outer_contours_yx_cropped, inner_edges_cropped,
                              inner_contours_yx_cropped, maze_sections)
 
+      end = time.time_ns()
+      print(str((end - start)/1e6) + " ms to do sectioning and agent setup")
+
+      start = time.time_ns()
       # raw_path_coords = maze_agent.run_round_dumb(image_path)
       raw_path_coords =  maze_agent.run_round_trace(Enums.TraceTechnique.back_forth)
 
       raw_path_coords_centered = slic.shift_contours([raw_path_coords], crop[0][0], crop[0][1])[0]
-
+      end = time.time_ns()
+      print(str((end - start)/1e6) + " ms to do trace run")
       # flipped_coords_nd = np.array(raw_path_coords_centered)
       # flipped_coords_nd[:, 0] = outer_edges.shape[0] - 1 - flipped_coords_nd[:, 0]
       # flipped_coords = flipped_coords_nd.tolist()  # Flip y-coordinates
       start= time.time_ns()
-      simplified = smooth.simplify_line(raw_path_coords_centered, tolerance=options.simplify_tolerance)
+      remove_blips = clean.remove_inout(raw_path_coords_centered, 50, 100)
+
+      simplified = smooth.simplify_line(remove_blips, tolerance=options.simplify_tolerance)
 
 
 
@@ -227,7 +239,7 @@ for file in os.listdir("Trial-AI-Base-Images\\bg_removed"):
       end = time.time_ns()
       print(str((end - start)/1e6) + " ms to do post proc")
 
-      y_coords, x_coords = zip(*raw_path_coords_centered)  # Unzip the coordinates
+      y_coords, x_coords = zip(*remove_blips)  # Unzip the coordinates
       plt.plot(x_coords, y_coords, marker='o', markersize=1)  # Plot the line with markers
       plt.gca().invert_yaxis()
       plt.xlabel("X-coordinate")

@@ -6,7 +6,7 @@ proximity_search_radius = 40
 segment_length = 10
 parallel_search_radius = 5
 max_deflect_rad = 2*math.pi/3
-maze_sections_across = 40
+maze_sections_across = 70
 cluster_start_point_size = 11
 section_saturation_satisfied = 0.5
 saturation_termination = 0.4 #NOTE: all paths are double-counted due to nature of contours
@@ -22,8 +22,8 @@ dumb_node_optional_weight = 1
 dumb_node_optional_max_variable_weight = 6 #Turn on with inner_contour_variable_weights
 dumb_node_min_opt_weight_reduced = 1
 dumb_node_blank_weight = 200
-dumb_node_opt_jump_weight = 3 #NOTE: should be 1/2 cost of jump, since always jumps 2x to get to next path in section
-dumb_node_req_jump_weight = 2 #NOTE: should be 1/2 cost of jump, since always jumps 2x to get to next path in section
+dumb_node_opt_jump_weight = 1 #NOTE: should be 1/2 cost of jump, since always jumps 2x to get to next path in section
+dumb_node_req_jump_weight = 1 #NOTE: should be 1/2 cost of jump, since always jumps 2x to get to next path in section
 dumb_node_required_weight = 1
 
 section_tracker_max_walk = 20
@@ -35,7 +35,7 @@ inner_contour_length_cutoff = 20
 inner_contour_variable_weights = True #Shorter contours get higher weight, thus less preferable
 
 scorched_earth = True
-scorched_earth_weight_multiplier = 3
+scorched_earth_weight_multiplier = 6
 #TODO: Make sure to reset scorched earth weights when generating new maze
 
 snake_trace_max_jump_from_outer = 2
@@ -50,7 +50,7 @@ zigzag_typewriter_traverse_threshold = 0.3 #Ratio of region height to typewriter
 vertical_zigzag_lines = 5 #MUST BE AT LEAST 2!!!
 vertical_zigzag_traverse_threshold = 0.3 #Ratio of region height to typewriter line height
 
-back_forth_lines = 5 #MUST BE AT LEAST 2!!!
+back_forth_lines = 12 #MUST BE AT LEAST 2!!!
 back_forth_traverse_threshold = 0.3 #Ratio of region height to typewriter line height
 
 simplify_tolerance = 0.7
