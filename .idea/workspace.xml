@@ -4,12 +4,29 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Images for website article">
-      <change afterPath="$PROJECT_DIR$/Lazy Imports Info" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/helpers/post_proc/post_effects.py" afterDir="false" />
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Configured lfo dither">
+      <change afterPath="$PROJECT_DIR$/helpers/DECREPIT/old_method/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helpers/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helpers/caching/DataRetrieval.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Database and update schema.xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/Database and update schema.xlsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgeNode.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgeNode.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgentHelpers.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/DECREPIT/_DECREPIT-MazeAgentHelpers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/NetworkInputs.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/DECREPIT/_DECREPIT-NetworkInputs.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/ShortestPathCoverage.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/DECREPIT/_DECREPIT-ShortestPathCoverage.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/TEMP_cugraph_demo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/TestGetDirection.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/DECREPIT/_DECREPIT-TestGetDirection.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/old_method/AgentStats.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/DECREPIT/old_method/AgentStats.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/old_method/DrawingAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/DECREPIT/old_method/DrawingAgent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/old_method/NodeSet.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/DECREPIT/old_method/NodeSet.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/old_method/ParsePathsIntoObjects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/DECREPIT/old_method/ParsePathsIntoObjects.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/old_method/TourConstraints.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/DECREPIT/old_method/TourConstraints.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/old_method/TourNode.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/DECREPIT/old_method/TourNode.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/old_method/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/DECREPIT/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/old_method/draw_outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/DECREPIT/old_method/draw_outline.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -68,11 +85,11 @@
       <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\Trial-AI-Base-Images" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
-      <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\helpers\edge-detect" />
       <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\helpers\DECREPIT" />
+      <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\helpers\DECREPIT\old_method" />
+      <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\helpers\edge-detect" />
       <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\helpers\old-method" />
       <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\Trial-AI-Base-Images\_TEMPPPP" />
-      <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\helpers" />
     </key>
   </component>
   <component name="RunManager" selected="Python.Testing">
@@ -507,7 +524,15 @@
       <option name="project" value="LOCAL" />
       <updated>1741736124433</updated>
     </task>
-    <option name="localTasksCounter" value="43" />
+    <task id="LOCAL-00043" summary="Configured lfo dither">
+      <option name="closed" value="true" />
+      <created>1741797839192</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1741797839192</updated>
+    </task>
+    <option name="localTasksCounter" value="44" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -522,7 +547,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="deflectin &amp; starting point" />
     <MESSAGE value="configured network inputs" />
     <MESSAGE value="Dumb round working!  incl dumb af term cond, dsumb weights, dumb starbucks, etc" />
     <MESSAGE value="Debugging &amp; improvements of basic dumb round func" />
@@ -547,7 +571,8 @@
     <MESSAGE value="Back forth going, bg rem working as sep test func" />
     <MESSAGE value="Trimming blips funct going" />
     <MESSAGE value="Images for website article" />
-    <option name="LAST_COMMIT_MESSAGE" value="Images for website article" />
+    <MESSAGE value="Configured lfo dither" />
+    <option name="LAST_COMMIT_MESSAGE" value="Configured lfo dither" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -563,33 +588,13 @@
           <option name="timeStamp" value="268" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>887</line>
-          <option name="timeStamp" value="285" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>908</line>
-          <option name="timeStamp" value="301" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>914</line>
-          <option name="timeStamp" value="302" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>675</line>
-          <option name="timeStamp" value="325" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/ProcessTestImages.py</url>
           <line>25</line>
           <option name="timeStamp" value="335" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>270</line>
+          <line>166</line>
           <option name="timeStamp" value="343" />
         </line-breakpoint>
       </breakpoints>

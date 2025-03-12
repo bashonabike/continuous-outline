@@ -10,49 +10,14 @@ from helpers.Enums import NodeType
 class MazeSections:
     def __init__(self, outer_edge, m, n, req_details_mask):
         self.m, self.n = m, n
-        self.outer_edge = outer_edge
-        self.num_sections = m * n
-        self.sections_satisfied = 0
-        self.sections_satisfied_pct = 0.0
         self.focus_region_sections = []
         self.dumb_nodes_req = np.zeros((m, n), dtype=np.uint8)
         self.sections, self.section_indices_list, self.y_grade, self.x_grade = (
             self.count_true_pixels_in_sections(outer_edge, m, n, req_details_mask))
-        # self.dumb_nodes, self.dumb_nodes_req, self.dumb_nodes_opt, self.dumb_opt_node_start = (
-        #     np.zeros((m, n), dtype=list), np.zeros((m, n), dtype=list), np.zeros((m, n), dtype=list), -1)
-        self.dumb_opt_node_start = -1
-        self.dumb_nodes_weighted = np.zeros((m, n), dtype=np.uint8)
-        # self.dumb_nodes.fill([])
-        # self.dumb_nodes_req.fill([])
-        # self.dumb_nodes_opt.fill([])
-        self.dumb_nodes_weighted.fill(options.dumb_node_blank_weight)
-
-        self.dumb_nodes_distances = np.zeros((options.maze_sections_across**2,
-                                              options.maze_sections_across**2), dtype=np.uint16)
-        self.initialize_dumb_distances()
-        self.dumb_nodes_distances_trackers_path = np.zeros((m * n, m * n), dtype=list)
-        self.dumb_nodes_distances_trackers_contour= np.zeros((m * n, m * n), dtype=np.uint16)
-
-        self.edge_connections = []
 
         self.path_graph = nx.Graph()
         self.set_section_blank_overs_in_graph()
 
-    def update_saturation(self):
-        self.sections_satisfied += 1
-        self.sections_satisfied_pct = self.sections_satisfied / self.num_sections
-
-    def check_saturation(self):
-        return self.sections_satisfied_pct > options.saturation_termination
-
-    def initialize_dumb_distances(self):
-        rows, cols = self.dumb_nodes_distances.shape
-        i_indices, j_indices = np.indices((rows, cols))
-        self.dumb_nodes_distances [:] = (
-                options.dumb_node_blank_weight*np.abs(i_indices % options.maze_sections_across -
-                                                      j_indices % options.maze_sections_across) +
-                options.dumb_node_blank_weight*np.abs(i_indices // options.maze_sections_across -
-                                                      j_indices // options.maze_sections_across))
 
     def set_section_blank_overs_in_graph(self):
         #Set sections as nodes into graph
@@ -90,38 +55,6 @@ class MazeSections:
         for i in range(len(self.focus_region_sections)):
             self.focus_region_sections[i] = [s for s in self.focus_region_sections[i] if s is not None
                                              and (s.dumb_req or s.dumb_opt)]
-
-    def set_dumb_nodes(self):
-
-        req_count = 1  # Start counting required elements from 1
-
-        # Process required elements first
-        for i in range(self.n):
-            for j in range(self.m):
-                if self.sections[i, j].dumb_req:
-                    # self.dumb_nodes[i][j].append(req_count)
-                    # self.dumb_nodes_req[i][j].append(req_count)
-                    self.dumb_nodes_weighted[i][j] = options.dumb_node_required_weight
-                    if self.dumb_nodes_req[i][j] == 0:
-                        self.dumb_nodes_req[i][j] = req_count
-                        req_count += 1
-
-        self.dumb_opt_node_start = opt_count = req_count  # Start optional elements from where required left off
-
-        # Process optional elements
-        for i in range(self.n):
-            for j in range(self.m):
-                if self.sections[i, j].dumb_opt:
-                    # self.dumb_nodes[i][j].append(opt_count)
-                    # self.dumb_nodes_opt[i][j].append(opt_count)
-                    if self.dumb_nodes_weighted[i][j] == options.dumb_node_blank_weight:
-                        #Reduce impedance a bit if multiple optional paths here
-                        self.dumb_nodes_weighted[i][j] = max(options.dumb_node_min_opt_weight_reduced,
-                                                            options.dumb_node_optional_weight -
-                                                             (len(self.sections[i, j].inner_paths) - 1))
-                    opt_count += 1
-
-
     def count_true_pixels_in_sections(self, boolean_image, m, n, req_details_masks:list[np.ndarray]):
         """
         Breaks a boolean image into m x n rectangular sections and counts the number of
@@ -191,37 +124,12 @@ class MazeSection:
         self.y_sec, self.x_sec = y_sec, x_sec
         self.coords_sec = (y_sec, x_sec)
         self.edge_pixels = edge_pixels
-        self.attraction = 100.0
         self.nodes, self.outer_nodes = [], []
-        self.paths, self.outer_paths, self.inner_paths = set(), set(), set()
-
-        self.filled_nodes = 0
-        self.saturation = 0.0
-        self.saturated = False
-        self.attraction = 100.0
 
         self.focus_region = focus_region
         self.focus_region_nums = focus_region_nums
         self.dumb_req = False
         self.dumb_opt = False
-
-
-    def setup_saturation(self, parent:MazeSections):
-        #Only do this AFTER nodes are filled
-        self.filled_nodes= 0
-        self.saturation = 0.0 if len(self.outer_nodes) > 0 else 1.0
-        self.saturated = False if len(self.outer_nodes) > 0 else True
-        self.attraction = 100.0 if len(self.outer_nodes) > 0 else 0
-        if self.saturated: parent.update_saturation()
-
-    def update_saturation(self, parent:MazeSections, num_nodes):
-        if len(self.outer_nodes) == 0: return
-        self.filled_nodes += num_nodes
-        self.saturation = float(self.filled_nodes) / len(self.outer_nodes)
-        self.attraction = 1.0/(self.saturation + 0.01)
-        if not self.saturated and self.saturation >= options.section_saturation_satisfied:
-            self.saturated = True
-            parent.update_saturation()
 
     def add_node(self, node: EdgeNode):
         self.nodes.append(node)

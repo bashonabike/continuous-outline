@@ -2,8 +2,8 @@ import math
 import numpy as np
 
 import helpers.Enums as enums
-import helpers.old_method.TourNode as TourNode
-import helpers.old_method.TourConstraints as constr
+import helpers.DECREPIT.old_method.TourNode as TourNode
+import helpers.DECREPIT.old_method.TourConstraints as constr
 
 def create_tour_nodes_from_paths(paths, set:enums.NodeSet):
     """

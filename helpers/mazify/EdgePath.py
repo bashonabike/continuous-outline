@@ -1,7 +1,5 @@
-import math
 import numpy as np
 from scipy.ndimage import convolve1d
-import matplotlib.pyplot as plt
 
 import helpers.mazify.temp_options as options
 import helpers.mazify.EdgeNode as EdgeNode
@@ -27,29 +25,6 @@ class EdgePath:
 
     def parse_path(self, path, maze_sections: sections.MazeSections, is_outer=False,
                    custom_weight=0):
-        #Determine explicit directions
-        dys,dxs = [],[]
-        for i in range(len(path)):
-            i_next = (i + 1) % len(path)
-            dy, dx = path[i_next][0] - path[i][0], path[i_next][1] - path[i][1]
-            dys.append(dy)
-            dxs.append(dx)
-        dy_nd, dx_nd = np.array(dys), np.array(dxs)
-        path_fwd_dirs_nd = np.arctan2(dy_nd, dx_nd)
-        path_fwd_dirs = path_fwd_dirs_nd.tolist()
-        path_rev_dirs_part = (path_fwd_dirs_nd + np.pi) % (2 * np.pi)
-        path_rev_dirs = np.append(path_rev_dirs_part[-1], path_rev_dirs_part[:-1]).tolist()
-        path_displs = np.sqrt(dy_nd**2 + dx_nd**2).tolist()
-
-        #Set smoothed directions
-        kernel = self.gaussian_kernel_1d(options.dir_smoothing_size, options.dir_smoothing_sigma)
-        smoothed_dy_nd, smoothed_dx_nd = convolve1d(dy_nd, kernel, mode='wrap'),  convolve1d(dx_nd, kernel, mode='wrap')
-        path_fwd_dirs_smoothed_nd = np.arctan2(smoothed_dy_nd, smoothed_dx_nd)
-        path_fwd_dirs_smoothed = path_fwd_dirs_smoothed_nd.tolist()
-        path_rev_dirs_smoothed_part = (path_fwd_dirs_smoothed_nd + np.pi) % (2 * np.pi)
-        path_rev_dirs_smoothed = np.append(path_rev_dirs_smoothed_part[-1],
-                                                path_rev_dirs_smoothed_part[:-1]).tolist()
-
         #Set up nodes
         prev_section, section_tracker_num = None, -1
         prev_tracker, cur_tracker = None, None
@@ -59,8 +34,7 @@ class EdgePath:
         if custom_weight > 0: edge_weight = custom_weight
         is_focus, section_edge_weight = False, edge_weight
         for i in range(len(path)):
-            node = EdgeNode.EdgeNode(path[i][0], path[i][1], self, path_rev_dirs[i], path_rev_dirs_smoothed[i],
-                                     path_fwd_dirs[i], path_fwd_dirs_smoothed[i], path_displs[i], is_outer)
+            node = EdgeNode.EdgeNode(path[i][0], path[i][1], self, is_outer)
 
             if i > 0:
                 node.set_prev_node(self.path[i-1])
@@ -78,9 +52,6 @@ class EdgePath:
                                                           prev_tracker=prev_tracker)
                 if section_tracker_num > 0: self.section_tracker[-1].next_tracker = cur_tracker
                 self.section_tracker.append(cur_tracker)
-                cur_section.paths.add(self)
-                if self.outer: cur_section.outer_paths.add(self)
-                else: cur_section.inner_paths.add(self)
                 #NOTE: this one lags behind by one
                 if section_tracker_num > 0: self.section_tracker[section_tracker_num - 1].out_node = self.path[i-1]
 
