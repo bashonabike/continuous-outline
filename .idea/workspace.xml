@@ -4,11 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Back forth going, bg rem working as sep test func">
-      <change afterPath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" afterDir="false" />
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Images for website article">
+      <change afterPath="$PROJECT_DIR$/Lazy Imports Info" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helpers/post_proc/post_effects.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/temp_options.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/temp_options.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -50,14 +51,14 @@
   "keyToString": {
     "Python.ProcessTestImages.executor": "Run",
     "Python.SLIC-Segmentation.executor": "Debug",
-    "Python.Testing.executor": "Debug",
+    "Python.Testing.executor": "Run",
     "Python.edge_detection.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "com.codeium.enabled": "true",
     "git-widget-placeholder": "master",
     "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "C:/Users/liamc/PycharmProjects/continuous-outline/Trial-AI-Base-Images/bg_removed",
+    "last_opened_file_path": "C:/Users/liamc/Downloads/refact-6.2.0.zip",
     "settings.editor.selected.configurable": "preferences.pluginManager"
   }
 }]]></component>
@@ -490,7 +491,23 @@
       <option name="project" value="LOCAL" />
       <updated>1741731870912</updated>
     </task>
-    <option name="localTasksCounter" value="41" />
+    <task id="LOCAL-00041" summary="Trimming blips funct going">
+      <option name="closed" value="true" />
+      <created>1741736073588</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1741736073588</updated>
+    </task>
+    <task id="LOCAL-00042" summary="Images for website article">
+      <option name="closed" value="true" />
+      <created>1741736124433</created>
+      <option name="number" value="00042" />
+      <option name="presentableId" value="LOCAL-00042" />
+      <option name="project" value="LOCAL" />
+      <updated>1741736124433</updated>
+    </task>
+    <option name="localTasksCounter" value="43" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -505,8 +522,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="screenshots n notes for story" />
-    <MESSAGE value="consolidate compass funcitons, did legality" />
     <MESSAGE value="deflectin &amp; starting point" />
     <MESSAGE value="configured network inputs" />
     <MESSAGE value="Dumb round working!  incl dumb af term cond, dsumb weights, dumb starbucks, etc" />
@@ -530,7 +545,9 @@
     <MESSAGE value="Set up variable inner weights" />
     <MESSAGE value="Zigzag typewriter n scorched earth func going woooo gettin stooookd" />
     <MESSAGE value="Back forth going, bg rem working as sep test func" />
-    <option name="LAST_COMMIT_MESSAGE" value="Back forth going, bg rem working as sep test func" />
+    <MESSAGE value="Trimming blips funct going" />
+    <MESSAGE value="Images for website article" />
+    <option name="LAST_COMMIT_MESSAGE" value="Images for website article" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -542,7 +559,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Testing.py</url>
-          <line>259</line>
+          <line>261</line>
           <option name="timeStamp" value="268" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">

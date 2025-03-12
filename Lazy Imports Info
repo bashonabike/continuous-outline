@@ -1,0 +1,113 @@
+Yes, you can definitely optimize your Python extension to avoid unnecessary imports when calling the smaller script. Here's a breakdown of strategies and best practices:
+
+**1. Lazy Imports (Conditional Imports)**
+
+* The most straightforward approach is to import the larger script's libraries only when needed, based on the input parameters.
+* This prevents loading them into memory when the smaller script is called.
+
+```python
+def my_extension_function(input_params):
+    if input_params["use_big_script"]:
+        # Lazy import of the big script and its dependencies
+        from .big_script import big_script_function
+
+        # Call the big script function
+        result = big_script_function(input_params)
+    else:
+        # Import and call the small script function
+        from .small_script import small_script_function
+
+        result = small_script_function(input_params)
+
+    return result
+```
+
+* **Explanation:**
+    * The `from .big_script import big_script_function` line is executed only if `input_params["use_big_script"]` is `True`.
+    * This ensures that the `big_script` module and its imports are loaded only when necessary.
+    * The same logic is applied to the small script.
+
+**2. Function-Level Imports**
+
+* If the `big_script` has many functions, and you only need a few of them based on the input, you can further optimize by importing only the specific functions you need.
+
+```python
+def my_extension_function(input_params):
+    if input_params["use_big_script"]:
+        if input_params["function_type"] == "type1":
+            from .big_script import function_type1
+            result = function_type1(input_params)
+        elif input_params["function_type"] == "type2":
+            from .big_script import function_type2
+            result = function_type2(input_params)
+        else:
+            from .big_script import function_type_default
+            result = function_type_default(input_params)
+    else:
+        from .small_script import small_script_function
+        result = small_script_function(input_params)
+    return result
+```
+
+**3. Module-Level Lazy Loading (More Advanced)**
+
+* For more complex scenarios, you can create a wrapper module that handles lazy loading of the `big_script`.
+* This can be useful if the `big_script` has many dependencies and you want to avoid repeated import checks.
+
+```python
+# big_script_wrapper.py
+_big_script = None
+
+def get_big_script():
+    global _big_script
+    if _big_script is None:
+        from .big_script import big_script_function #or import *
+        _big_script = big_script_function #or big_script
+    return _big_script
+
+# my_extension.py
+from .small_script import small_script_function
+from .big_script_wrapper import get_big_script
+
+def my_extension_function(input_params):
+    if input_params["use_big_script"]:
+        big_script_function = get_big_script()
+        result = big_script_function(input_params)
+    else:
+        result = small_script_function(input_params)
+    return result
+```
+
+* **Explanation:**
+    * The `big_script` is imported only the first time `get_big_script()` is called.
+    * Subsequent calls reuse the already imported module.
+
+**4. Dynamic Imports with `importlib` (Less Common)**
+
+* The `importlib` module allows you to import modules dynamically by name.
+* This can be useful if the script to be called is determined at runtime.
+
+```python
+import importlib
+
+def my_extension_function(input_params):
+    if input_params["use_big_script"]:
+        big_script = importlib.import_module(".big_script", package=__package__)
+        result = big_script.big_script_function(input_params)
+    else:
+        small_script = importlib.import_module(".small_script", package=__package__)
+        result = small_script.small_script_function(input_params)
+    return result
+```
+
+**Important Considerations:**
+
+* **Relative Imports:**
+    * Use relative imports (e.g., `from .big_script import ...`) to ensure that your extension works correctly within a package.
+* **Performance:**
+    * Lazy imports can improve performance, especially if the `big_script` has many dependencies.
+    * However, there is a small overhead associated with importing modules, so avoid excessive lazy imports.
+* **Error Handling:**
+    * Add appropriate error handling to catch import errors or other exceptions.
+* **Package Structure:**
+    * Ensure that your python extension is properly structured as a package.

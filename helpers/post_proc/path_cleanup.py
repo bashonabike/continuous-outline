@@ -21,8 +21,9 @@ def remove_inout(path, manhatten_dist_thresh=0, max_blip_coords=50):
     #Re-build path without inouts
     processed_path = path[0:removal_stretches[0][0]]
     for i in range(len(removal_stretches)):
-        if removal_stretches[i][1] + 1 > len(path) - 1: break
-        startpoint, endpoint = (removal_stretches[i][1] + 1,
+        if removal_stretches[i][1] > len(path) - 1: break
+        #NOTE: including 1 of the removed boundary so doesn't chop up path too much
+        startpoint, endpoint = (removal_stretches[i][1],
                                 removal_stretches[i + 1][0] if i < len(removal_stretches) - 1 else len(path))
         processed_path.extend(path[startpoint:endpoint])
 

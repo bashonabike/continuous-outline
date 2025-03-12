@@ -45,6 +45,7 @@ from helpers.mazify.MazeSections import MazeSections, MazeSection
 import helpers.mazify.temp_options as options
 import helpers.post_proc.smooth_path as smooth
 import helpers.post_proc.path_cleanup as clean
+import helpers.post_proc.post_effects as fx
 
 
 def draw_open_paths(image, paths, color=(0, 0, 255), thickness=2):
@@ -229,8 +230,9 @@ for file in os.listdir("Trial-AI-Base-Images\\bg_removed"):
       # flipped_coords = flipped_coords_nd.tolist()  # Flip y-coordinates
       start= time.time_ns()
       remove_blips = clean.remove_inout(raw_path_coords_centered, 50, 100)
+      dithered = fx.lfo_dither(remove_blips, 20, 1000, 3.0)
 
-      simplified = smooth.simplify_line(remove_blips, tolerance=options.simplify_tolerance)
+      simplified = smooth.simplify_line(dithered, tolerance=options.simplify_tolerance)
 
 
 
@@ -239,7 +241,7 @@ for file in os.listdir("Trial-AI-Base-Images\\bg_removed"):
       end = time.time_ns()
       print(str((end - start)/1e6) + " ms to do post proc")
 
-      y_coords, x_coords = zip(*remove_blips)  # Unzip the coordinates
+      y_coords, x_coords = zip(*simplified)  # Unzip the coordinates
       plt.plot(x_coords, y_coords, marker='o', markersize=1)  # Plot the line with markers
       plt.gca().invert_yaxis()
       plt.xlabel("X-coordinate")
