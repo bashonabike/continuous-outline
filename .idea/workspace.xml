@@ -4,13 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Got setting data by level configured">
-      <change afterPath="$PROJECT_DIR$/helpers/caching/build_objects_from_db.py" afterDir="false" />
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Midway thru build from df working">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/caching/build_objects_from_db.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/build_objects_from_db.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/caching/set_data_by_level.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/set_data_by_level.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgeNode.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgeNode.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/temp_options.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/temp_options.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -540,7 +542,15 @@
       <option name="project" value="LOCAL" />
       <updated>1741839344703</updated>
     </task>
-    <option name="localTasksCounter" value="47" />
+    <task id="LOCAL-00047" summary="Midway thru build from df working">
+      <option name="closed" value="true" />
+      <created>1741844147863</created>
+      <option name="number" value="00047" />
+      <option name="presentableId" value="LOCAL-00047" />
+      <option name="project" value="LOCAL" />
+      <updated>1741844147863</updated>
+    </task>
+    <option name="localTasksCounter" value="48" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -555,7 +565,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Got stuff funcitoning, perf imprv, didn't work well tho, started on path-walking use compass just to find Jumps between paths" />
     <MESSAGE value="Working on edge-snapping" />
     <MESSAGE value="Got all stuff in place!! still need to debug" />
     <MESSAGE value="Debugged edge tracking, finessing magnetism etc" />
@@ -580,7 +589,8 @@
     <MESSAGE value="Working on db caching, created data layer and db" />
     <MESSAGE value="Setting Level 1 data configured" />
     <MESSAGE value="Got setting data by level configured" />
-    <option name="LAST_COMMIT_MESSAGE" value="Got setting data by level configured" />
+    <MESSAGE value="Midway thru build from df working" />
+    <option name="LAST_COMMIT_MESSAGE" value="Midway thru build from df working" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -602,7 +612,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>178</line>
+          <line>205</line>
           <option name="timeStamp" value="343" />
         </line-breakpoint>
       </breakpoints>

@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import helpers.mazify.temp_options as options
 
 
 def build_level_1_data(dataframes:dict, out_data:dict):
@@ -52,10 +53,11 @@ def build_level_1_data(dataframes:dict, out_data:dict):
 
     out_data["focus_masks"] = focus_masks
 
-def build_level_2_data(dataframes:dict, out_data:dict):
+def build_level_2_data(dataframes:dict, in_data:dict, out_data:dict):
     """
     Build the level 2 data for the sections and agent.
     :param outer_contours: dict of dataframes to set
+    :param in_data: dict of objects inputted from previous level
     :param out_data: dict of objects to output
     :return: None
     """
@@ -63,6 +65,7 @@ def build_level_2_data(dataframes:dict, out_data:dict):
     #Retrieve section header data
     section_header_df = dataframes["Sections"]
     height, width = section_header_df['height'][0], section_header_df['width'][0]
+    shape = (height, width)
     y_grade, x_grade = section_header_df['y_grade'][0], section_header_df['x_grade'][0]
 
     #Set up graph
@@ -91,6 +94,7 @@ def build_level_2_data(dataframes:dict, out_data:dict):
         path_graph.add_nodes_from(nodes_non_0)
 
     # Set edges
+    #TODO: set indices group and join on indices
     graph_edges_df = dataframes["GraphEdge"]
     graph_edges_formed_df = pd.merge(graph_edges_df, graph_nodes_df, left_on='from_node', right_on='node', how='inner')
     graph_edges_formed_df = pd.merge(graph_edges_formed_df, graph_nodes_df, left_on='to_node', right_on='node',
@@ -133,113 +137,99 @@ def build_level_2_data(dataframes:dict, out_data:dict):
     focus_sections = []
     for i, focus_mask_value, group_df in focus_sections_df.groupby(['focus_mask']):
         y_coords = group_df['y_sec'].to_numpy()
-        x_coords =   group_df['x_sec'].to_numpy()
+        x_coords = group_df['x_sec'].to_numpy()
         focus_sections.append(list(zip(y_coords, x_coords)))
 
 
-    #Set sections details
-    y_coords, x_coords = np.indices(sections.sections.shape)  # Generate y and x coordinates using indices
-
-    # Flatten the arrays
-    y_flat = y_coords.flatten()
-    x_flat = x_coords.flatten()
-    sections_flat = sections.sections.flatten()
-    dumb_req = np.array([section.dumb_req for section in sections_flat])
-    dumb_opt = np.array([section.dumb_opt for section in sections_flat])
-
-    #Create dataframe
-    dataframes["Section"] = pd.DataFrame({
-        'y_sec': y_flat,
-        'x_sec': x_flat,
-        'dumb_req': dumb_req,
-        'dumb_opt': dumb_opt
-    })[dataframes["Section"].columns]
+    #Build section details (except adding nodes)
+    from helpers.mazify.MazeSections import MazeSections, MazeSection, MazeSectionTracker
+    sections_df = dataframes["Section"]
+    sections_with_focus_df = pd.merge(sections_df, focus_sections_df, on=['y_sec', 'x_sec'], how='left')
+    sections_with_focus_df.sort_values(['y_sec', 'x_sec', 'focus_mask'], inplace=True)
+    sections_nd = np.zeros(shape, dtype=MazeSection)
+    for i, group_df in sections_with_focus_df.groupby(['y_sec', 'x_sec']):
+        bounds =  (group_df['y_start'], group_df['y_end'], group_df['x_start'], group_df['x_end'])
+        focus_masks_l = group_df['focus_mask'].to_list() if (group_df['focus_mask'] is not None
+                                                            and not pd.isna(group_df['focus_mask'])) else []
+        cur_section = MazeSection.from_df(bounds, group_df['num_edge_pixels'], group_df['y_sec'], group_df['x_sec'],
+                                          group_df['num_edge_pixels'], focus_masks_l, group_df['dumb_req'],
+                                          group_df['dumb_opt'])
+        sections_nd[group_df['y_sec'], group_df['x_sec']] = cur_section
 
 
-    #Set focus sections
-    for i, focus_mask in enumerate(focus_sections):
-        y_sec, x_sec = zip(*[(s.y_sec, s.x_sec) for s in focus_mask])
+    #Build edge path, trackers, nodes
+    from helpers.mazify.EdgePath import EdgePath
+    from helpers.mazify.EdgeNode import EdgeNode
+    edge_paths_df, edge_nodes_df, trackers_df = dataframes["EdgePath"], dataframes["PathNode"], dataframes["SectionTracker"]
+    edge_paths_all_df = pd.merge(edge_paths_df, trackers_df, on=['path'], how='inner')
+    edge_paths_all_df = pd.merge(edge_paths_all_df, edge_nodes_df, on=['path', 'tracker_num'], how='inner')
+    edge_paths_df.sort_values(['path', 'tracker_num', 'node'], inplace=True)
+    edge_paths, cur_trackers, cur_path, cur_tracker_path = [], [], [], []
+    cur_path_num, cur_outer, cur_closed, cur_weight = -1, False, False, 0
+    cur_y_sec, cur_x_sec = -1, -1
+    cur_tracker_num = -1
+    for (path_num, tracker_num), path_tracker_df in edge_paths_df.groupby(['path', 'tracker_num']):
+        if cur_tracker_num != path_tracker_df['tracker_num']:
+            prev_tracker = cur_trackers[-1] if len(cur_trackers) > 0 else None
+            cur_trackers.append(MazeSectionTracker.from_df(sections_nd[cur_y_sec, cur_x_sec], cur_tracker_path[0],
+                                                           cur_tracker_path[-1], cur_tracker_num, prev_tracker,
+                                                           cur_tracker_path))
 
-        # Create the DataFrame
-        partial_df = pd.DataFrame({
-            'y_sec': y_sec,
-            'x_sec': x_sec,
-            'focus_mask': i
-        })[dataframes["FocusSection"].columns]
+            for node in cur_tracker_path:
+                node.section_tracker = cur_trackers[-1]
+                node.section_tracker_num = cur_tracker_num
 
-        dataframes["FocusSection"] = pd.concat([dataframes["FocusSection"], partial_df], ignore_index=True)
+            cur_tracker_num, cur_tracker_path = path_tracker_df.at[0, 'tracker_num'], []
+            cur_y_sec, cur_x_sec = path_tracker_df.at[0, 'y_sec'], path_tracker_df.at[0, 'x_sec']
 
+        if cur_path_num != path_tracker_df.at[0, 'path']:
+            if cur_path_num != -1:
+                edge_paths.append(EdgePath.from_df(cur_path_num, cur_outer, cur_closed, cur_weight, cur_path,
+                                                   cur_trackers))
 
-    #Set edge paths
-    path, is_outer, is_closed, custom_weight = zip(*[(p.num, p.outer, p.closed, p.custom_weight) for p in edge_paths])
-    dataframes["EdgePath"] = pd.DataFrame({
-        'path': path,
-        'is_outer': is_outer,
-        'is_closed': is_closed,
-        'custom_weight': custom_weight
-    })[dataframes["EdgePath"].columns]
+            for node in cur_path:
+                node.path = edge_paths[-1]
 
+            cur_trackers, cur_path = [], []
+            cur_path_num, cur_outer, cur_closed, cur_weight = (path_tracker_df.at[0, 'path'],
+                                                                path_tracker_df.at[0, 'is_outer'],
+                                                                path_tracker_df.at[0, 'is_closed'],
+                                                                path_tracker_df.at[0, 'custom_weight'])
 
-    #Set edge nodes
-    for edge_path in edge_paths:
-        path = edge_path.path
-        y, x, tracker_num, is_outer, y_sec, x_sec = zip(
-            *[(n.y, n.x, n.section_tracker_num, n.outer, n.section.y_sec, n.section.x_sec) for n in path])
-        node = range(0, len(path))
-        partial_df = pd.DataFrame({
-            'y_sec': y_sec,
-            'x_sec': x_sec,
-            'y': y,
-            'x': x,
-            'tracker_num': tracker_num,
-            'is_outer': is_outer,
-            'node': node,
-            'path': path.num
-        })[dataframes["PathNode"].columns]
-        dataframes["PathNode"] = pd.concat([dataframes["PathNode"], partial_df], ignore_index=True)
+        cur_node = EdgeNode.from_df(path_tracker_df.at[0, 'y'], path_tracker_df.at[0, 'x'], path_tracker_df.at[0, 'path'],
+                                    path_tracker_df.at[0, 'node'], path_tracker_df.at[0, 'is_outer'],
+                                    sections_nd[cur_y_sec, cur_x_sec])
+        cur_path.append(cur_node)
+        cur_tracker_path.append(cur_node)
 
-    #Set section trackers
-    max_tracker_size = 0
-    for edge_path in edge_paths:
-        trackers = edge_path.section_tracker
-        if len(trackers) > max_tracker_size: max_tracker_size = len(trackers)
-        in_node,out_node,path,rev_in_node,rev_out_node,tracker_num,prev_tracker,next_tracker,y_sec,x_sec = zip(*[(
-            t.in_node,t.out_node,t.path_num,t.rev_in_node.num,t.rev_out_node.num,t.tracker_num,
-            t.prev_tracker.num,t.next_tracker.num,t.section.y_sec,t.section.x_sec) for t in trackers])
-        partial_df = pd.DataFrame({
-            'in_node': in_node,
-            'out_node': out_node,
-            'path': path,
-            'rev_in_node': rev_in_node,
-            'rev_out_node': rev_out_node,
-            'tracker_num': tracker_num,
-            'prev_tracker': prev_tracker,
-            'next_tracker': next_tracker,
-            'y_sec': y_sec,
-            'x_sec': x_sec
-        })[dataframes["SectionTracker"].columns]
-        dataframes["SectionTracker"] = pd.concat([dataframes["SectionTracker"], partial_df], ignore_index=True)
+    #Final push last edge path
+    last_next_tracker = cur_trackers[0] if cur_closed else None
+    prev_tracker = cur_trackers[-1] if len(cur_trackers) > 0 else None
+    cur_trackers.append(MazeSectionTracker.from_df(sections_nd[cur_y_sec, cur_x_sec], cur_tracker_path[0],
+                                                   cur_tracker_path[-1], cur_tracker_num, prev_tracker,
+                                                   cur_tracker_path, last_next_tracker))
+    for node in cur_tracker_path:
+        node.section_tracker = cur_trackers[-1]
+        node.section_tracker_num = cur_tracker_num
+
+    edge_paths.append(EdgePath.from_df(cur_path_num, cur_outer, cur_closed, cur_weight, cur_path,
+                                       cur_trackers))
 
 
+    #Configure sections object
+    sections_object = MazeSections.from_df(options.maze_sections_across, options.maze_sections_across, focus_sections,
+                                           sections_nd, y_grade, x_grade, path_graph)
+    out_data['sections'] = sections_object
 
 
-    #Set into dataframe
-    dataframes["GraphEdge"] = pd.DataFrame({
-        'from_node': hash_in,
-        'to_node': hash_out,
-        'weight': weights
-    })[dataframes["GraphEdge"].columns]
-
-
-    #Set agent
-    dataframes["Agent"] = pd.DataFrame({
-        'start_node': agent.start_node.num,
-        'end_node': agent.end_node.num,
-        'start_path': agent.start_node.path_num,
-        'end_path': agent.end_node.path_num
-    })[dataframes["Agent"].columns]
-
-
+    #Configure agent object
+    from helpers.mazify.MazeAgent import MazeAgent
+    agent_df = dataframes["Agent"]
+    start_node = edge_paths[agent_df.at[0, 'start_path'] - 1].path[agent_df.at[0, 'start_node']]
+    end_node = edge_paths[agent_df.at[0, 'end_path'] - 1].path[agent_df.at[0, 'end_node']]
+    agent = MazeAgent.from_df(in_data['outer_edges'], in_data['outer_contours'], in_data['inner_edges'], in_data['inner_contours'],
+                              sections_object, edge_paths, agent_df.at[0, 'max_tracker_size'], start_node, end_node)
+    out_data['agent'] = agent
 def set_level_3_data(dataframes:dict, input_data:dict):
     """
     Set the level 2 data for the contours and edges.

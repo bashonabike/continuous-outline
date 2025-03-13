@@ -23,9 +23,19 @@ class EdgePath:
         else:
             self.parse_path(path_raw, maze_sections, is_outer)
 
+    @classmethod
+    def from_df(self, path_num, is_outer, is_closed, custom_weight, path, trackers):
+        self.path, self.num = path, path_num
+        self.outer = is_outer
+        self.closed = is_closed
+        self.section_tracker = trackers
+        self.section_tracker_red_nd_doubled = \
+            np.array([t.section for t in (self.section_tracker + self.section_tracker)])
+        self.custom_weight = custom_weight
+        return self
 
     def parse_path(self, path, maze_sections: sections.MazeSections, is_outer=False,
-                   custom_weight=0):
+       custom_weight=0):
         #Set up nodes
         prev_section, section_tracker_num = None, -1
         prev_tracker, cur_tracker = None, None

@@ -122,15 +122,23 @@ def set_level_2_data(dataframes:dict, input_data:dict):
     y_flat = y_coords.flatten()
     x_flat = x_coords.flatten()
     sections_flat = sections.sections.flatten()
-    dumb_req = np.array([section.dumb_req for section in sections_flat])
-    dumb_opt = np.array([section.dumb_opt for section in sections_flat])
+
+    dumb_req,dumb_opt,y_start,y_end,x_start,x_end,num_edge_pixels,is_focus_region = (
+        zip(*[(s.dumb_req, s.dumb_opt, s.ymin, s.ymax, s.xmin, s.xmax, s.edge_pixels, s.focus_region)
+              for s in sections_flat]))
 
     #Create dataframe
     dataframes["Section"] = pd.DataFrame({
         'y_sec': y_flat,
         'x_sec': x_flat,
         'dumb_req': dumb_req,
-        'dumb_opt': dumb_opt
+        'dumb_opt': dumb_opt,
+        'y_start': y_start,
+        'y_end': y_end,
+        'x_start': x_start,
+        'x_end': x_end,
+        'num_edge_pixels': num_edge_pixels,
+        'is_focus_region': is_focus_region
     })[dataframes["Section"].columns]
 
 
@@ -246,7 +254,8 @@ def set_level_2_data(dataframes:dict, input_data:dict):
         'start_node': agent.start_node.num,
         'end_node': agent.end_node.num,
         'start_path': agent.start_node.path_num,
-        'end_path': agent.end_node.path_num
+        'end_path': agent.end_node.path_num,
+        'max_tracker_size': agent.max_tracker_size
     })[dataframes["Agent"].columns]
 
 

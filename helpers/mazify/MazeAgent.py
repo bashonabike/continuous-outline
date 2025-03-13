@@ -12,6 +12,8 @@ from helpers.mazify.EdgePath import EdgePath
 from helpers.mazify.EdgeNode import EdgeNode
 import helpers.mazify.NetworkxExtension as nxex
 
+#TODO: Push maze finding func into sep helper, lazy import it at start of each finder method so not loading on ds_load
+
 class MazeAgent:
     def __init__(self, outer_edges, outer_contours, inner_edges, inner_contours,
                  maze_sections: sections.MazeSections):
@@ -41,6 +43,31 @@ class MazeAgent:
         self.cur_section = None
         self.cur_point, self.cur_node = (0, 0), None
         self.start_node, self.end_node = None, None
+        self.edge_rev = False
+
+    @classmethod
+    def from_df(self, outer_edges, outer_contours, inner_edges, inner_contours,
+                 maze_sections: sections.MazeSections, all_contours_objects:list,
+                max_tracker_size, start_node, end_node):
+        #NOTE: edges are codified numerically to correspond with outer contours
+        self.outer_edges, self.outer_contours = outer_edges, outer_contours
+        self.inner_edges, self.inner_contours = inner_edges, inner_contours
+        self.maze_sections = maze_sections
+
+        self.all_edges_bool, self.all_contours = (np.where(self.outer_edges + self.inner_edges > 0, True, False),
+                                             self.outer_contours + self.inner_contours)
+        self.all_contours_objects, self.outer_contours_objects, self.inner_contours_objects  = (all_contours_objects,
+                                                                                                [], [])
+        self.outer_contours_objects = [p for p in self.all_contours_objects if p.outer]
+        self.inner_contours_objects = [p for p in self.all_contours_objects if not p.outer]
+        self.outer_contours_objects.sort(key=lambda p: p.num)
+        self.inner_contours_objects.sort(key=lambda p: p.num)
+        self.max_tracker_size = max_tracker_size
+
+        self.dims = (outer_edges.shape[0], outer_edges.shape[1])
+        self.cur_section = None
+        self.cur_point, self.cur_node = (0, 0), None
+        self.start_node, self.end_node = start_node, end_node
         self.edge_rev = False
 
     #region Build

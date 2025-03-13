@@ -1,5 +1,5 @@
 class EdgeNode:
-    def __init__(self, y, x, path, node_num, is_outer, hash=0):
+    def __init__(self, y, x, path, node_num, is_outer):
         self.y, self.x = y, x
         self.path, self.path_num = path, path.num
         self.num = node_num
@@ -8,7 +8,18 @@ class EdgeNode:
         self.section = None
         self.section_tracker = None
         self.section_tracker_num = -1
-        # self.hash = hash
+
+    @classmethod
+    def from_df(self, y, x, path_num, node_num, is_outer, section):
+        self.y, self.x = y, x
+        self.path, self.path_num = None, path_num
+        self.num = node_num
+        self.point = (y, x)
+        self.outer = is_outer
+        self.section = section
+        self.section_tracker = None
+        self.section_tracker_num = -1
+        return self
 
     def set_section(self, section, section_tracker):
         self.section = section
