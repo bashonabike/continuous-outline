@@ -16,14 +16,14 @@ class MazeSections:
             self.count_true_pixels_in_sections(outer_edge, m, n, req_details_mask))
 
         self.path_graph = nx.Graph()
-        self.set_section_blank_overs_in_graph()
+        # self.set_section_blank_overs_in_graph()
 
 
-    def set_section_blank_overs_in_graph(self):
-        #Set sections as nodes into graph
-        for i in range(self.m):
-            for j in range(self.n):
-                self.path_graph.add_node((i, j))
+    # def set_section_blank_overs_in_graph(self):
+    #     #Set sections as nodes into graph
+    #     for i in range(self.m):
+    #         for j in range(self.n):
+    #             self.path_graph.add_node((i, j))
 
         #Set jumps as edges into graph
         for i in range(self.m):

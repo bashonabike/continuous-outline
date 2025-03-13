@@ -4,10 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Working on db caching, created data layer and db">
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Setting Level 1 data configured">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/caching/set_data_by_level.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/set_data_by_level.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgeNode.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgeNode.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -521,7 +525,15 @@
       <option name="project" value="LOCAL" />
       <updated>1741807692542</updated>
     </task>
-    <option name="localTasksCounter" value="45" />
+    <task id="LOCAL-00045" summary="Setting Level 1 data configured">
+      <option name="closed" value="true" />
+      <created>1741812598356</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1741812598356</updated>
+    </task>
+    <option name="localTasksCounter" value="46" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -536,7 +548,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Dumb round working!  incl dumb af term cond, dsumb weights, dumb starbucks, etc" />
     <MESSAGE value="Debugging &amp; improvements of basic dumb round func" />
     <MESSAGE value="Got stuff funcitoning, perf imprv, didn't work well tho, started on path-walking use compass just to find Jumps between paths" />
     <MESSAGE value="Working on edge-snapping" />
@@ -561,7 +572,8 @@
     <MESSAGE value="Images for website article" />
     <MESSAGE value="Configured lfo dither" />
     <MESSAGE value="Working on db caching, created data layer and db" />
-    <option name="LAST_COMMIT_MESSAGE" value="Working on db caching, created data layer and db" />
+    <MESSAGE value="Setting Level 1 data configured" />
+    <option name="LAST_COMMIT_MESSAGE" value="Setting Level 1 data configured" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -583,7 +595,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>166</line>
+          <line>178</line>
           <option name="timeStamp" value="343" />
         </line-breakpoint>
       </breakpoints>

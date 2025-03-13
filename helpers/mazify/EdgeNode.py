@@ -1,12 +1,14 @@
 class EdgeNode:
-    def __init__(self, y, x, path, is_outer):
+    def __init__(self, y, x, path, node_num, is_outer, hash=0):
         self.y, self.x = y, x
         self.path, self.path_num = path, path.num
+        self.num = node_num
         self.point = (y, x)
         self.outer = is_outer
         self.section = None
         self.section_tracker = None
         self.section_tracker_num = -1
+        # self.hash = hash
 
     def set_section(self, section, section_tracker):
         self.section = section

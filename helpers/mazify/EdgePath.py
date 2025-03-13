@@ -13,12 +13,13 @@ class EdgePath:
         self.outer = is_outer
         self.closed = True #assert closed
         self.section_tracker, self.section_tracker_red_nd_doubled = [], None
+        self.custom_weight = 0
         if options.inner_contour_variable_weights and not is_outer and max_inner_contour_len > 0:
             #Set custom weight based on contour length
-            custom_weight = options.dumb_node_optional_weight + ((max_inner_contour_len - len(path_raw))//
+            self.custom_weight = options.dumb_node_optional_weight + ((max_inner_contour_len - len(path_raw))//
                       (max_inner_contour_len//
                        (options.dumb_node_optional_max_variable_weight - options.dumb_node_optional_weight + 1)))
-            self.parse_path(path_raw, maze_sections, is_outer, custom_weight)
+            self.parse_path(path_raw, maze_sections, is_outer, self.custom_weight)
         else:
             self.parse_path(path_raw, maze_sections, is_outer)
 
@@ -34,7 +35,7 @@ class EdgePath:
         if custom_weight > 0: edge_weight = custom_weight
         is_focus, section_edge_weight = False, edge_weight
         for i in range(len(path)):
-            node = EdgeNode.EdgeNode(path[i][0], path[i][1], self, is_outer)
+            node = EdgeNode.EdgeNode(path[i][0], path[i][1], self, i, is_outer)
 
             if i > 0:
                 node.set_prev_node(self.path[i-1])

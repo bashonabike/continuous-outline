@@ -24,12 +24,16 @@ class MazeAgent:
                                              self.outer_contours + self.inner_contours)
         self.all_contours_objects, self.outer_contours_objects, self.inner_contours_objects  = [], [], []
         max_inner_contour_len = max([len(contour) for contour in self.inner_contours])
+        self.max_tracker_size = 0
         for i in range(len(self.all_contours)):
             new_path = EdgePath(i + 1, self.all_contours[i], maze_sections, i < len(self.outer_contours),
                                 max_inner_contour_len)
             self.all_contours_objects.append(new_path)
             if new_path.outer: self.outer_contours_objects.append(new_path)
             else: self.inner_contours_objects.append(new_path)
+            if len(new_path.section_tracker) > self.max_tracker_size:
+                self.max_tracker_size = len(new_path.section_tracker)
+        self.set_node_hashes()
 
         self.maze_sections.set_section_node_cats()
 
@@ -40,6 +44,14 @@ class MazeAgent:
         self.edge_rev = False
 
     #region Build
+    def set_node_hashes(self):
+        height, width = self.outer_edges.shape
+        num_paths, num_trackers = len(self.outer_edges), self.max_tracker_size
+        for path in self.all_contours_objects:
+            for node in path.path:
+                node.hash = (width*num_paths*num_trackers*node.y + num_paths*num_trackers*node.x +
+                             num_trackers*node.path_num + node.section_tracker_num)
+
     #endregion
     #region Run
     def plot_path(self, path_coords, image):
@@ -554,7 +566,7 @@ class MazeAgent:
             else:
                 next_sect = None
 
-            if len(cur_sect) == 4:
+            if len(cur_sect) == 5:
                 if inflection_out is not None:
                     cur_tracker_idx = inflection_out['tracker_path_idx']
                 else:
