@@ -97,8 +97,6 @@ def set_level_2_data(dataframes:dict, input_data:dict):
     :param input_data: dict of objects to input
     :return: None
     """
-    # import helpers.mazify.MazeSections
-    # import helpers.mazify.MazeAgent
 
     #Retrieve input data
     sections = input_data["sections"]
@@ -210,7 +208,7 @@ def set_level_2_data(dataframes:dict, input_data:dict):
 
     #Figure out hashing
     height, width = sections.img_height, sections.img_width
-    num_paths, num_trackers = len(edge_paths), max_tracker_size
+    num_paths, num_trackers = len(edge_paths) + 1, max_tracker_size #NOTE: +1 since 1-indexed
     hash = (width * num_paths * num_trackers * nodes[:, 0]+ num_paths * num_trackers * nodes[:, 1] +
             num_trackers * nodes[:, 2] + nodes[:, 3])
 

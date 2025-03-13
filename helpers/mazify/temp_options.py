@@ -53,6 +53,9 @@ vertical_zigzag_traverse_threshold = 0.3 #Ratio of region height to typewriter l
 back_forth_lines = 12 #MUST BE AT LEAST 2!!!
 back_forth_traverse_threshold = 0.3 #Ratio of region height to typewriter line height
 
+#TODO: Do "include details proximal to outer edge" setting, maybe include edges that are at least a certain % within the allowable margin
+#Set them as required
+
 simplify_tolerance = 0.7
 
 

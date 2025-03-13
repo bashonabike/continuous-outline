@@ -11,19 +11,27 @@ class MazeSections:
     def __init__(self, outer_edge, m, n, req_details_mask):
         self.m, self.n = m, n
         self.focus_region_sections = []
-        self.dumb_nodes_req = np.zeros((m, n), dtype=np.uint8)
-        self.sections, self.section_indices_list, self.y_grade, self.x_grade = (
+        self.sections, _, self.y_grade, self.x_grade = (
             self.count_true_pixels_in_sections(outer_edge, m, n, req_details_mask))
 
         self.path_graph = nx.Graph()
-        # self.set_section_blank_overs_in_graph()
+        self.set_section_blank_overs_in_graph()
+
+    @classmethod
+    def from_df(self, m, n, focus_region_sections:list[np.ndarray], sections:np.ndarray,
+                 y_grade, x_grade, path_graph: nx.Graph):
+        self.m, self.n = m, n
+        self.focus_region_sections = focus_region_sections
+        self.sections = sections
+        self.y_grade, self.x_grade = y_grade, x_grade
+        self.path_graph = path_graph
 
 
-    # def set_section_blank_overs_in_graph(self):
-    #     #Set sections as nodes into graph
-    #     for i in range(self.m):
-    #         for j in range(self.n):
-    #             self.path_graph.add_node((i, j))
+    def set_section_blank_overs_in_graph(self):
+        #Set sections as nodes into graph
+        for i in range(self.m):
+            for j in range(self.n):
+                self.path_graph.add_node((i, j))
 
         #Set jumps as edges into graph
         for i in range(self.m):
@@ -108,7 +116,6 @@ class MazeSections:
                 sections[i, j] = MazeSection(self, (y_start, y_end, x_start, x_end), count, i, j,
                                              len(focus_region_nums) > 0, focus_region_nums)
                 for k in focus_region_nums: self.focus_region_sections[k].append(sections[i, j])
-                if len(focus_region_nums) > 0: self.dumb_nodes_req[i, j] = 1
 
         return sections, section_indices_list, section_height, section_width
 

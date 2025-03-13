@@ -33,7 +33,7 @@ class MazeAgent:
             else: self.inner_contours_objects.append(new_path)
             if len(new_path.section_tracker) > self.max_tracker_size:
                 self.max_tracker_size = len(new_path.section_tracker)
-        self.set_node_hashes()
+        # self.set_node_hashes()
 
         self.maze_sections.set_section_node_cats()
 
@@ -44,13 +44,13 @@ class MazeAgent:
         self.edge_rev = False
 
     #region Build
-    def set_node_hashes(self):
-        height, width = self.outer_edges.shape
-        num_paths, num_trackers = len(self.outer_edges), self.max_tracker_size
-        for path in self.all_contours_objects:
-            for node in path.path:
-                node.hash = (width*num_paths*num_trackers*node.y + num_paths*num_trackers*node.x +
-                             num_trackers*node.path_num + node.section_tracker_num)
+    # def set_node_hashes(self):
+    #     height, width = self.outer_edges.shape
+    #     num_paths, num_trackers = len(self.outer_edges), self.max_tracker_size
+    #     for path in self.all_contours_objects:
+    #         for node in path.path:
+    #             node.hash = (width*num_paths*num_trackers*node.y + num_paths*num_trackers*node.x +
+    #                          num_trackers*node.path_num + node.section_tracker_num)
 
     #endregion
     #region Run
