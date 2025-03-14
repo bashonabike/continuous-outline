@@ -324,7 +324,6 @@ for file in os.listdir("Trial-AI-Base-Images\\bg_removed"):
       start = time.time_ns()
       lev_1_data = {}
       builddf.build_level_1_data(retrieved, lev_1_data)
-      data_retr.close_connection()
 
 
       end = time.time_ns()
@@ -334,11 +333,28 @@ for file in os.listdir("Trial-AI-Base-Images\\bg_removed"):
       start = time.time_ns()
       lev_2_data = {}
       builddf.build_level_2_data(retrieved, lev_1_data, lev_2_data)
-      data_retr.close_connection()
 
 
       end = time.time_ns()
       print(str((end - start) / 1e6) + " ms to build level 2 objects")
+
+
+      start = time.time_ns()
+      lev_3_data = {}
+      builddf.build_level_3_data(retrieved, lev_3_data)
+
+
+      end = time.time_ns()
+      print(str((end - start) / 1e6) + " ms to build level 3 objects")
+
+
+      start = time.time_ns()
+      lev_4_data = {}
+      builddf.build_level_4_data(retrieved, lev_4_data)
+
+
+      end = time.time_ns()
+      print(str((end - start) / 1e6) + " ms to build level 4 objects")
 
       #
       # start = time.time_ns()
