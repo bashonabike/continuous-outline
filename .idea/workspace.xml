@@ -4,17 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="COnfigured building back from df all objects">
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="WOrking on DAL,  class funcitons fixed up">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testing.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/caching/DataRetrieval.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/DataRetrieval.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/caching/build_objects_from_db.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/build_objects_from_db.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/caching/set_data_by_level.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/set_data_by_level.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgeNode.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgeNode.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -561,7 +557,15 @@
       <option name="project" value="LOCAL" />
       <updated>1741892257126</updated>
     </task>
-    <option name="localTasksCounter" value="49" />
+    <task id="LOCAL-00049" summary="WOrking on DAL,  class funcitons fixed up">
+      <option name="closed" value="true" />
+      <created>1741932007740</created>
+      <option name="number" value="00049" />
+      <option name="presentableId" value="LOCAL-00049" />
+      <option name="project" value="LOCAL" />
+      <updated>1741932007740</updated>
+    </task>
+    <option name="localTasksCounter" value="50" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -576,7 +580,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Got all stuff in place!! still need to debug" />
     <MESSAGE value="Debugged edge tracking, finessing magnetism etc" />
     <MESSAGE value="Dumb nodes breaking into sections working, got weighted efficient djikstra going! defs a start" />
     <MESSAGE value="Got start/end going for travelling salesman, nodes walking etc coded for walk not tested yet tho" />
@@ -601,7 +604,8 @@
     <MESSAGE value="Got setting data by level configured" />
     <MESSAGE value="Midway thru build from df working" />
     <MESSAGE value="COnfigured building back from df all objects" />
-    <option name="LAST_COMMIT_MESSAGE" value="COnfigured building back from df all objects" />
+    <MESSAGE value="WOrking on DAL,  class funcitons fixed up" />
+    <option name="LAST_COMMIT_MESSAGE" value="WOrking on DAL,  class funcitons fixed up" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -628,8 +632,13 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/caching/build_objects_from_db.py</url>
-          <line>208</line>
-          <option name="timeStamp" value="404" />
+          <line>357</line>
+          <option name="timeStamp" value="415" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/helpers/caching/build_objects_from_db.py</url>
+          <line>287</line>
+          <option name="timeStamp" value="420" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

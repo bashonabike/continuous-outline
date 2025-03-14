@@ -205,78 +205,169 @@ def build_level_2_data(dataframes:dict, in_data:dict, out_data:dict):
     end = time.time_ns()
     print(str((end - start) / 1e6) + " ms to do NEW sections")
 
+    # try:
+    start = time.time_ns()
     #Build edge path, trackers, nodes
     from helpers.mazify.EdgePath import EdgePath
     from helpers.mazify.EdgeNode import EdgeNode
     edge_paths_df, edge_nodes_df, trackers_df = dataframes["EdgePath"], dataframes["PathNode"], dataframes["SectionTracker"]
     edge_paths_all_df = pd.merge(edge_paths_df, trackers_df, on=['path'], how='inner')
-    edge_paths_all_df = pd.merge(edge_paths_all_df, edge_nodes_df, on=['path', 'tracker_num'], how='inner')
+    edge_paths_all_df = pd.merge(edge_paths_all_df, edge_nodes_df, on=['path', 'tracker_num'], how='inner', suffixes=("", "_tracker"))
     edge_paths_all_df.sort_values(['path', 'tracker_num', 'node'], inplace=True)
-    edge_paths, cur_trackers, cur_path, cur_tracker_path = [], [], [], []
-    cur_path_num, cur_outer, cur_closed, cur_weight = -1, False, False, 0
-    cur_y_sec, cur_x_sec = -1, -1
-    cur_tracker_num = -1
-    for (path_num, tracker_num), path_tracker_df in edge_paths_all_df.groupby(['path', 'tracker_num']):
-        if cur_tracker_num != path_tracker_df['tracker_num']:
-            prev_tracker = cur_trackers[-1] if len(cur_trackers) > 0 else None
-            cur_trackers.append(MazeSectionTracker.from_df(sections_nd[cur_y_sec, cur_x_sec], cur_tracker_path[0],
-                                                           cur_tracker_path[-1], cur_tracker_num, prev_tracker,
-                                                           cur_tracker_path))
+    edge_paths_all_df['section'] = sections_nd[edge_paths_all_df['y_sec'], edge_paths_all_df['x_sec']]
 
-            for node in cur_tracker_path:
-                node.section_tracker = cur_trackers[-1]
-                node.section_tracker_num = cur_tracker_num
+    #Build all stub trackers
+    edge_paths_all_df.set_index(['path', 'tracker_num'], inplace=True)
+    edge_paths_all_df['path_num'] = edge_paths_all_df.index.get_level_values(0)
+    trackers_df = edge_paths_all_df.groupby(level=[0, 1]).agg(
+        num_nodes=('node', 'count'),
+        section=('section', 'first')
 
-            cur_tracker_num, cur_tracker_path = path_tracker_df.at[0, 'tracker_num'], []
-            cur_y_sec, cur_x_sec = path_tracker_df.at[0, 'y_sec'], path_tracker_df.at[0, 'x_sec']
+    )
+    trackers_df['path_num'] = trackers_df.index.get_level_values(0)
+    trackers_df['tracker_num'] = trackers_df.index.get_level_values(1)
+    all_trackers_l = [MazeSectionTracker.from_df(**row) for row in trackers_df.to_dict('records')]
 
-        if cur_path_num != path_tracker_df.at[0, 'path']:
-            if cur_path_num != -1:
-                edge_paths.append(EdgePath.from_df(cur_path_num, cur_outer, cur_closed, cur_weight, cur_path,
-                                                   cur_trackers))
 
-            for node in cur_path:
-                node.path = edge_paths[-1]
+    #Build all stub paths
+    paths_df = edge_paths_all_df.groupby(level=0).agg(
+        num_nodes=('node', 'count'),
+        is_outer=('is_outer', 'first'),
+        is_closed=('is_closed', 'first'),
+        custom_weight=('custom_weight', 'first')
+    )
+    paths_df['path_num'] = paths_df.index.get_level_values(0)
+    all_paths_l = [EdgePath.from_df(**row) for row in paths_df.to_dict('records')]
 
-            cur_trackers, cur_path = [], []
-            cur_path_num, cur_outer, cur_closed, cur_weight = (path_tracker_df.at[0, 'path'],
-                                                                path_tracker_df.at[0, 'is_outer'],
-                                                                path_tracker_df.at[0, 'is_closed'],
-                                                                path_tracker_df.at[0, 'custom_weight'])
+    #Build all nodes
+    edge_paths_all_df['path_object'] = np.array(all_paths_l)[edge_paths_all_df['path_num'] - 1]
+    edge_paths_all_df['tracker_object'] = np.array(all_trackers_l)[edge_paths_all_df['path_tracker_seq']]
+    nodes_setting_df = edge_paths_all_df[['y', 'x', 'path_num', 'node', 'is_outer', 'section', 'path_object',
+                                          'tracker_object']]
+    all_nodes_l = [EdgeNode.from_df(**row) for row in nodes_setting_df.to_dict('records')]
 
-        cur_node = EdgeNode.from_df(path_tracker_df.at[0, 'y'], path_tracker_df.at[0, 'x'], path_tracker_df.at[0, 'path'],
-                                    path_tracker_df.at[0, 'node'], path_tracker_df.at[0, 'is_outer'],
-                                    sections_nd[cur_y_sec, cur_x_sec])
-        cur_path.append(cur_node)
-        cur_tracker_path.append(cur_node)
+    #Set into trackers and paths
+    path_idx, path_tracker_idx, path_nodes_idx, tracker_nodes_idx = 0, 0, 0, 0
+    for i in range(len(all_trackers_l)):
+        if path_idx < len(all_paths_l) and all_trackers_l[i].path_num != path_idx + 1:
+            path_nodes = all_nodes_l[path_nodes_idx:path_nodes_idx + all_paths_l[path_idx].from_db_num_nodes]
+            all_paths_l[path_idx].set_path_and_trackers(path_nodes, all_trackers_l[path_tracker_idx:i])
+            if all_paths_l[path_idx].closed:
+                all_trackers_l[path_tracker_idx].prev_tracker = all_trackers_l[i - 1]
+                all_trackers_l[i - 1].next_tracker = all_trackers_l[path_tracker_idx]
+            path_nodes_idx += all_paths_l[path_idx].from_db_num_nodes
+            path_idx += 1
+            path_tracker_idx = i
 
-    #Final push last edge path
-    last_next_tracker = cur_trackers[0] if cur_closed else None
-    prev_tracker = cur_trackers[-1] if len(cur_trackers) > 0 else None
-    cur_trackers.append(MazeSectionTracker.from_df(sections_nd[cur_y_sec, cur_x_sec], cur_tracker_path[0],
-                                                   cur_tracker_path[-1], cur_tracker_num, prev_tracker,
-                                                   cur_tracker_path, last_next_tracker))
-    for node in cur_tracker_path:
-        node.section_tracker = cur_trackers[-1]
-        node.section_tracker_num = cur_tracker_num
+        if all_trackers_l[i].tracker_num == 0:
+            prev_tracker, next_tracker = None, None if i >= len(all_trackers_l) else all_trackers_l[i + 1]
+        elif i >= len(all_trackers_l) - 1 or all_trackers_l[i + 1].tracker_num == 0:
+            prev_tracker, next_tracker = all_trackers_l[i - 1], None
+        else:
+            prev_tracker, next_tracker = all_trackers_l[i - 1], all_trackers_l[i + 1]
+        all_trackers_l[i].set_nodes_and_neighbours(all_nodes_l[tracker_nodes_idx:tracker_nodes_idx +
+                                                                                 all_trackers_l[i].from_db_num_nodes],
+                                                   prev_tracker, next_tracker)
+        tracker_nodes_idx += all_trackers_l[i].from_db_num_nodes
 
-    edge_paths.append(EdgePath.from_df(cur_path_num, cur_outer, cur_closed, cur_weight, cur_path,
-                                       cur_trackers))
+    #Set final path
+    path_nodes = all_nodes_l[path_nodes_idx:path_nodes_idx + all_paths_l[path_idx].from_db_num_nodes]
+    all_paths_l[path_idx].set_path_and_trackers(path_nodes, all_trackers_l[path_tracker_idx:])
+    if all_paths_l[path_idx].closed:
+        all_trackers_l[path_tracker_idx].prev_tracker = all_trackers_l[len(all_trackers_l) - 1]
+        all_trackers_l[len(all_trackers_l) - 1].next_tracker = all_trackers_l[path_tracker_idx]
+
+
+
+
+
+
+    #
+    #
+    #
+    # edge_paths, cur_trackers, cur_path, cur_tracker_path = [], [], [], []
+    # cur_path_num, cur_outer, cur_closed, cur_weight = -1, False, False, 0
+    # cur_y_sec, cur_x_sec = -1, -1
+    # cur_tracker_num = -1
+    # grouped_edge_paths_df = edge_paths_all_df.groupby(['path', 'tracker_num'])
+    # edge_paths_headers = grouped_edge_paths_df.first()
+    # for (i, header_df), ((path_num, tracker_num), path_tracker_df) in zip(edge_paths_headers.iterrows(),
+    #                                                     edge_paths_all_df.groupby(['path', 'tracker_num'])):
+    #     ttest6t = path_num
+    #     if cur_path_num != int(path_num):
+    #         if cur_path_num != -1:
+    #             edge_paths.append(EdgePath.from_df(cur_path_num, cur_outer, cur_closed, cur_weight, cur_path,
+    #                                                cur_trackers))
+    #
+    #             for node in cur_path:
+    #                 node.path = edge_paths[-1]
+    #             for i in range(len(cur_trackers)):
+    #                 cur_trackers[i].path = edge_paths[-1]
+    #                 if i < len(cur_trackers) - 1:
+    #                     cur_trackers[i].next_tracker = cur_trackers[i + 1]
+    #
+    #             if cur_closed:
+    #                 cur_trackers[-1].next_tracker = cur_trackers[0]
+    #                 cur_trackers[0].prev_tracker = cur_trackers[-1]
+    #
+    #         cur_trackers, cur_path = [], []
+    #         cur_path_num, cur_outer, cur_closed, cur_weight = (int(path_num),
+    #                                                            header_df['is_outer'],
+    #                                                            header_df['is_closed'],
+    #                                                            header_df['custom_weight'])
+    #
+    #     cur_section = sections_nd[header_df['y_sec'], header_df['x_sec']]
+    #     path_tracker_df['section'] = cur_section
+    #     tracker_path_creation_df = path_tracker_df[['y', 'x', 'path', 'node', 'is_outer', 'section']]
+    #     path_tracker_dicts = tracker_path_creation_df.to_dict('records')
+    #     cur_tracker_path = [EdgeNode.from_df(**row) for row in path_tracker_dicts]
+    #     cur_path.extend(cur_tracker_path)
+    #
+    #     prev_tracker = cur_trackers[-1] if len(cur_trackers) > 0 else None
+    #     cur_tracker_num  = int(tracker_num)
+    #     cur_trackers.append(MazeSectionTracker.from_df(cur_section, cur_tracker_path[0], cur_tracker_path[-1],
+    #                                                     cur_tracker_num, prev_tracker, cur_tracker_path,
+    #                                                    path_num=cur_path_num))
+    #
+    #     for node in cur_tracker_path:
+    #         node.section_tracker = cur_trackers[-1]
+    #         node.section_tracker_num = cur_tracker_num
+    #
+    # #Final push last edge path
+    # edge_paths.append(EdgePath.from_df(cur_path_num, cur_outer, cur_closed, cur_weight, cur_path,
+    #                                    cur_trackers))
+    #
+    # for node in cur_path:
+    #     node.path = edge_paths[-1]
+    # for i in range(len(cur_trackers)):
+    #     cur_trackers[i].path = edge_paths[-1]
+    #     if i < len(cur_trackers) - 1:
+    #         cur_trackers[i].next_tracker = cur_trackers[i + 1]
+    #
+    # if cur_closed:
+    #     cur_trackers[-1].next_tracker = cur_trackers[0]
+    #     cur_trackers[0].prev_tracker = cur_trackers[-1]
+
+    end = time.time_ns()
+    print(str((end - start) / 1e6) + " ms to do path trackers nodes")
+    # except Exception as e: #or except:
+    #     print(f"An unexpected error occurred: {e}")
 
 
     #Configure sections object
     sections_object = MazeSections.from_df(options.maze_sections_across, options.maze_sections_across, focus_sections,
                                            sections_nd, y_grade, x_grade, img_height, img_width, path_graph)
+    #TODO: Set SAections object into paths
     out_data['sections'] = sections_object
 
 
     #Configure agent object
     from helpers.mazify.MazeAgent import MazeAgent
     agent_df = dataframes["Agent"]
-    start_node = edge_paths[agent_df.at[0, 'start_path'] - 1].path[agent_df.at[0, 'start_node']]
-    end_node = edge_paths[agent_df.at[0, 'end_path'] - 1].path[agent_df.at[0, 'end_node']]
+    start_node = all_paths_l[agent_df.at[0, 'start_path'] - 1].path[agent_df.at[0, 'start_node']]
+    end_node = all_paths_l[agent_df.at[0, 'end_path'] - 1].path[agent_df.at[0, 'end_node']]
     agent = MazeAgent.from_df(in_data['outer_edges'], in_data['outer_contours'], in_data['inner_edges'], in_data['inner_contours'],
-                              sections_object, edge_paths, agent_df.at[0, 'max_tracker_size'], start_node, end_node)
+                              sections_object, all_paths_l, agent_df.at[0, 'max_tracker_size'], start_node, end_node)
     out_data['agent'] = agent
 def set_level_3_data(dataframes:dict, input_data:dict):
     """

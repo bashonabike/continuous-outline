@@ -187,27 +187,42 @@ class MazeSection:
         return nodes
 
 class MazeSectionTracker:
-    def __init__(self, section:MazeSection, in_node:EdgeNode, tracker_num:int,
-                 prev_tracker=None, next_tracker=None, out_node:EdgeNode=None, from_db=False,
-                 nodes=None):
+    def __init__(self, section:MazeSection, in_node:EdgeNode=None, tracker_num:int=None,
+                 prev_tracker=None, next_tracker=None, out_node:EdgeNode=None, from_db=False, path_num=None,
+                 from_db_num_nodes=None):
         self.section = section
-        if nodes is not None:
-            self.nodes = nodes
-        else:
-            self.nodes = []
-        self.in_node = in_node
-        self.out_node = out_node
-        self.path, self.path_num = in_node.path, in_node.path.num
-        self.rev_in_node, self.rev_out_node = out_node, in_node
         self.tracker_num = tracker_num
-        self.prev_tracker = prev_tracker
-        self.next_tracker = next_tracker
+        self.nodes = []
+        if not from_db:
+            self.in_node = in_node
+            self.out_node = out_node
+            self.path, self.path_num = in_node.path, in_node.path.num
+            self.rev_in_node, self.rev_out_node = out_node, in_node
+            self.prev_tracker = prev_tracker
+            self.next_tracker = next_tracker
+            self.from_db_num_nodes = 0
+        else:
+            self.path_num = path_num
+            self.in_node = None
+            self.out_node = None
+            self.path = None
+            self.rev_in_node, self.rev_out_node = None, None
+            self.prev_tracker = None
+            self.next_tracker = None
+            self.from_db_num_nodes = from_db_num_nodes
 
     @classmethod
-    def from_df(cls, section:MazeSection, in_node:EdgeNode, out_node:EdgeNode,
-                tracker_num:int, prev_tracker, nodes:list, next_tracker=None):
-        return cls(section, in_node, tracker_num, out_node=out_node, prev_tracker=prev_tracker,
-                   nodes=nodes, next_tracker=next_tracker, from_db=True)
+    def from_df(cls, section:MazeSection, tracker_num:int, path_num:int, num_nodes):
+        return cls(section, from_db=True, tracker_num=tracker_num, path_num=path_num,
+                   from_db_num_nodes=num_nodes)
+
+    def set_nodes_and_neighbours(self, nodes:list, prev_tracker, next_tracker):
+        self.nodes = nodes
+        self.in_node = nodes[0]
+        self.out_node = nodes[-1]
+        self.path = self.in_node.path
+        self.rev_in_node, self.rev_out_node = nodes[0], nodes[-1]
+        self.prev_tracker, self.next_tracker = prev_tracker, next_tracker
 
     def __hash__(self):
         return hash((self.section.y_sec, self.section.x_sec, self.path_num, self.tracker_num))

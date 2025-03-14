@@ -190,7 +190,7 @@ def set_level_2_data(dataframes:dict, input_data:dict):
         dataframes["PathNode"] = pd.concat([dataframes["PathNode"], partial_df], ignore_index=True)
 
     #Set section trackers
-    max_tracker_size = 0
+    max_tracker_size, path_tracker_seq_offset = 0, 0
     for edge_path in edge_paths:
         trackers = edge_path.section_tracker
         if len(trackers) > max_tracker_size: max_tracker_size = len(trackers)
@@ -200,6 +200,7 @@ def set_level_2_data(dataframes:dict, input_data:dict):
             -1 if t.prev_tracker is None else t.prev_tracker.tracker_num,
             -1 if t.next_tracker is None else t.next_tracker.tracker_num,
             t.section.y_sec,t.section.x_sec) for t in trackers])
+        path_tracker_seq = range(path_tracker_seq_offset + 0, path_tracker_seq_offset + len(trackers))
         partial_df = pd.DataFrame({
             'in_node': in_node,
             'out_node': out_node,
@@ -210,9 +211,11 @@ def set_level_2_data(dataframes:dict, input_data:dict):
             'prev_tracker': prev_tracker,
             'next_tracker': next_tracker,
             'y_sec': y_sec,
-            'x_sec': x_sec
+            'x_sec': x_sec,
+            'path_tracker_seq': path_tracker_seq
         })[dataframes["SectionTracker"].columns]
         dataframes["SectionTracker"] = pd.concat([dataframes["SectionTracker"], partial_df], ignore_index=True)
+        path_tracker_seq_offset += len(trackers)
 
 
     #Set graph nodes
