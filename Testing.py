@@ -47,6 +47,10 @@ import helpers.post_proc.smooth_path as smooth
 import helpers.post_proc.path_cleanup as clean
 import helpers.post_proc.post_effects as fx
 
+import helpers.caching.build_objects_from_db as builddf
+import helpers.caching.set_data_by_level as setdf
+from helpers.caching.DataRetrieval import DataRetrieval
+
 
 def draw_open_paths(image, paths, color=(0, 0, 255), thickness=2):
   """
@@ -208,6 +212,30 @@ for file in os.listdir("Trial-AI-Base-Images\\bg_removed"):
 
       end = time.time_ns()
       print(str((end - start)/1e6) + " ms to do shifting")
+
+
+
+      start = time.time_ns()
+
+
+      input_data = {}
+      data_retr = DataRetrieval()
+      _, dataframes = data_retr.retrieve_and_wipe_data(0)
+
+
+      input_data["outer_contours"] = outer_contours_yx
+      input_data["outer_edges"] = outer_edges
+      input_data["inner_contours"] = inner_contours_yx
+      input_data["inner_edges"] = inner_edges
+      input_data["focus_masks"] = [detail_req_mask]
+
+      setdf.set_level_1_data(dataframes, input_data)
+
+
+
+      end = time.time_ns()
+      print(str((end - start) / 1e6) + " ms to do level 1 data setting")
+
       start = time.time_ns()
       maze_sections = MazeSections(outer_edges_cropped, options.maze_sections_across, options.maze_sections_across,
                                    [detail_req_mask])
@@ -216,7 +244,18 @@ for file in os.listdir("Trial-AI-Base-Images\\bg_removed"):
                              inner_contours_yx_cropped, maze_sections)
 
       end = time.time_ns()
-      print(str((end - start)/1e6) + " ms to do sectioning and agent setup")
+      print(str((end - start) / 1e6) + " ms to do sectioning and agent setup")
+
+      start = time.time_ns()
+      input_data["sections"] = maze_sections
+      input_data["agent"] = maze_agent
+      setdf.set_level_2_data(dataframes, input_data)
+
+
+
+      end = time.time_ns()
+      print(str((end - start)/1e6) + " ms to do level 2 data setting")
+
 
       start = time.time_ns()
       # raw_path_coords = maze_agent.run_round_dumb(image_path)
@@ -225,6 +264,18 @@ for file in os.listdir("Trial-AI-Base-Images\\bg_removed"):
       raw_path_coords_centered = slic.shift_contours([raw_path_coords], crop[0][0], crop[0][1])[0]
       end = time.time_ns()
       print(str((end - start)/1e6) + " ms to do trace run")
+
+
+      start = time.time_ns()
+      input_data["raw_path"] = raw_path_coords_centered
+      setdf.set_level_3_data(dataframes, input_data)
+
+
+
+      end = time.time_ns()
+      print(str((end - start)/1e6) + " ms to do level 3 data setting")
+
+
       # flipped_coords_nd = np.array(raw_path_coords_centered)
       # flipped_coords_nd[:, 0] = outer_edges.shape[0] - 1 - flipped_coords_nd[:, 0]
       # flipped_coords = flipped_coords_nd.tolist()  # Flip y-coordinates
@@ -240,6 +291,76 @@ for file in os.listdir("Trial-AI-Base-Images\\bg_removed"):
 
       end = time.time_ns()
       print(str((end - start)/1e6) + " ms to do post proc")
+
+
+      start = time.time_ns()
+      input_data["formed_path"] = raw_path_coords_centered
+      setdf.set_level_3_data(dataframes, input_data)
+
+
+
+      end = time.time_ns()
+      print(str((end - start)/1e6) + " ms to do level 3 data setting")
+
+
+      start = time.time_ns()
+      data_retr.set_data(dataframes)
+      # data_retr.close_connection()
+
+
+      end = time.time_ns()
+      print(str((end - start) / 1e6) + " ms to do data db setting")
+
+
+      start = time.time_ns()
+      retrieved, discarded = data_retr.retrieve_and_wipe_data(7)
+      data_retr.close_connection()
+
+
+      end = time.time_ns()
+      print(str((end - start) / 1e6) + " ms to retrieve all data into dataframes")
+
+
+      start = time.time_ns()
+      lev_1_data = {}
+      builddf.build_level_1_data(retrieved, lev_1_data)
+      data_retr.close_connection()
+
+
+      end = time.time_ns()
+      print(str((end - start) / 1e6) + " ms to build level 1 objects")
+
+
+      start = time.time_ns()
+      lev_2_data = {}
+      builddf.build_level_2_data(retrieved, lev_1_data, lev_2_data)
+      data_retr.close_connection()
+
+
+      end = time.time_ns()
+      print(str((end - start) / 1e6) + " ms to build level 2 objects")
+
+      #
+      # start = time.time_ns()
+      # lev_1_data = {}
+      # builddf.build_level_1_data(retrieved, lev_1_data)
+      # data_retr.close_connection()
+      #
+      #
+      # end = time.time_ns()
+      # print(str((end - start) / 1e6) + " ms to build level 3 objects")
+      #
+      #
+      # start = time.time_ns()
+      # lev_1_data = {}
+      # builddf.build_level_1_data(retrieved, lev_1_data)
+      # data_retr.close_connection()
+      #
+      #
+      # end = time.time_ns()
+      # print(str((end - start) / 1e6) + " ms to build level 4 objects")
+
+
 
       y_coords, x_coords = zip(*simplified)  # Unzip the coordinates
       plt.plot(x_coords, y_coords, marker='o', markersize=1)  # Plot the line with markers

@@ -24,7 +24,8 @@ def set_level_1_data(dataframes:dict, input_data:dict):
         contour_values = pd.Series(range(1 + contour_idx_offset, num_rows + contour_idx_offset + 1))
         is_outer_values = pd.Series([1] if outer else [0] * num_rows)
         is_inner_values = pd.Series([0] if outer else [1]  * num_rows)
-        partial_df = pd.DataFrame({'contour': contour_values, 'is_outer': is_outer_values, 'is_inner': is_inner_values})
+        partial_df = pd.DataFrame({'contour': contour_values, 'is_outer': is_outer_values, 'is_inner': is_inner_values,
+                                   'img_height': outer_edges.shape[0], 'img_width': outer_edges.shape[1]})
         partial_df = partial_df[dataframes["Contours"].columns]
         dataframes["Contours"] = pd.concat([dataframes["Contours"], partial_df], ignore_index=True)
         contour_idx_offset = num_rows
@@ -32,48 +33,48 @@ def set_level_1_data(dataframes:dict, input_data:dict):
 
     #Set contours details
     for i, contour in enumerate(outer_contours + inner_contours):
-        contour = pd.Series([i + 1] * len(contour))
+        # contour_nums = pd.Series([i + 1] * len(contour))
         points = pd.Series(range(1, len(contour) + 1))
         contour_nd = np.array(contour)
         y_values = pd.Series(contour_nd[:, 0])
         x_values = pd.Series(contour_nd[:, 1])
-        partial_df = pd.DataFrame({'point_num': points, 'x': x_values, 'y': y_values, 'contour': contour})
+        partial_df = pd.DataFrame({'point_num': points, 'x': x_values, 'y': y_values, 'contour': i + 1})
         partial_df = partial_df[dataframes["Contour"].columns]
         dataframes["Contour"] = pd.concat([dataframes["Contour"], partial_df], ignore_index=True)
 
 
-    #Set edges pixel maps
-    if outer_edges.shape != inner_edges.shape:
-        raise ValueError("Outer and inner edge arrays must have the same shape.")
-
-    y_coords, x_coords = np.indices(outer_edges.shape)  # Generate y and x coordinates using indices
-
-    # Flatten the arrays
-    y_flat = y_coords.flatten()
-    x_flat = x_coords.flatten()
-    outer_flat = outer_edges.flatten()
-    inner_flat = inner_edges.flatten()
-
-    # Create is_inner and is_outer columns
-    is_inner = np.where(inner_flat != 0, 1, 0)
-    is_outer = np.where(outer_flat != 0, 1, 0)
-
-    # Create the DataFrame
-    partial_df = pd.DataFrame({
-        'y': y_flat,
-        'x': x_flat,
-        'is_inner': is_inner,
-        'is_outer': is_outer,
-        'inner_edge_num': inner_flat,
-        'outer_edge_num': outer_flat
-    })[dataframes["EdgesPixelMap"].columns]
-
-    dataframes["EdgesPixelMap"] = partial_df
+    # #Set edges pixel maps
+    # if outer_edges.shape != inner_edges.shape:
+    #     raise ValueError("Outer and inner edge arrays must have the same shape.")
+    #
+    # y_coords, x_coords = np.indices(outer_edges.shape)  # Generate y and x coordinates using indices
+    #
+    # # Flatten the arrays
+    # y_flat = y_coords.flatten()
+    # x_flat = x_coords.flatten()
+    # outer_flat = outer_edges.flatten()
+    # inner_flat = inner_edges.flatten()
+    #
+    # # Create is_inner and is_outer columns
+    # is_inner = np.where(inner_flat != 0, 1, 0)
+    # is_outer = np.where(outer_flat != 0, 1, 0)
+    #
+    # # Create the DataFrame
+    # partial_df = pd.DataFrame({
+    #     'y': y_flat,
+    #     'x': x_flat,
+    #     'is_inner': is_inner,
+    #     'is_outer': is_outer,
+    #     'inner_edge_num': inner_flat,
+    #     'outer_edge_num': outer_flat
+    # })[dataframes["EdgesPixelMap"].columns]
+    #
+    # dataframes["EdgesPixelMap"] = partial_df
 
 
     #Set focus masks header
-    focus_masks = pd.Series(range(0, len(focus_masks)))
-    partial_df = pd.DataFrame({'focus_mask': focus_masks})
+    focus_masks_sr = pd.Series(range(0, len(focus_masks)))
+    partial_df = pd.DataFrame({'focus_mask': focus_masks_sr})
     dataframes["FocusMasks"] = partial_df
 
 
@@ -108,10 +109,12 @@ def set_level_2_data(dataframes:dict, input_data:dict):
 
     #Set sections header
     dataframes["Sections"] = pd.DataFrame({
-        'height': sections.m,
-        'width': sections.n,
-        'y_grade': sections.y_grade,
-        'x_grade': sections.x_grade
+        'height': [sections.m],
+        'width': [sections.n],
+        'y_grade': [sections.y_grade],
+        'x_grade': [sections.x_grade],
+        'img_height': [sections.img_height],
+        'img_width': [sections.img_width]
     })[dataframes["Sections"].columns]
 
 
@@ -123,8 +126,9 @@ def set_level_2_data(dataframes:dict, input_data:dict):
     x_flat = x_coords.flatten()
     sections_flat = sections.sections.flatten()
 
-    dumb_req,dumb_opt,y_start,y_end,x_start,x_end,num_edge_pixels,is_focus_region = (
-        zip(*[(s.dumb_req, s.dumb_opt, s.ymin, s.ymax, s.xmin, s.xmax, s.edge_pixels, s.focus_region)
+    dumb_req,dumb_opt,y_start,y_end,x_start,x_end,num_edge_pixels,is_focus_region, focus_region_nums = (
+        zip(*[(s.dumb_req, s.dumb_opt, s.ymin, s.ymax, s.xmin, s.xmax, s.edge_pixels, s.focus_region,
+               ','.join(str(n) for n in s.focus_region_nums))
               for s in sections_flat]))
 
     #Create dataframe
@@ -138,7 +142,8 @@ def set_level_2_data(dataframes:dict, input_data:dict):
         'x_start': x_start,
         'x_end': x_end,
         'num_edge_pixels': num_edge_pixels,
-        'is_focus_region': is_focus_region
+        'is_focus_region': is_focus_region,
+        'focus_region_nums': focus_region_nums
     })[dataframes["Section"].columns]
 
 
@@ -180,7 +185,7 @@ def set_level_2_data(dataframes:dict, input_data:dict):
             'tracker_num': tracker_num,
             'is_outer': is_outer,
             'node': node,
-            'path': path.num
+            'path': edge_path.num
         })[dataframes["PathNode"].columns]
         dataframes["PathNode"] = pd.concat([dataframes["PathNode"], partial_df], ignore_index=True)
 
@@ -190,8 +195,11 @@ def set_level_2_data(dataframes:dict, input_data:dict):
         trackers = edge_path.section_tracker
         if len(trackers) > max_tracker_size: max_tracker_size = len(trackers)
         in_node,out_node,path,rev_in_node,rev_out_node,tracker_num,prev_tracker,next_tracker,y_sec,x_sec = zip(*[(
-            t.in_node,t.out_node,t.path_num,t.rev_in_node.num,t.rev_out_node.num,t.tracker_num,
-            t.prev_tracker.num,t.next_tracker.num,t.section.y_sec,t.section.x_sec) for t in trackers])
+            t.in_node.num,t.out_node.num,t.path_num,-1 if t.rev_in_node is None else t.rev_in_node.num,
+            -1 if t.rev_out_node is None else t.rev_out_node.num,t.tracker_num,
+            -1 if t.prev_tracker is None else t.prev_tracker.tracker_num,
+            -1 if t.next_tracker is None else t.next_tracker.tracker_num,
+            t.section.y_sec,t.section.x_sec) for t in trackers])
         partial_df = pd.DataFrame({
             'in_node': in_node,
             'out_node': out_node,
@@ -212,7 +220,7 @@ def set_level_2_data(dataframes:dict, input_data:dict):
     blank_nodes, blank_node_cats = zip(*[n for n in nodes_with_cat if len(n[0]) == 2])
     edged_nodes, edged_node_cats = zip(*[n for n in nodes_with_cat if len(n[0]) == 4])
     nodes = np.vstack((np.hstack((np.array(blank_nodes), np.zeros((len(blank_nodes), 2)))), np.array(edged_nodes)))
-    cats = blank_node_cats + edged_node_cats
+    cats = [c.value for c in blank_node_cats] + [c.value for c in edged_node_cats]
 
     #Figure out hashing
     height, width = sections.img_height, sections.img_width
@@ -231,7 +239,11 @@ def set_level_2_data(dataframes:dict, input_data:dict):
     })[dataframes["GraphNode"].columns]
 
     #Set edges
-    indices, in_nodes, out_nodes, weights = zip(*[(index, in_node, out_node, data.get('weight'))
+    indices, in_nodes, out_nodes, weights = zip(*[(index,
+                                                   (in_node[0], in_node[1], 0 if len(in_node) == 2 else in_node[2],
+                                                    0 if len(in_node) == 2 else in_node[3]),
+                                                   (out_node[0], out_node[1], 0 if len(out_node) == 2 else out_node[2],
+                                                    0 if len(out_node) == 2 else out_node[3]), data.get('weight'))
                          for index, (in_node, out_node, data) in enumerate(path_graph.edges(data=True))])
     in_nodes_nd, out_nodes_nd = np.array(in_nodes), np.array(out_nodes)
 
@@ -251,11 +263,11 @@ def set_level_2_data(dataframes:dict, input_data:dict):
 
     #Set agent
     dataframes["Agent"] = pd.DataFrame({
-        'start_node': agent.start_node.num,
-        'end_node': agent.end_node.num,
-        'start_path': agent.start_node.path_num,
-        'end_path': agent.end_node.path_num,
-        'max_tracker_size': agent.max_tracker_size
+        'start_node': [-1 if agent.start_node is None else agent.start_node.num],
+        'end_node': [-1 if agent.end_node is None else agent.end_node.num],
+        'start_path': [-1 if agent.start_node is None else agent.start_node.path_num],
+        'end_path': [-1 if agent.end_node is None else agent.end_node.path_num],
+        'max_tracker_size': [agent.max_tracker_size]
     })[dataframes["Agent"].columns]
 
 
@@ -287,7 +299,7 @@ def set_level_4_data(dataframes:dict, input_data:dict):
     #Retrieve raw path data
     formed_path = input_data["formed_path"]
     indices, y, x = zip(*[(index, n[0], n[1]) for index, n in enumerate(formed_path)])
-    dataframes["RawPath"] = pd.DataFrame({
+    dataframes["FormedPath"] = pd.DataFrame({
         'path_num': indices,
         'y': y,
         'x': x

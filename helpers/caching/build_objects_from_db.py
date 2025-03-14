@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import helpers.mazify.temp_options as options
+import time
 
 
 def build_level_1_data(dataframes:dict, out_data:dict):
@@ -10,10 +11,22 @@ def build_level_1_data(dataframes:dict, out_data:dict):
     :param input_data: dict of objects to input
     :return: None
     """
+    import cv2
+
+    def pixel_map_from_edge_contours(shape, contours, offset_idx):
+        contours_for_cv = [np.array([[[p[1], p[0]]] for p in contour]) for contour in contours]
+        edges_final = np.zeros(shape, dtype=np.uint16)
+        for contour_idx in range(len(contours_for_cv)):
+            cv2.drawContours(edges_final, contours_for_cv, contour_idx,
+                             (contour_idx + 1 + offset_idx, contour_idx + 1 + offset_idx,
+                              contour_idx + 1 + offset_idx))
+        return edges_final
+
     #Set contours lists
     contours_hdr_df, contours_det_df = dataframes["Contours"], dataframes["Contour"]
+    outer_last_idx = int(contours_hdr_df[contours_hdr_df['is_outer'] == 1]['contour'].max())
     contours_all_df = pd.merge(contours_hdr_df, contours_det_df, on='contour', how='inner')
-    contours_all_df.sort_values(['contour', 'path_num'], inplace=True)
+    contours_all_df.sort_values(['contour', 'point_num'], inplace=True)
     outer_contours, inner_contours = [], []
     for (contour, is_outer, is_inner), contour_df in contours_all_df.groupby(['contour', 'is_outer', 'is_inner']):
         if is_outer:
@@ -25,17 +38,9 @@ def build_level_1_data(dataframes:dict, out_data:dict):
 
 
     #Set edges pixel maps
-    edges_pixel_map_df = dataframes["EdgesPixelMap"]
-    shape = (edges_pixel_map_df['y'].max() + 1, edges_pixel_map_df['x'].max() + 1)
-    outer_edges, inner_edges = np.zeros(shape, dtype=np.uint16), np.zeros(shape, dtype=np.uint16)
-
-    y_coords = edges_pixel_map_df['y'].to_numpy()
-    x_coords = edges_pixel_map_df['x'].to_numpy()
-    outer_values = edges_pixel_map_df['outer_edge_num'].to_numpy()
-    inner_values = edges_pixel_map_df['inner_edge_num'].to_numpy()
-
-    outer_edges[y_coords, x_coords] = outer_values
-    inner_edges[y_coords, x_coords] = inner_values
+    shape = contours_hdr_df["img_height"][0], contours_hdr_df["img_width"][0]
+    outer_edges = pixel_map_from_edge_contours(shape, outer_contours, 0)
+    inner_edges = pixel_map_from_edge_contours(shape, inner_contours, outer_last_idx)
 
     out_data["outer_edges"], out_data["inner_edges"] = outer_edges, inner_edges
 
@@ -66,6 +71,7 @@ def build_level_2_data(dataframes:dict, in_data:dict, out_data:dict):
     section_header_df = dataframes["Sections"]
     height, width = section_header_df['height'][0], section_header_df['width'][0]
     shape = (height, width)
+    img_height, img_width = section_header_df['img_height'][0], section_header_df['img_width'][0]
     y_grade, x_grade = section_header_df['y_grade'][0], section_header_df['x_grade'][0]
 
     #Set up graph
@@ -96,17 +102,16 @@ def build_level_2_data(dataframes:dict, in_data:dict, out_data:dict):
     # Set edges
     #TODO: set indices group and join on indices
     graph_edges_df = dataframes["GraphEdge"]
-    graph_edges_formed_df = pd.merge(graph_edges_df, graph_nodes_df, left_on='from_node', right_on='node', how='inner')
-    graph_edges_formed_df = pd.merge(graph_edges_formed_df, graph_nodes_df, left_on='to_node', right_on='node',
-                                     how='inner', suffixes=('_from', '_to'))
-    blank_to_blank_df = graph_edges_formed_df[graph_edges_formed_df['graph_node_path_from'] == 0 and
-                                           graph_edges_formed_df['graph_node_path_to'] == 0]
-    blank_to_edge_df = graph_edges_formed_df[graph_edges_formed_df['graph_node_path_from'] == 0 and
-                                           graph_edges_formed_df['graph_node_path_to'] > 0]
-    edge_to_blank_df = graph_edges_formed_df[graph_edges_formed_df['graph_node_path_from'] > 0 and
-                                           graph_edges_formed_df['graph_node_path_to'] == 0]
-    edge_to_edge_df = graph_edges_formed_df[graph_edges_formed_df['graph_node_path_from'] > 0 and
-                                           graph_edges_formed_df['graph_node_path_to'] > 0]
+    graph_edges_formed_df = pd.merge(graph_edges_df, graph_nodes_df, left_on='from_node', right_on='graph_node', how='inner')
+    graph_edges_formed_df = pd.merge(graph_edges_formed_df, graph_nodes_df, left_on='to_node', right_on='graph_node',
+                                     how='inner', suffixes=('__from', '__to')
+                                     )
+    blank_from = graph_edges_formed_df['graph_node_path__from'] == 0
+    blank_to = graph_edges_formed_df['graph_node_path__to'] == 0
+    blank_to_blank_df = graph_edges_formed_df[blank_from & blank_to]
+    blank_to_edge_df = graph_edges_formed_df[blank_from & (~blank_to)]
+    edge_to_blank_df = graph_edges_formed_df[(~blank_from) & blank_to]
+    edge_to_edge_df = graph_edges_formed_df[~(blank_from | blank_to)]
 
     for tuple_len, df in zip([(2, 2), (2, 4), (4, 2), (4, 4)],
                              [blank_to_blank_df, blank_to_edge_df, edge_to_blank_df, edge_to_edge_df]):
@@ -114,15 +119,15 @@ def build_level_2_data(dataframes:dict, in_data:dict, out_data:dict):
         for i, dir in enumerate(["from", "to"]):
             if tuple_len[i] == 4:
                 nodes_set.append(list(zip(
-                    graph_edges_df['graph_node_y_' + dir].to_numpy(),
-                    graph_edges_df['graph_node_x_' + dir].to_numpy(),
-                    graph_edges_df['graph_node_path_' + dir].to_numpy(),
-                    graph_edges_df['graph_node_tracker_f' + dir].to_numpy()
+                    df['graph_node_y__' + dir].to_numpy(),
+                    df['graph_node_x__' + dir].to_numpy(),
+                    df['graph_node_path__' + dir].to_numpy(),
+                    df['graph_node_tracker__' + dir].to_numpy()
                 )))
             else:
                 nodes_set.append(list(zip(
-                    graph_edges_df['graph_node_y_' + dir].to_numpy(),
-                    graph_edges_df['graph_node_x_' + dir].to_numpy()
+                    df['graph_node_y__' + dir].to_numpy(),
+                    df['graph_node_x__' + dir].to_numpy()
                 )))
 
         weights = graph_edges_df['weight'].to_numpy()
@@ -135,7 +140,7 @@ def build_level_2_data(dataframes:dict, in_data:dict, out_data:dict):
     focus_sections_df = dataframes["FocusSection"]
     focus_sections_df.sort_values(['focus_mask'], inplace=True)
     focus_sections = []
-    for i, focus_mask_value, group_df in focus_sections_df.groupby(['focus_mask']):
+    for i, group_df in focus_sections_df.groupby(['focus_mask']):
         y_coords = group_df['y_sec'].to_numpy()
         x_coords = group_df['x_sec'].to_numpy()
         focus_sections.append(list(zip(y_coords, x_coords)))
@@ -144,18 +149,61 @@ def build_level_2_data(dataframes:dict, in_data:dict, out_data:dict):
     #Build section details (except adding nodes)
     from helpers.mazify.MazeSections import MazeSections, MazeSection, MazeSectionTracker
     sections_df = dataframes["Section"]
-    sections_with_focus_df = pd.merge(sections_df, focus_sections_df, on=['y_sec', 'x_sec'], how='left')
-    sections_with_focus_df.sort_values(['y_sec', 'x_sec', 'focus_mask'], inplace=True)
+    # sections_with_focus_df = pd.merge(sections_df, focus_sections_df, on=['y_sec', 'x_sec'], how='left')
+    # sections_with_focus_df.sort_values(['y_sec', 'x_sec', 'focus_mask'], inplace=True)
     sections_nd = np.zeros(shape, dtype=MazeSection)
-    for i, group_df in sections_with_focus_df.groupby(['y_sec', 'x_sec']):
-        bounds =  (group_df['y_start'], group_df['y_end'], group_df['x_start'], group_df['x_end'])
-        focus_masks_l = group_df['focus_mask'].to_list() if (group_df['focus_mask'] is not None
-                                                            and not pd.isna(group_df['focus_mask'])) else []
-        cur_section = MazeSection.from_df(bounds, group_df['num_edge_pixels'], group_df['y_sec'], group_df['x_sec'],
-                                          group_df['num_edge_pixels'], focus_masks_l, group_df['dumb_req'],
-                                          group_df['dumb_opt'])
-        sections_nd[group_df['y_sec'], group_df['x_sec']] = cur_section
+    #
+    # # Aggregate focus_masks into comma-separated strings
+    # def aggregate_focus_masks(group):
+    #     focus_masks = group.dropna().astype(int).tolist()
+    #     return focus_masks
+    #
+    # start = time.time_ns()
+    # sections_grouped_df = sections_with_focus_df.groupby(['y_sec', 'x_sec'])
+    # sections_final_df = sections_grouped_df.agg({
+    #     'y_start': 'first',
+    #     'y_end': 'first',
+    #     'x_start': 'first',
+    #     'x_end': 'first',
+    #     'num_edge_pixels': 'first',
+    #     'y_sec': 'first',
+    #     'x_sec': 'first',
+    #     'is_focus_region': 'first',
+    #     'focus_mask': aggregate_focus_masks,
+    #     'dumb_req': 'first',
+    #     'dumb_opt': 'first'
+    # })#.reset_index()
+    # end = time.time_ns()
+    # print(str((end - start) / 1e6) + " ms to do grouping sections")
+    # maze_sections_flat_l = sections_final_df.apply(
+    #     lambda sec: MazeSection.from_df((sec['y_start'], sec['y_end'], sec['x_start'], sec['x_end']),
+    #                                     sec['num_edge_pixels'],sec['y_sec'],sec['x_sec'],
+    #                                     sec['is_focus_region'],sec['focus_mask'],
+    #                                     sec['dumb_req'],sec['dumb_opt']))
 
+    # Pre-allocate lists for y_sec, x_sec, and sections
+    # y_coords = np.array([sec.y_sec for sec in maze_sections_flat_l])
+    # x_coords = np.array([sec.x_sec for sec in maze_sections_flat_l])
+    # sections_nd[y_coords, x_coords] = np.array(maze_sections_flat_l)
+
+    start = time.time_ns()
+    sections_dicts = sections_df.to_dict('records')
+    maze_sections_flat_l = [MazeSection.from_df(**row) for row in sections_dicts]
+    # for i, section_df in sections_final_df.iterrows():
+    # for i, section_df in sections_df.iterrows():
+        # bounds =  (section_df['y_start'], section_df['y_end'], section_df['x_start'], section_df['x_end'])
+        # cur_section = MazeSection.from_df(bounds, section_df['num_edge_pixels'], section_df['y_sec'], section_df['x_sec'],
+        #                                   section_df['is_focus_region'], section_df['focus_mask'], section_df['dumb_req'],
+        #                                   section_df['dumb_opt'])
+        # cur_section = MazeSection.test_blank()
+        # sections_nd[section_df['y_sec'], section_df['x_sec']] = cur_section
+        # test = 1
+    # Pre-allocate lists for y_sec, x_sec, and sections
+    y_coords = np.array([sec.y_sec for sec in maze_sections_flat_l])
+    x_coords = np.array([sec.x_sec for sec in maze_sections_flat_l])
+    sections_nd[y_coords, x_coords] = np.array(maze_sections_flat_l)
+    end = time.time_ns()
+    print(str((end - start) / 1e6) + " ms to do NEW sections")
 
     #Build edge path, trackers, nodes
     from helpers.mazify.EdgePath import EdgePath
@@ -163,12 +211,12 @@ def build_level_2_data(dataframes:dict, in_data:dict, out_data:dict):
     edge_paths_df, edge_nodes_df, trackers_df = dataframes["EdgePath"], dataframes["PathNode"], dataframes["SectionTracker"]
     edge_paths_all_df = pd.merge(edge_paths_df, trackers_df, on=['path'], how='inner')
     edge_paths_all_df = pd.merge(edge_paths_all_df, edge_nodes_df, on=['path', 'tracker_num'], how='inner')
-    edge_paths_df.sort_values(['path', 'tracker_num', 'node'], inplace=True)
+    edge_paths_all_df.sort_values(['path', 'tracker_num', 'node'], inplace=True)
     edge_paths, cur_trackers, cur_path, cur_tracker_path = [], [], [], []
     cur_path_num, cur_outer, cur_closed, cur_weight = -1, False, False, 0
     cur_y_sec, cur_x_sec = -1, -1
     cur_tracker_num = -1
-    for (path_num, tracker_num), path_tracker_df in edge_paths_df.groupby(['path', 'tracker_num']):
+    for (path_num, tracker_num), path_tracker_df in edge_paths_all_df.groupby(['path', 'tracker_num']):
         if cur_tracker_num != path_tracker_df['tracker_num']:
             prev_tracker = cur_trackers[-1] if len(cur_trackers) > 0 else None
             cur_trackers.append(MazeSectionTracker.from_df(sections_nd[cur_y_sec, cur_x_sec], cur_tracker_path[0],
@@ -218,7 +266,7 @@ def build_level_2_data(dataframes:dict, in_data:dict, out_data:dict):
 
     #Configure sections object
     sections_object = MazeSections.from_df(options.maze_sections_across, options.maze_sections_across, focus_sections,
-                                           sections_nd, y_grade, x_grade, path_graph)
+                                           sections_nd, y_grade, x_grade, img_height, img_width, path_graph)
     out_data['sections'] = sections_object
 
 

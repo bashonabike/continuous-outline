@@ -13,10 +13,12 @@ from helpers.mazify.EdgeNode import EdgeNode
 import helpers.mazify.NetworkxExtension as nxex
 
 #TODO: Push maze finding func into sep helper, lazy import it at start of each finder method so not loading on ds_load
+#TODO: Also check if focal regions or expl control points changed since last rev, if so regen sections agent (split focus masks level between)
 
 class MazeAgent:
     def __init__(self, outer_edges, outer_contours, inner_edges, inner_contours,
-                 maze_sections: sections.MazeSections):
+                 maze_sections: sections.MazeSections, from_db=False, all_contours_objects:list=None,
+                max_tracker_size=-1, start_node=None, end_node=None):
         #NOTE: edges are codified numerically to correspond with outer contours
         self.outer_edges, self.outer_contours = outer_edges, outer_contours
         self.inner_edges, self.inner_contours = inner_edges, inner_contours
@@ -24,60 +26,44 @@ class MazeAgent:
 
         self.all_edges_bool, self.all_contours = (np.where(self.outer_edges + self.inner_edges > 0, True, False),
                                              self.outer_contours + self.inner_contours)
-        self.all_contours_objects, self.outer_contours_objects, self.inner_contours_objects  = [], [], []
-        max_inner_contour_len = max([len(contour) for contour in self.inner_contours])
-        self.max_tracker_size = 0
-        for i in range(len(self.all_contours)):
-            new_path = EdgePath(i + 1, self.all_contours[i], maze_sections, i < len(self.outer_contours),
-                                max_inner_contour_len)
-            self.all_contours_objects.append(new_path)
-            if new_path.outer: self.outer_contours_objects.append(new_path)
-            else: self.inner_contours_objects.append(new_path)
-            if len(new_path.section_tracker) > self.max_tracker_size:
-                self.max_tracker_size = len(new_path.section_tracker)
-        # self.set_node_hashes()
 
-        self.maze_sections.set_section_node_cats()
+        if not from_db:
+            self.all_contours_objects, self.outer_contours_objects, self.inner_contours_objects  = [], [], []
+            max_inner_contour_len = max([len(contour) for contour in self.inner_contours])
+            self.max_tracker_size = 0
+            for i in range(len(self.all_contours)):
+                new_path = EdgePath(i + 1, self.all_contours[i], maze_sections, i < len(self.outer_contours),
+                                    max_inner_contour_len)
+                self.all_contours_objects.append(new_path)
+                if new_path.outer: self.outer_contours_objects.append(new_path)
+                else: self.inner_contours_objects.append(new_path)
+                if len(new_path.section_tracker) > self.max_tracker_size:
+                    self.max_tracker_size = len(new_path.section_tracker)
+
+            self.maze_sections.set_section_node_cats()
+            self.start_node, self.end_node = None, None
+        else:
+            self.all_contours_objects, self.outer_contours_objects, self.inner_contours_objects = (all_contours_objects,
+                                                                                                   [], [])
+            self.outer_contours_objects = [p for p in self.all_contours_objects if p.outer]
+            self.inner_contours_objects = [p for p in self.all_contours_objects if not p.outer]
+            self.outer_contours_objects.sort(key=lambda p: p.num)
+            self.inner_contours_objects.sort(key=lambda p: p.num)
+            self.max_tracker_size = max_tracker_size
+            self.start_node, self.end_node = start_node, end_node
 
         self.dims = (outer_edges.shape[0], outer_edges.shape[1])
         self.cur_section = None
         self.cur_point, self.cur_node = (0, 0), None
-        self.start_node, self.end_node = None, None
         self.edge_rev = False
 
     @classmethod
-    def from_df(self, outer_edges, outer_contours, inner_edges, inner_contours,
+    def from_df(cls, outer_edges, outer_contours, inner_edges, inner_contours,
                  maze_sections: sections.MazeSections, all_contours_objects:list,
                 max_tracker_size, start_node, end_node):
-        #NOTE: edges are codified numerically to correspond with outer contours
-        self.outer_edges, self.outer_contours = outer_edges, outer_contours
-        self.inner_edges, self.inner_contours = inner_edges, inner_contours
-        self.maze_sections = maze_sections
-
-        self.all_edges_bool, self.all_contours = (np.where(self.outer_edges + self.inner_edges > 0, True, False),
-                                             self.outer_contours + self.inner_contours)
-        self.all_contours_objects, self.outer_contours_objects, self.inner_contours_objects  = (all_contours_objects,
-                                                                                                [], [])
-        self.outer_contours_objects = [p for p in self.all_contours_objects if p.outer]
-        self.inner_contours_objects = [p for p in self.all_contours_objects if not p.outer]
-        self.outer_contours_objects.sort(key=lambda p: p.num)
-        self.inner_contours_objects.sort(key=lambda p: p.num)
-        self.max_tracker_size = max_tracker_size
-
-        self.dims = (outer_edges.shape[0], outer_edges.shape[1])
-        self.cur_section = None
-        self.cur_point, self.cur_node = (0, 0), None
-        self.start_node, self.end_node = start_node, end_node
-        self.edge_rev = False
-
-    #region Build
-    # def set_node_hashes(self):
-    #     height, width = self.outer_edges.shape
-    #     num_paths, num_trackers = len(self.outer_edges), self.max_tracker_size
-    #     for path in self.all_contours_objects:
-    #         for node in path.path:
-    #             node.hash = (width*num_paths*num_trackers*node.y + num_paths*num_trackers*node.x +
-    #                          num_trackers*node.path_num + node.section_tracker_num)
+        return cls(outer_edges, outer_contours, inner_edges, inner_contours,
+                 maze_sections, from_db=True, all_contours_objects=all_contours_objects,
+                   max_tracker_size=max_tracker_size, start_node=start_node, end_node=end_node)
 
     #endregion
     #region Run
@@ -593,7 +579,7 @@ class MazeAgent:
             else:
                 next_sect = None
 
-            if len(cur_sect) == 5:
+            if len(cur_sect) == 4:
                 if inflection_out is not None:
                     cur_tracker_idx = inflection_out['tracker_path_idx']
                 else:

@@ -77,6 +77,14 @@ def mask_test_boundaries(img_path, split_contours):
 
 	return find_contours_near_boundaries(split_contours, mask, tolerance=2), mask
 
+def pixel_map_from_edge_contours(shape, contours, offset_idx):
+	edges_final = np.zeros(shape, dtype=np.uint16)
+	for contour_idx in range(len(contours)):
+		cv2.drawContours(edges_final, contours, contour_idx,
+						 (contour_idx + 1 + offset_idx, contour_idx + 1 + offset_idx,
+						  contour_idx + 1 + offset_idx))
+	return edges_final
+
 def mask_boundary_edges(img_unchanged):
 	start = time.time_ns()
 	#NOTE: only work PNG with transparent bg, or where background is all white

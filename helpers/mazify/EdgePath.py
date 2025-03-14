@@ -8,31 +8,35 @@ from helpers.Enums import NodeType
 
 class EdgePath:
     def __init__(self, path_num, path_raw, maze_sections: sections.MazeSections, is_outer=False,
-                 max_inner_contour_len=0):
-        self.path, self.num = [], path_num
-        self.outer = is_outer
-        self.closed = True #assert closed
-        self.section_tracker, self.section_tracker_red_nd_doubled = [], None
-        self.custom_weight = 0
-        if options.inner_contour_variable_weights and not is_outer and max_inner_contour_len > 0:
-            #Set custom weight based on contour length
-            self.custom_weight = options.dumb_node_optional_weight + ((max_inner_contour_len - len(path_raw))//
-                      (max_inner_contour_len//
-                       (options.dumb_node_optional_max_variable_weight - options.dumb_node_optional_weight + 1)))
-            self.parse_path(path_raw, maze_sections, is_outer, self.custom_weight)
+                 max_inner_contour_len=0, from_db=False, is_closed=None, custom_weight=None,
+                 path=None, trackers=None):
+        if not from_db:
+            self.path, self.num = [], path_num
+            self.outer = is_outer
+            self.closed = True #assert closed
+            self.section_tracker, self.section_tracker_red_nd_doubled = [], None
+            self.custom_weight = 0
+            if options.inner_contour_variable_weights and not is_outer and max_inner_contour_len > 0:
+                #Set custom weight based on contour length
+                self.custom_weight = options.dumb_node_optional_weight + ((max_inner_contour_len - len(path_raw))//
+                          (max_inner_contour_len//
+                           (options.dumb_node_optional_max_variable_weight - options.dumb_node_optional_weight + 1)))
+                self.parse_path(path_raw, maze_sections, is_outer, self.custom_weight)
+            else:
+                self.parse_path(path_raw, maze_sections, is_outer)
         else:
-            self.parse_path(path_raw, maze_sections, is_outer)
+            self.path, self.num = path, path_num
+            self.outer = is_outer
+            self.closed = is_closed
+            self.section_tracker = trackers
+            self.section_tracker_red_nd_doubled = \
+                np.array([t.section for t in (self.section_tracker + self.section_tracker)])
+            self.custom_weight = custom_weight
 
     @classmethod
-    def from_df(self, path_num, is_outer, is_closed, custom_weight, path, trackers):
-        self.path, self.num = path, path_num
-        self.outer = is_outer
-        self.closed = is_closed
-        self.section_tracker = trackers
-        self.section_tracker_red_nd_doubled = \
-            np.array([t.section for t in (self.section_tracker + self.section_tracker)])
-        self.custom_weight = custom_weight
-        return self
+    def from_df(cls, path_num, is_outer, is_closed, custom_weight, path, trackers):
+        return cls(path_num, None,  None, is_outer=is_outer, from_db=True, is_closed=is_closed,
+                   custom_weight=custom_weight, path=path, trackers=trackers)
 
     def parse_path(self, path, maze_sections: sections.MazeSections, is_outer=False,
        custom_weight=0):

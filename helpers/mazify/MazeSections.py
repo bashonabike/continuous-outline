@@ -8,24 +8,31 @@ from helpers.mazify.EdgeNode import EdgeNode
 from helpers.Enums import NodeType
 
 class MazeSections:
-    def __init__(self, outer_edge, m, n, req_details_mask):
+    def __init__(self, outer_edge, m, n, req_details_mask, from_db=False, focus_region_sections=None,
+                 sections=None, y_grade=None, x_grade=None, img_height=None, img_width=None, path_graph=None):
         self.m, self.n = m, n
-        self.focus_region_sections = []
-        self.sections, _, self.y_grade, self.x_grade = (
-            self.count_true_pixels_in_sections(outer_edge, m, n, req_details_mask))
+        if not from_db:
+            self.focus_region_sections = []
+            self.img_height, self.img_width = outer_edge.shape
+            self.sections, _, self.y_grade, self.x_grade = (
+                self.count_true_pixels_in_sections(outer_edge, m, n, req_details_mask))
 
-        self.path_graph = nx.Graph()
-        self.set_section_blank_overs_in_graph()
+            self.path_graph = nx.Graph()
+            self.set_section_blank_overs_in_graph()
+        else:
+            self.m, self.n = m, n
+            self.img_height, self.img_width = img_height, img_width
+            self.focus_region_sections = focus_region_sections
+            self.sections = sections
+            self.y_grade, self.x_grade = y_grade, x_grade
+            self.path_graph = path_graph
 
     @classmethod
-    def from_df(self, m, n, focus_region_sections:list, sections:np.ndarray,
-                 y_grade, x_grade, path_graph: nx.Graph):
-        self.m, self.n = m, n
-        self.focus_region_sections = focus_region_sections
-        self.sections = sections
-        self.y_grade, self.x_grade = y_grade, x_grade
-        self.path_graph = path_graph
-        return self
+    def from_df(cls, m, n, focus_region_sections:list, sections:np.ndarray,
+                 y_grade, x_grade, img_height, img_width, path_graph: nx.Graph):
+        return cls(None, m, n, None, from_db=True, focus_region_sections=focus_region_sections,
+                   sections=sections, y_grade=y_grade, x_grade=x_grade, img_height=img_height, img_width=img_width,
+                   path_graph=path_graph)
 
 
     def set_section_blank_overs_in_graph(self):
@@ -127,20 +134,8 @@ class MazeSections:
         return min(y // self.y_grade, self.m - 1), min(x // self.x_grade, self.n - 1)
 
 class MazeSection:
-    def __init__(self, bounds, edge_pixels, y_sec, x_sec, focus_region, focus_region_nums=None):
-        (self.ymin, self.ymax, self.xmin, self.xmax) = bounds
-        self.y_sec, self.x_sec = y_sec, x_sec
-        self.coords_sec = (y_sec, x_sec)
-        self.edge_pixels = edge_pixels
-        self.nodes, self.outer_nodes = [], []
-
-        self.focus_region = focus_region
-        self.focus_region_nums = focus_region_nums
-        self.dumb_req = False
-        self.dumb_opt = False
-
-    @classmethod
-    def from_df(self, bounds, edge_pixels, y_sec, x_sec, focus_region, focus_region_nums, dumb_req, dumb_opt):
+    def __init__(self, bounds, edge_pixels, y_sec, x_sec, focus_region, focus_region_nums=None, from_df=False,
+                 dumb_req=False, dumb_opt=False):
         (self.ymin, self.ymax, self.xmin, self.xmax) = bounds
         self.y_sec, self.x_sec = y_sec, x_sec
         self.coords_sec = (y_sec, x_sec)
@@ -151,7 +146,18 @@ class MazeSection:
         self.focus_region_nums = focus_region_nums
         self.dumb_req = dumb_req
         self.dumb_opt = dumb_opt
-        return self
+
+    @classmethod
+    def from_df(cls, y_start, y_end, x_start, x_end, num_edge_pixels, y_sec, x_sec,
+                is_focus_region, focus_region_nums,
+                dumb_req, dumb_opt):
+        if len(focus_region_nums) > 0:
+            focus_region_nums = [int(n) for n in focus_region_nums.split(",")]
+        else:
+            focus_region_nums = []
+        new_section = cls((y_start, y_end, x_start, x_end), num_edge_pixels, y_sec, x_sec, is_focus_region,
+                          focus_region_nums=focus_region_nums, from_df=True, dumb_req=dumb_req, dumb_opt=dumb_opt)
+        return new_section
 
 
     def bulk_add_nodes_from_df(self, nodes:list[EdgeNode], outer_nodes:list[EdgeNode]):
@@ -182,9 +188,13 @@ class MazeSection:
 
 class MazeSectionTracker:
     def __init__(self, section:MazeSection, in_node:EdgeNode, tracker_num:int,
-                 prev_tracker=None, next_tracker=None, out_node:EdgeNode=None):
+                 prev_tracker=None, next_tracker=None, out_node:EdgeNode=None, from_db=False,
+                 nodes=None):
         self.section = section
-        self.nodes = []
+        if nodes is not None:
+            self.nodes = nodes
+        else:
+            self.nodes = []
         self.in_node = in_node
         self.out_node = out_node
         self.path, self.path_num = in_node.path, in_node.path.num
@@ -194,21 +204,10 @@ class MazeSectionTracker:
         self.next_tracker = next_tracker
 
     @classmethod
-    def from_df(self, section:MazeSection, in_node:EdgeNode, out_node:EdgeNode,
+    def from_df(cls, section:MazeSection, in_node:EdgeNode, out_node:EdgeNode,
                 tracker_num:int, prev_tracker, nodes:list, next_tracker=None):
-        self.section = section
-        self.nodes = nodes
-        self.in_node = in_node
-        self.out_node = out_node
-        self.path, self.path_num = in_node.path, in_node.path.num
-        self.rev_in_node, self.rev_out_node = out_node, in_node
-        self.tracker_num = tracker_num
-        self.prev_tracker = prev_tracker
-        self.next_tracker = next_tracker
-        if next_tracker is not None:
-            next_tracker.prev_tracker = self
-        if self.prev_tracker is not None: self.prev_tracker.next_tracker = self
-        return self
+        return cls(section, in_node, tracker_num, out_node=out_node, prev_tracker=prev_tracker,
+                   nodes=nodes, next_tracker=next_tracker, from_db=True)
 
     def __hash__(self):
         return hash((self.section.y_sec, self.section.x_sec, self.path_num, self.tracker_num))
