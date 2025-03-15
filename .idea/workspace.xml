@@ -4,11 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Object rebuilding from db all working woo!  Except raw &amp; formed">
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Object building all done">
+      <change afterPath="$PROJECT_DIR$/helpers/build_objects.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/continuous-outline.inx" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.inx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/caching/DataRetrieval.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/DataRetrieval.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/caching/build_objects_from_db.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/build_objects_from_db.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/temp_options.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/temp_options.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -169,14 +174,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1736210770875</updated>
-    </task>
-    <task id="LOCAL-00002" summary="Initial sub image gen function, working but dimensioning all off">
-      <option name="closed" value="true" />
-      <created>1736289189289</created>
-      <option name="number" value="00002" />
-      <option name="presentableId" value="LOCAL-00002" />
-      <option name="project" value="LOCAL" />
-      <updated>1736289189289</updated>
     </task>
     <task id="LOCAL-00003" summary="Scaling &amp; shifting working for rect &amp; ellipse crop">
       <option name="closed" value="true" />
@@ -562,7 +559,15 @@
       <option name="project" value="LOCAL" />
       <updated>1741980385472</updated>
     </task>
-    <option name="localTasksCounter" value="51" />
+    <task id="LOCAL-00051" summary="Object building all done">
+      <option name="closed" value="true" />
+      <created>1741981306747</created>
+      <option name="number" value="00051" />
+      <option name="presentableId" value="LOCAL-00051" />
+      <option name="project" value="LOCAL" />
+      <updated>1741981306747</updated>
+    </task>
+    <option name="localTasksCounter" value="52" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -577,7 +582,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Dumb nodes breaking into sections working, got weighted efficient djikstra going! defs a start" />
     <MESSAGE value="Got start/end going for travelling salesman, nodes walking etc coded for walk not tested yet tho" />
     <MESSAGE value="Configured cropping for your efficiency" />
     <MESSAGE value="Working!  ISh, still a bit rough but it's something" />
@@ -602,7 +606,8 @@
     <MESSAGE value="COnfigured building back from df all objects" />
     <MESSAGE value="WOrking on DAL,  class funcitons fixed up" />
     <MESSAGE value="Object rebuilding from db all working woo!  Except raw &amp; formed" />
-    <option name="LAST_COMMIT_MESSAGE" value="Object rebuilding from db all working woo!  Except raw &amp; formed" />
+    <MESSAGE value="Object building all done" />
+    <option name="LAST_COMMIT_MESSAGE" value="Object building all done" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -614,7 +619,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Testing.py</url>
-          <line>398</line>
+          <line>402</line>
           <option name="timeStamp" value="268" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">

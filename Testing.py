@@ -121,6 +121,10 @@ for file in os.listdir("Trial-AI-Base-Images\\bg_removed"):
       # postedge, split_contours = edge.detect_edges(image_path)
 
       #TODO: maybe just run edge detect on details regions spec by user, see if can just call a given function wtihout importing
+
+
+      #TODO: train nn based on dumb req/opt gridding for fixed section grades, do buncha trial rough paths, log which ones have good stats
+      #If make into illust plugin, can collect user stats
       #Dump cached info to temp files, import as needed
       #use SLIC  for tracing, maybe build agent so it follows line lke maze then jumps to next as needed
       #try to do this intelligently? prioritize maximizing coverage (length)

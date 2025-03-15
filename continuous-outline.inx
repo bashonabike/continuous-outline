@@ -1,10 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
-    <name>continuous-outline.js</name>
-    <id>fablabchemnitz.de.continuous-outline</id>
+    <name>continuous-outline</name>
+    <id>continuous-outline</id>
     <param name="tab" type="notebook">
-        <page name="tab_general" gui-text="continuous-outline.js">
+        <page name="tab_general" gui-text="continuous-outline">
             <hbox>
+                <vbox>
+                    <label appearance="header">Continuous Outline</label>
+                    <separator/>
+                    <param name="slic_regions" type="int" min="1" max="9999" gui-text="Number of SLIC regions">12</param>
+                    <param name="dumb_node_optional_weight" type="int" min="0" max="9999" gui-text="Weight for optional dumb nodes">1</param>
+                    <param name="dumb_node_optional_max_variable_weight" type="int" min="0" max="9999" gui-text="Max variable weight for optional dumb nodes">6</param>
+                    <param name="dumb_node_min_opt_weight_reduced" type="int" min="0" max="9999" gui-text="Minimum reduced weight for optional dumb nodes">1</param>
+                    <param name="dumb_node_blank_weight" type="int" min="0" max="9999" gui-text="Weight for blank dumb nodes">200</param>
+                    <param name="dumb_node_opt_jump_weight" type="int" min="0" max="9999" gui-text="Weight for optional dumb node jumps">1</param>
+                    <param name="dumb_node_req_jump_weight" type="int" min="0" max="9999" gui-text="Weight for required dumb node jumps">1</param>
+                    <param name="dumb_node_required_weight" type="int" min="0" max="9999" gui-text="Weight for required dumb nodes">1</param>
+                    <param name="max_inner_path_seg_manhatten_length" type="int" min="0" max="9999" gui-text="Maximum Manhattan length for inner path segments">50</param>
+                    <param name="outer_contour_length_cutoff" type="int" min="0" max="9999" gui-text="Length cutoff for outer contours">200</param>
+                    <param name="inner_contour_length_cutoff" type="int" min="0" max="9999" gui-text="Length cutoff for inner contours">20</param>
+                    <param name="inner_contour_variable_weights" type="bool" gui-text="Enable variable weights for inner contours">true</param>
+                    <param name="scorched_earth" type="bool" gui-text="Enable scorched earth mode">true</param>
+                    <param name="scorched_earth_weight_multiplier" type="int" min="0" max="9999" gui-text="Weight multiplier for scorched earth mode">6</param>
+
+                    <param name="trace_technique" type="int" min="1" max="5" gui-text="TEMP!! Trace technique">2</param>
+
+                    <param name="snake_trace_max_jump_from_outer" type="int" min="0" max="9999" gui-text="Maximum jump from outer contour for snake trace">2</param>
+                    <param name="snake_details_polygon_faces" type="int" min="0" max="9999" gui-text="Number of polygon faces for snake details">7</param>
+                    <param name="typewriter_lines" type="int" min="2" max="9999" gui-text="Number of typewriter lines">5</param>
+                    <param name="typewriter_traverse_threshold" type="float" min="0.0" max="1.0" gui-text="Traverse threshold for typewriter lines">0.5</param>
+                    <param name="zigzag_typewriter_lines" type="int" min="2" max="9999" gui-text="Number of zigzag typewriter lines">5</param>
+                    <param name="zigzag_typewriter_traverse_threshold" type="float" min="0.0" max="1.0" gui-text="Traverse threshold for zigzag typewriter lines">0.3</param>
+                    <param name="vertical_zigzag_lines" type="int" min="2" max="9999" gui-text="Number of vertical zigzag lines">5</param>
+                    <param name="vertical_zigzag_traverse_threshold" type="float" min="0.0" max="1.0" gui-text="Traverse threshold for vertical zigzag lines">0.3</param>
+                    <param name="back_forth_lines" type="int" min="2" max="9999" gui-text="Number of back and forth lines">12</param>
+                    <param name="back_forth_traverse_threshold" type="float" min="0.0" max="1.0" gui-text="Traverse threshold for back and forth lines">0.3</param>
+                    <param name="simplify_tolerance" type="float" min="0.0" max="1.0" gui-text="Simplify tolerance">0.7</param>
+                </vbox>
+                <spacer/>
+                <separator/>
+                <spacer/>
                 <vbox>
                     <label appearance="header">Tracing</label>
                     <separator/>
@@ -68,21 +103,11 @@
             <label>This piece of software is part of the MightyScape for Inkscape Extension Collection and is licensed under GNU GPL v3</label>
             <label appearance="url">https://y.stadtfabrikanten.org/mightyscape-overview</label>
         </page>
-        <page name="tab_donate" gui-text="Donate">
-            <label appearance="header">Coffee + Pizza</label>
-            <label>We are the Stadtfabrikanten, running the FabLab Chemnitz since 2016. A FabLab is an open workshop that gives people access to machines and digital tools like 3D printers, laser cutters and CNC milling machines.</label>
-            <spacer/>           
-            <label>You like our work and want to support us? You can donate to our non-profit organization by different ways:</label>
-            <label appearance="url">https://y.stadtfabrikanten.org/donate</label>
-            <spacer/>
-            <label>Thanks for using our extension and helping us!</label>
-            <image>../000_about_fablabchemnitz.svg</image>
-        </page>
     </param>
     <effect needs-live-preview="true">
         <object-type>all</object-type>
 		<effects-menu>
-         <submenu name="FabLab Chemnitz">
+         <submenu name="clinetime">
             <submenu name="Tracing/Images/Edge Detection"/>
          </submenu>
 		</effects-menu>

@@ -9,6 +9,9 @@ import base64
 import helpers.edge_detection as edge
 import copy as cp
 import numpy as np
+import pandas as pd
+
+import helpers.caching.DataRetrieval as dataret
 
 """
 Extension for InkScape 1.X
@@ -27,7 +30,7 @@ Used version of imagetracerjs: https://github.com/jankovicsandras/imagetracerjs/
 
 #TODO: Input all svg paths elipses, rectangles, etc. pick all pixels inside bounds as areas to emphasize detail
 
-class Continuous_outline(inkex.EffectExtension):
+class continuous_outline(inkex.EffectExtension):
 
 
 
@@ -56,27 +59,83 @@ class Continuous_outline(inkex.EffectExtension):
 
     def add_arguments(self, pars):
         pars.add_argument("--tab")
-        pars.add_argument("--keeporiginal", type=inkex.Boolean, default=False, help="Keep original image on canvas")
-        pars.add_argument("--ltres", type=float, default=1.0, help="Error treshold straight lines")
-        pars.add_argument("--qtres", type=float, default=1.0, help="Error treshold quadratic splines")
-        pars.add_argument("--pathomit", type=int, default=8, help="Noise reduction - discard edge node paths shorter than")         
-        pars.add_argument("--rightangleenhance", type=inkex.Boolean, default=True, help="Enhance right angle corners")
-        pars.add_argument("--colorsampling", default="2",help="Color sampling")      
-        pars.add_argument("--numberofcolors", type=int, default=16, help="Number of colors to use on palette")
-        pars.add_argument("--mincolorratio", type=int, default=0, help="Color randomization ratio")
-        pars.add_argument("--colorquantcycles", type=int, default=3, help="Color quantization will be repeated this many times")           
-        pars.add_argument("--layering", default="0",help="Layering")
-        pars.add_argument("--strokewidth", type=float, default=1.0, help="SVG stroke-width")
-        pars.add_argument("--linefilter", type=inkex.Boolean, default=False, help="Noise reduction line filter")
-        #pars.add_argument("--scale", type=float, default=1.0, help="Coordinate scale factor")
-        pars.add_argument("--roundcoords", type=int, default=1, help="Decimal places for rounding")
-        pars.add_argument("--viewbox", type=inkex.Boolean, default=False, help="Enable or disable SVG viewBox")
-        pars.add_argument("--desc", type=inkex.Boolean, default=False, help="SVG descriptions")
-        pars.add_argument("--blurradius", type=int, default=0, help="Selective Gaussian blur preprocessing")
-        pars.add_argument("--blurdelta", type=float, default=20.0, help="RGBA delta treshold for selective Gaussian blur preprocessing")
-  
+        # pars.add_argument("--keeporiginal", type=inkex.Boolean, default=False, help="Keep original image on canvas")
+        # pars.add_argument("--ltres", type=float, default=1.0, help="Error treshold straight lines")
+        # pars.add_argument("--qtres", type=float, default=1.0, help="Error treshold quadratic splines")
+        # pars.add_argument("--pathomit", type=int, default=8, help="Noise reduction - discard edge node paths shorter than")
+        # pars.add_argument("--rightangleenhance", type=inkex.Boolean, default=True, help="Enhance right angle corners")
+        # pars.add_argument("--colorsampling", default="2",help="Color sampling")
+        # pars.add_argument("--numberofcolors", type=int, default=16, help="Number of colors to use on palette")
+        # pars.add_argument("--mincolorratio", type=int, default=0, help="Color randomization ratio")
+        # pars.add_argument("--colorquantcycles", type=int, default=3, help="Color quantization will be repeated this many times")
+        # pars.add_argument("--layering", default="0",help="Layering")
+        # pars.add_argument("--strokewidth", type=float, default=1.0, help="SVG stroke-width")
+        # pars.add_argument("--linefilter", type=inkex.Boolean, default=False, help="Noise reduction line filter")
+        # #pars.add_argument("--scale", type=float, default=1.0, help="Coordinate scale factor")
+        # pars.add_argument("--roundcoords", type=int, default=1, help="Decimal places for rounding")
+        # pars.add_argument("--viewbox", type=inkex.Boolean, default=False, help="Enable or disable SVG viewBox")
+        # pars.add_argument("--desc", type=inkex.Boolean, default=False, help="SVG descriptions")
+        # pars.add_argument("--blurradius", type=int, default=0, help="Selective Gaussian blur preprocessing")
+        # pars.add_argument("--blurdelta", type=float, default=20.0, help="RGBA delta treshold for selective Gaussian blur preprocessing")
+        #
+        pars.add_argument("--slic_regions", type=int, default=12, help="Number of SLIC regions")
+        pars.add_argument("--dumb_node_optional_weight", type=int, default=1, help="Weight for optional dumb nodes")
+        pars.add_argument("--dumb_node_optional_max_variable_weight", type=int, default=6,
+                          help="Max variable weight for optional dumb nodes")
+        pars.add_argument("--dumb_node_min_opt_weight_reduced", type=int, default=1,
+                          help="Minimum reduced weight for optional dumb nodes")
+        pars.add_argument("--dumb_node_blank_weight", type=int, default=200, help="Weight for blank dumb nodes")
+        pars.add_argument("--dumb_node_opt_jump_weight", type=int, default=1,
+                          help="Weight for optional dumb node jumps")
+        pars.add_argument("--dumb_node_req_jump_weight", type=int, default=1,
+                          help="Weight for required dumb node jumps")
+        pars.add_argument("--dumb_node_required_weight", type=int, default=1, help="Weight for required dumb nodes")
+        pars.add_argument("--max_inner_path_seg_manhatten_length", type=int, default=50,
+                          help="Maximum Manhattan length for inner path segments")
+        pars.add_argument("--outer_contour_length_cutoff", type=int, default=200,
+                          help="Length cutoff for outer contours")
+        pars.add_argument("--inner_contour_length_cutoff", type=int, default=20,
+                          help="Length cutoff for inner contours")
+        pars.add_argument("--inner_contour_variable_weights", type=inkex.Boolean, default=True,
+                          help="Enable variable weights for inner contours")
+        pars.add_argument("--scorched_earth", type=inkex.Boolean, default=True, help="Enable scorched earth mode")
+        pars.add_argument("--scorched_earth_weight_multiplier", type=int, default=6,
+                          help="Weight multiplier for scorched earth mode")
 
-    def image_prep(self, image):
+        pars.add_argument("--trace_technique", type=int, default=2,
+                          help="TEMP!! Trace technique")
+
+        pars.add_argument("--snake_trace_max_jump_from_outer", type=int, default=2,
+                          help="Maximum jump from outer contour for snake trace")
+        pars.add_argument("--snake_details_polygon_faces", type=int, default=7,
+                          help="Number of polygon faces for snake details")
+        pars.add_argument("--typewriter_lines", type=int, default=5, help="Number of typewriter lines")
+        pars.add_argument("--typewriter_traverse_threshold", type=float, default=0.5,
+                          help="Traverse threshold for typewriter lines")
+        pars.add_argument("--zigzag_typewriter_lines", type=int, default=5, help="Number of zigzag typewriter lines")
+        pars.add_argument("--zigzag_typewriter_traverse_threshold", type=float, default=0.3,
+                          help="Traverse threshold for zigzag typewriter lines")
+        pars.add_argument("--vertical_zigzag_lines", type=int, default=5, help="Number of vertical zigzag lines")
+        pars.add_argument("--vertical_zigzag_traverse_threshold", type=float, default=0.3,
+                          help="Traverse threshold for vertical zigzag lines")
+        pars.add_argument("--back_forth_lines", type=int, default=12, help="Number of back and forth lines")
+        pars.add_argument("--back_forth_traverse_threshold", type=float, default=0.3,
+                          help="Traverse threshold for back and forth lines")
+        pars.add_argument("--simplify_tolerance", type=float, default=0.7, help="Simplify tolerance")
+
+
+    def check_level_to_update(self, data_ret:dataret.DataRetrieval):
+        # Collect parameter names and values into a list of dictionaries
+        param_data = []
+        for param_name, param_value in vars(self.options).items():
+            param_data.append({'param_name': param_name, 'param_val': param_value})
+
+        # Create a pandas DataFrame from the list of dictionaries
+        params_df = pd.DataFrame(param_data)
+        return data_ret.level_of_update(params_df)
+
+
+    def retrieve_image(self, image):
         self.path = self.checkImagePath(image)  # This also ensures the file exists
         if self.path is None:  # check if image is embedded or linked
             image_string = image.get('{http://www.w3.org/1999/xlink}href')
@@ -96,11 +155,11 @@ class Continuous_outline(inkex.EffectExtension):
         else:
             exportfile = "/tmp/helpers.png"
 
-        if img.mode != 'RGB':
-            img = img.convert('RGB')
-        img.save(exportfile, "png")
+        # if img.mode != 'RGB':
+        #     img = img.convert('RGB')
+        # img.save(exportfile, "png")
 
-        return exportfile
+        return img
 
     def get_image_offsets(self, svg_image):
         # Determine image offsets
@@ -178,6 +237,65 @@ class Continuous_outline(inkex.EffectExtension):
 
         return newGroup
 
+    def det_img_and_focus_specs(self, image_path, detail_bounds):
+        img_focus_specs = []
+        img_focus_specs.append(image_path)
+        for bounds in detail_bounds:
+            # Check if ellipse or rect
+            if bounds.tag == inkex.addNS('rect', 'svg'):
+                # Get rectangle properties
+                img_focus_specs.append(float(bounds.attrib.get('x', 0)))
+                img_focus_specs.append(float(bounds.attrib.get('y', 0)))
+                img_focus_specs.append(float(bounds.attrib.get('width', 0)))
+                img_focus_specs.append(float(bounds.attrib.get('height', 0)))
+            elif bounds.tag == inkex.addNS('ellipse', 'svg'):
+                # Get ellipse properties
+                # Get rectangle properties
+                img_focus_specs.append(float(bounds.attrib.get('cx', 0)))
+                img_focus_specs.append(float(bounds.attrib.get('cy', 0)))
+                img_focus_specs.append(float(bounds.attrib.get('rx', 0)))
+                img_focus_specs.append(float(bounds.attrib.get('ry', 0)))
+            else:
+                raise inkex.AbortExtension("Only ellipses and rectangles are supported as bounds.")
+
+        selection_info_df = pd.DataFrame(img_focus_specs, columns=['selection_info'])
+
+        # Add the 'line' column from the index
+        selection_info_df['line'] = selection_info_df.index
+
+        # Reset the index if you want 'line' to be the first column
+        selection_info_df = selection_info_df[['line', 'selection_info']]  # reorders columns
+
+        return selection_info_df
+
+    def form_focus_region_specs_normalized(self, detail_bounds, image_in_svg):
+        #Determine image offsets
+        (x_offset, y_offset) = self.get_image_offsets(image_in_svg)
+        (x_norm, y_norm) = float(image_in_svg.get('width')),  float(image_in_svg.get('height'))
+        bounds_out = []
+
+        #Determined shifted and normalized bounds
+        for bounds in detail_bounds:
+            # Check if ellipse or rect
+            if bounds.tag == inkex.addNS('rect', 'svg'):
+                # Get rectangle properties
+                x = (float(bounds.attrib.get('x', 0)) - x_offset) / x_norm
+                y = (float(bounds.attrib.get('y', 0)) - y_offset) / y_norm
+                width = float(bounds.attrib.get('width', 0)) / x_norm
+                height = float(bounds.attrib.get('height', 0)) / y_norm
+                bounds_out.append({'form': "rectangle", 'x': x, 'y': y, 'width': width, 'height': height})
+            elif bounds.tag == inkex.addNS('ellipse', 'svg'):
+                # Get ellipse properties
+                cx = (float(bounds.attrib.get('cx', 0)) - x_offset) / x_norm
+                cy = (float(bounds.attrib.get('cy', 0)) - y_offset) / y_norm
+                rx = float(bounds.attrib.get('rx', 0)) / x_norm
+                ry = float(bounds.attrib.get('ry', 0)) / y_norm
+                bounds_out.append({'form': "ellipse", 'cx': cx, 'cy': cy, 'rx': rx, 'ry': ry})
+            else:
+                raise inkex.AbortExtension("Only ellipses and rectangles are supported as bounds.")
+
+        return bounds_out
+
     def isolate_sub_images(self, detail_bounds, export_file, image_in_svg):
         #Determine image offsets
         (x_offset, y_offset) = self.get_image_offsets(image_in_svg)
@@ -249,126 +367,167 @@ class Continuous_outline(inkex.EffectExtension):
     def effect(self):
         # internal overwrite for scale:
         self.options.scale = 1.0
+        data_ret = dataret.DataRetrieval()
     
         if len(self.svg.selected) > 0:
+            #Grab selected items if selected
             images = self.svg.selection.filter(inkex.Image).values()
             detail_bounds= self.svg.selection.filter(inkex.Rectangle, inkex.Ellipse).values()
-
-            if len(images) > 0:
-                for svg_image in images:
-                    exportfile = self.image_prep(svg_image)
-                    detail_sub_dicts = self.isolate_sub_images(detail_bounds, exportfile, svg_image)
-                    edge.k_means_clustering(exportfile)
-                    main_image_outline = edge.detect_edges('clustered.png')
-                    contours_all = list(cp.deepcopy(main_image_outline))
-                    # edge.vectorize_edgified_image(contours_all)
-
-                    with Image.open(exportfile) as image:
-                        image_size = image.size
-
-                        x_scale = image_size[0] / float(svg_image.get('width'))
-                        y_scale = image_size[1] / float(svg_image.get('height'))
-                        scale_nd = np.array([x_scale, y_scale])
-
-                    # Determine image offsets
-                    main_image_offsets = np.array(self.get_image_offsets(svg_image))
-
-                    #Offset main contours to line up with master photo on svg
-                    contours_transformed = []
-                    for contour in contours_all:
-                        new_contour = []
-                        for point in contour:
-                            new_contour.append(list((point/scale_nd + main_image_offsets)[0]))
-                        contours_transformed.append(new_contour)
-
-
-                    for detail_sub_dict in detail_sub_dicts:
-                        path = detail_sub_dict["imagepath"]
-                        detail_outline = edge.detect_edges(path)
-
-                        #Offset detail to line up with master photo
-                        for contour in detail_outline:
-                            new_contour = []
-                            for point in contour:
-                                new_contour.append(list(((point + detail_sub_dict["localorigin"])/scale_nd +
-                                                         main_image_offsets)[0]))
-                            contours_transformed.append(new_contour)
-
-                    #TODO: need to save temp sub images?
-                    # Build the path commands
-                    commands = []
-
-                    for contour in contours_transformed:
-                        for i, point in enumerate(contour):
-                            if i == 0:
-                                commands.append(['M', point])  # Move to the first point
-                            else:
-                                commands.append(['L', point])  # Line to the next point
-                            # self.msg(str(point))
-                        # commands.append(['Z'])  # Close path
-
-                    # Create the inkex.Path
-                    path = inkex.paths.Path(commands)
-
-                    # Add a new path element to the SVG
-                    path_element = inkex.PathElement()
-                    path_element.style = {'stroke': 'black', 'fill': 'none'}
-                    path_element.set('d', str(path))  # Set the path data
-                    self.svg.get_current_layer().append(path_element)
-                    #TODO: units are in pixels, scaling it's way too big why
-
-                    # nodeclipath = os.path.join("imagetracerjs-master", "nodecli", "nodecli.js")
-                    #
-                    # ## Build up imagetracerjs command according to your settings from extension GUI
-                    # command = "node --trace-deprecation " # "node.exe" or "node" on Windows or just "node" on Linux
-                    # if os.name=="nt": # your OS is Windows. We handle path separator as "\\" instead of unix-like "/"
-                    #     command += str(nodeclipath).replace("\\", "\\\\")
-                    # else:
-                    #     command += str(nodeclipath)
-                    # command += " " + exportfile
-                    # command += " ltres "             + str(self.options.ltres)
-                    # command += " qtres "             + str(self.options.qtres)
-                    # command += " pathomit "          + str(self.options.pathomit)
-                    # command += " rightangleenhance " + str(self.options.rightangleenhance).lower()
-                    # command += " colorsampling "     + str(self.options.colorsampling)
-                    # command += " numberofcolors "    + str(self.options.numberofcolors)
-                    # command += " mincolorratio "     + str(self.options.mincolorratio)
-                    # command += " numberofcolors "    + str(self.options.numberofcolors)
-                    # command += " colorquantcycles "  + str(self.options.colorquantcycles)
-                    # command += " layering "          + str(self.options.layering)
-                    # command += " strokewidth "       + str(self.options.strokewidth)
-                    # command += " linefilter "        + str(self.options.linefilter).lower()
-                    # command += " scale "             + str(self.options.scale)
-                    # command += " roundcoords "       + str(self.options.roundcoords)
-                    # command += " viewbox "           + str(self.options.viewbox).lower()
-                    # command += " desc "              + str(self.options.desc).lower()
-                    # command += " blurradius "        + str(self.options.blurradius)
-                    # command += " blurdelta "         + str(self.options.blurdelta)
-                    #
-                    # # Create the vector traced SVG file
-                    # with os.popen(command, "r") as tracerprocess:
-                    #     result = tracerprocess.read()
-                    #     if "was saved!" not in result:
-                    #         self.msg("Error while processing input: " + result)
-                    #         self.msg("Check the image file (maybe convert and save as new file) and try again.")
-                    #         self.msg("\nYour parser command:")
-                    #         self.msg(command)
-                    #
-                    #
-                    # # proceed if traced SVG file was successfully created
-                    # if os.path.exists(exportfile + ".svg"):
-                    #     self.fit_svg(exportfile, image)
-                    
-                    #remove the old image or not                    
-                    #TODO: re-enable this?
-                    # if self.options.keeporiginal is not True:
-                        # image.delete()
-                        # for sub_image in detail_sub_images:
-                        #     sub_image.delete()
-            else:
-                self.msg("No images found in selection! Check if you selected a group instead.")      
         else:
-            self.msg("Selection is empty. Please select one or more images.")
+            #Else grab all on doc
+            images = self.svg.filter(inkex.Image).values()
+            detail_bounds = self.svg.filter(inkex.Rectangle, inkex.Ellipse).values()
+
+        match len(images):
+            case 0:
+                if len(self.svg.selected) > 0:
+                    self.msg("No images found in selection! Check if you selected a group instead.")
+                else:
+                    self.msg("No images found in document!")
+            case 1:
+                svg_image = images[0]
+                image_path = self.checkImagePath(svg_image)
+                update_level = 0
+
+                #Check to verify selection/doc/params haven't changed since last run
+                img_and_focus_specs_df = self.det_img_and_focus_specs(image_path, detail_bounds)
+                update_level = data_ret.get_selection_match_level(img_and_focus_specs_df)
+                if update_level > 0:
+                    #If selection matches, check if params have changed
+                    update_level = min(self.check_level_to_update(data_ret), update_level)
+
+                objects = {}
+                #Retrieve or calculate data as needed
+                match update_level:
+                    case 0, 1:
+                        import helpers.build_objects as buildscr
+                        objects = {}
+
+                        #Level 1 objects form scratch
+                        normalized_focus_region_specs = self.form_focus_region_specs_normalized(detail_bounds, svg_image)
+                        buildscr.build_level_1_scratch(image_path, normalized_focus_region_specs, self.options, objects)
+
+                        #Level 2 objects from scratch
+
+
+
+
+
+
+
+
+                # detail_sub_dicts = self.isolate_sub_images(detail_bounds, exportfile, svg_image)
+                # edge.k_means_clustering(exportfile)
+                # main_image_outline = edge.detect_edges('clustered.png')
+                # contours_all = list(cp.deepcopy(main_image_outline))
+                # edge.vectorize_edgified_image(contours_all)
+
+                image_size = image.size
+
+                x_scale = image_size[0] / float(svg_image.get('width'))
+                y_scale = image_size[1] / float(svg_image.get('height'))
+                scale_nd = np.array([x_scale, y_scale])
+
+                # Determine image offsets
+                main_image_offsets = np.array(self.get_image_offsets(svg_image))
+
+                # #Offset main contours to line up with master photo on svg
+                # contours_transformed = []
+                # for contour in contours_all:
+                #     new_contour = []
+                #     for point in contour:
+                #         new_contour.append(list((point/scale_nd + main_image_offsets)[0]))
+                #     contours_transformed.append(new_contour)
+
+
+                # for detail_sub_dict in detail_sub_dicts:
+                #     path = detail_sub_dict["imagepath"]
+                #     detail_outline = edge.detect_edges(path)
+                #
+                #     #Offset detail to line up with master photo
+                #     for contour in detail_outline:
+                #         new_contour = []
+                #         for point in contour:
+                #             new_contour.append(list(((point + detail_sub_dict["localorigin"])/scale_nd +
+                #                                      main_image_offsets)[0]))
+                #         contours_transformed.append(new_contour)
+
+                #TODO: need to save temp sub images?
+                # Build the path commands
+                commands = []
+
+                for contour in contours_transformed:
+                    for i, point in enumerate(contour):
+                        if i == 0:
+                            commands.append(['M', point])  # Move to the first point
+                        else:
+                            commands.append(['L', point])  # Line to the next point
+                        # self.msg(str(point))
+                    # commands.append(['Z'])  # Close path
+
+                # Create the inkex.Path
+                path = inkex.paths.Path(commands)
+
+                # Add a new path element to the SVG
+                path_element = inkex.PathElement()
+                path_element.style = {'stroke': 'black', 'fill': 'none'}
+                path_element.set('d', str(path))  # Set the path data
+                self.svg.get_current_layer().append(path_element)
+                #TODO: units are in pixels, scaling it's way too big why
+
+                # nodeclipath = os.path.join("imagetracerjs-master", "nodecli", "nodecli.js")
+                #
+                # ## Build up imagetracerjs command according to your settings from extension GUI
+                # command = "node --trace-deprecation " # "node.exe" or "node" on Windows or just "node" on Linux
+                # if os.name=="nt": # your OS is Windows. We handle path separator as "\\" instead of unix-like "/"
+                #     command += str(nodeclipath).replace("\\", "\\\\")
+                # else:
+                #     command += str(nodeclipath)
+                # command += " " + exportfile
+                # command += " ltres "             + str(self.options.ltres)
+                # command += " qtres "             + str(self.options.qtres)
+                # command += " pathomit "          + str(self.options.pathomit)
+                # command += " rightangleenhance " + str(self.options.rightangleenhance).lower()
+                # command += " colorsampling "     + str(self.options.colorsampling)
+                # command += " numberofcolors "    + str(self.options.numberofcolors)
+                # command += " mincolorratio "     + str(self.options.mincolorratio)
+                # command += " numberofcolors "    + str(self.options.numberofcolors)
+                # command += " colorquantcycles "  + str(self.options.colorquantcycles)
+                # command += " layering "          + str(self.options.layering)
+                # command += " strokewidth "       + str(self.options.strokewidth)
+                # command += " linefilter "        + str(self.options.linefilter).lower()
+                # command += " scale "             + str(self.options.scale)
+                # command += " roundcoords "       + str(self.options.roundcoords)
+                # command += " viewbox "           + str(self.options.viewbox).lower()
+                # command += " desc "              + str(self.options.desc).lower()
+                # command += " blurradius "        + str(self.options.blurradius)
+                # command += " blurdelta "         + str(self.options.blurdelta)
+                #
+                # # Create the vector traced SVG file
+                # with os.popen(command, "r") as tracerprocess:
+                #     result = tracerprocess.read()
+                #     if "was saved!" not in result:
+                #         self.msg("Error while processing input: " + result)
+                #         self.msg("Check the image file (maybe convert and save as new file) and try again.")
+                #         self.msg("\nYour parser command:")
+                #         self.msg(command)
+                #
+                #
+                # # proceed if traced SVG file was successfully created
+                # if os.path.exists(exportfile + ".svg"):
+                #     self.fit_svg(exportfile, image)
+
+                #remove the old image or not
+                #TODO: re-enable this?
+                # if self.options.keeporiginal is not True:
+                    # image.delete()
+                    # for sub_image in detail_sub_images:
+                    #     sub_image.delete()
+            case _:
+                if len(self.svg.selected) > 0:
+                    self.msg("Multiple images found in selection! Please select only 1, plus any focal regions desired.")
+                else:
+                    self.msg("Multiple images found in document, please select only 1, plus any focal regions desired.")
 
 if __name__ == '__main__':
     try:
@@ -377,4 +536,4 @@ if __name__ == '__main__':
         inkscape_ExtensionDevTools.inkscape_run_debug()
     except:
         pass
-    Continuous_outline().run()
+    continuous_outline().run()

@@ -262,7 +262,6 @@ def build_level_3_data(dataframes:dict, out_data:dict):
     """
 
     #Retrieve raw path data
-    # dataframes["RawPath"].set_index('path_num', inplace=True)
     out_data["raw_path"] = list(zip(dataframes["RawPath"]['y'], dataframes["RawPath"]['x']))
 
 def build_level_4_data(dataframes:dict, out_data:dict):
@@ -273,6 +272,5 @@ def build_level_4_data(dataframes:dict, out_data:dict):
     :return: None
     """
 
-    #Retrieve raw path data
-    # dataframes["FormedPath"].set_index('path_num', inplace=True)
+    #Retrieve formed path data
     out_data["formed_path"] = list(zip(dataframes["FormedPath"]['y'], dataframes["FormedPath"]['x']))

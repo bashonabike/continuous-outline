@@ -69,6 +69,50 @@ class DataRetrieval:
         except Exception as e:
             print(f"An error occurred: {e}")
 
+    def level_of_update(self, new_params_df):
+        """
+        Logs mismatched parameters and their lowest matching param_level.
+
+        Args:
+            new_params_df (pd.DataFrame): DataFrame with 'param_name' and 'param_val'..
+        """
+
+        old_params_df = self.read_sql_table('ParamsVals', self.conn)
+        old_params_df.set_index('param_name', inplace=True)
+        param_levels_df = self.read_sql_table('ParamsLevels', self.conn)
+        param_levels_df.set_index('param_name', inplace=True)
+        new_params_df.set_index('param_name', inplace=True)
+
+        merged_df = pd.merge(new_params_df, old_params_df, suffixes=('_new', '_old'),
+                             join='left')
+
+        mismatched_params = merged_df[merged_df['param_val_old'] != merged_df['param_val_new']]
+        if mismatched_params.empty:
+            return 9999
+
+        mismatched_levels = pd.merge(mismatched_params, param_levels_df)
+        level = mismatched_levels['param_level'].min()
+        return level
+
+    def get_selection_match_level(self, select_info_df):
+        """
+        Checks if the selection matches the old selection in the database.
+
+        Args:
+            select_info_df (pd.DataFrame): DataFrame with 'param_name' and 'param_val'..
+        """
+        old_select_df = self.read_sql_table('SelectionInfo', self.conn)
+        old_select_df.set_index('line', inplace=True)
+        merged_df = pd.merge(select_info_df, old_select_df, suffixes=('_new', '_old'),
+                             join='left')
+        mismatched_params = merged_df[merged_df['selection_info_old'] != merged_df['selection_info_new']]
+
+        if mismatched_params.empty: return 9999
+        elif mismatched_params.at[0, 'selection_info_new'] != select_info_df.at[0, 'selection_info_new']:
+            #If only focus regions changed, dont need to rerun img proc
+            return 2
+
+        return 0
 
     def close_connection(self):
         self.conn.close()

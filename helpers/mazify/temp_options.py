@@ -1,22 +1,22 @@
 import math
 
 #NOTE: should be in radians, even spacing between quadrants (pi/2, pi/4, pi/8,....,etc)
-directions_incr = math.pi/16
-proximity_search_radius = 40
-segment_length = 10
-parallel_search_radius = 5
-max_deflect_rad = 2*math.pi/3
-maze_sections_across = 70
-cluster_start_point_size = 11
-section_saturation_satisfied = 0.5
-saturation_termination = 0.4 #NOTE: all paths are double-counted due to nature of contours
-need_to_steer_off_edge = 2*math.pi/3
-edge_magnetism_look_ahead_sections = maze_sections_across//2
-edge_magnetism_cutoff = 0.5
+# directions_incr = math.pi/16
+# proximity_search_radius = 40
+# segment_length = 10
+# parallel_search_radius = 5
+# max_deflect_rad = 2*math.pi/3
+# maze_sections_across = 70
+# cluster_start_point_size = 11
+# section_saturation_satisfied = 0.5
+# saturation_termination = 0.4 #NOTE: all paths are double-counted due to nature of contours
+# need_to_steer_off_edge = 2*math.pi/3
+# edge_magnetism_look_ahead_sections = maze_sections_across//2
+# edge_magnetism_cutoff = 0.5
 
 slic_regions = 12
 
-dir_smoothing_size, dir_smoothing_sigma = 21, 2.0
+# dir_smoothing_size, dir_smoothing_sigma = 21, 2.0
 
 dumb_node_optional_weight = 1
 dumb_node_optional_max_variable_weight = 6 #Turn on with inner_contour_variable_weights
@@ -25,8 +25,6 @@ dumb_node_blank_weight = 200
 dumb_node_opt_jump_weight = 1 #NOTE: should be 1/2 cost of jump, since always jumps 2x to get to next path in section
 dumb_node_req_jump_weight = 1 #NOTE: should be 1/2 cost of jump, since always jumps 2x to get to next path in section
 dumb_node_required_weight = 1
-
-section_tracker_max_walk = 20
 
 max_inner_path_seg_manhatten_length = 50
 
@@ -60,7 +58,7 @@ simplify_tolerance = 0.7
 
 
 #CALCULATED DO NOT TOUCH!!
-rev_max_deflect_rad = 2 * math.pi - max_deflect_rad
+# rev_max_deflect_rad = 2 * math.pi - max_deflect_rad
 #########################
 
 
