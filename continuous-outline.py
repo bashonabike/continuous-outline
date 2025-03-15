@@ -396,34 +396,71 @@ class continuous_outline(inkex.EffectExtension):
                     #If selection matches, check if params have changed
                     update_level = min(self.check_level_to_update(data_ret), update_level)
 
-                objects = {}
                 #Retrieve or calculate data as needed
+                objects = {}
                 match update_level:
                     case 0, 1:
                         import helpers.build_objects as buildscr
-                        objects = {}
 
-                        #Level 1 objects form scratch
+                        #Form up normalized focus regions
                         normalized_focus_region_specs = self.form_focus_region_specs_normalized(detail_bounds, svg_image)
+
+                        #Levels 1-4 objects from scratch
                         buildscr.build_level_1_scratch(image_path, normalized_focus_region_specs, self.options, objects)
+                        buildscr.build_level_2_scratch(self.options, objects)
+                        buildscr.build_level_3_scratch(self.options, objects)
+                        buildscr.build_level_4_scratch(self.options, objects)
+                    case 2:
+                        import helpers.caching.build_objects_from_db as builddb
+                        import helpers.build_objects as buildscr
 
-                        #Level 2 objects from scratch
+                        #Retrieve Level 1 objects from db
+                        retrieved, discarded = data_ret.retrieve_and_wipe_data(1)
+                        builddb.build_level_1_data(retrieved, objects)
 
+                        #Levels 2-4 objects from scratch
+                        buildscr.build_level_2_scratch(self.options, objects)
+                        buildscr.build_level_3_scratch(self.options, objects)
+                        buildscr.build_level_4_scratch(self.options, objects)
+                    case 3:
+                        import helpers.caching.build_objects_from_db as builddb
+                        import helpers.build_objects as buildscr
 
+                        #Retrieve Level 1-2 objects from db
+                        retrieved, discarded = data_ret.retrieve_and_wipe_data(2)
+                        builddb.build_level_1_data(retrieved, objects)
+                        builddb.build_level_2_data(retrieved, objects)
 
+                        #Levels 3-4 objects from scratch
+                        buildscr.build_level_3_scratch(self.options, objects)
+                        buildscr.build_level_4_scratch(self.options, objects)
+                    case 4:
+                        import helpers.caching.build_objects_from_db as builddb
+                        import helpers.build_objects as buildscr
 
+                        #Retrieve Level 3 objects from db
+                        #NOTE: we dont need earlier since this is just forming up from raw path
+                        retrieved, discarded = data_ret.retrieve_and_wipe_data(3)
+                        #TODO: Only retrieve from raw table, wipe formed
+                        builddb.build_level_3_data(retrieved, objects)
 
+                        #Levels 4 objects from scratch
+                        buildscr.build_level_4_scratch(self.options, objects)
+                    case _:
+                        import helpers.caching.build_objects_from_db as builddb
 
+                        #Retrieve Level 4 objects
+                        retrieved = {}
+                        retrieved['FormedPath'] = data_ret.read_sql_table('FormedPath', data_ret.conn)
+                        builddb.build_level_4_data(retrieved, objects)
 
+                #Format output curve to fit into doc
+                #NOTE: Going from y, x to x, y
+                formed_path_nd = np.array(objects['FormedPath'])
+                formed_path_xy = formed_path_nd[:, [1, 0]]
 
-                # detail_sub_dicts = self.isolate_sub_images(detail_bounds, exportfile, svg_image)
-                # edge.k_means_clustering(exportfile)
-                # main_image_outline = edge.detect_edges('clustered.png')
-                # contours_all = list(cp.deepcopy(main_image_outline))
-                # edge.vectorize_edgified_image(contours_all)
-
-                image_size = image.size
-
+                #Determine scaling
+                image_size = (objects['sections'].shape[1], objects['sections'].shape[0])
                 x_scale = image_size[0] / float(svg_image.get('width'))
                 y_scale = image_size[1] / float(svg_image.get('height'))
                 scale_nd = np.array([x_scale, y_scale])
@@ -431,13 +468,8 @@ class continuous_outline(inkex.EffectExtension):
                 # Determine image offsets
                 main_image_offsets = np.array(self.get_image_offsets(svg_image))
 
-                # #Offset main contours to line up with master photo on svg
-                # contours_transformed = []
-                # for contour in contours_all:
-                #     new_contour = []
-                #     for point in contour:
-                #         new_contour.append(list((point/scale_nd + main_image_offsets)[0]))
-                #     contours_transformed.append(new_contour)
+                #Offset main contour to line up with master photo on svg
+                formed_path_shifted = (formed_path_xy/scale_nd + main_image_offsets).tolist()
 
 
                 # for detail_sub_dict in detail_sub_dicts:
@@ -456,14 +488,13 @@ class continuous_outline(inkex.EffectExtension):
                 # Build the path commands
                 commands = []
 
-                for contour in contours_transformed:
-                    for i, point in enumerate(contour):
-                        if i == 0:
-                            commands.append(['M', point])  # Move to the first point
-                        else:
-                            commands.append(['L', point])  # Line to the next point
-                        # self.msg(str(point))
-                    # commands.append(['Z'])  # Close path
+                for i, point in enumerate(formed_path_shifted):
+                    if i == 0:
+                        commands.append(['M', point])  # Move to the first point
+                    else:
+                        commands.append(['L', point])  # Line to the next point
+                    # self.msg(str(point))
+                # commands.append(['Z'])  # Close path
 
                 # Create the inkex.Path
                 path = inkex.paths.Path(commands)

@@ -58,12 +58,11 @@ def build_level_1_data(dataframes:dict, out_data:dict):
 
     out_data["focus_masks"] = focus_masks
 
-def build_level_2_data(dataframes:dict, in_data:dict, out_data:dict):
+def build_level_2_data(dataframes:dict, objects_data:dict):
     """
     Build the level 2 data for the sections and agent.
     :param outer_contours: dict of dataframes to set
-    :param in_data: dict of objects inputted from previous level
-    :param out_data: dict of objects to output
+    :param objects_data: dict of objects inputted from previous level and of objects to output
     :return: None
     """
 
@@ -242,7 +241,7 @@ def build_level_2_data(dataframes:dict, in_data:dict, out_data:dict):
     #Configure sections object
     sections_object = MazeSections.from_df(options.maze_sections_across, options.maze_sections_across, focus_sections,
                                            sections_nd, y_grade, x_grade, img_height, img_width, path_graph)
-    out_data['sections'] = sections_object
+    objects_data['sections'] = sections_object
 
 
     #Configure agent object
@@ -250,9 +249,10 @@ def build_level_2_data(dataframes:dict, in_data:dict, out_data:dict):
     agent_df = dataframes["Agent"]
     start_node = all_paths_l[agent_df.at[0, 'start_path'] - 1].path[agent_df.at[0, 'start_node']]
     end_node = all_paths_l[agent_df.at[0, 'end_path'] - 1].path[agent_df.at[0, 'end_node']]
-    agent = MazeAgent.from_df(in_data['outer_edges'], in_data['outer_contours'], in_data['inner_edges'], in_data['inner_contours'],
+    agent = MazeAgent.from_df(objects_data['outer_edges'], objects_data['outer_contours'], objects_data['inner_edges'],
+                              objects_data['inner_contours'],
                               sections_object, all_paths_l, agent_df.at[0, 'max_tracker_size'], start_node, end_node)
-    out_data['agent'] = agent
+    objects_data['agent'] = agent
 def build_level_3_data(dataframes:dict, out_data:dict):
     """
     Set the level 2 data for the contours and edges.
