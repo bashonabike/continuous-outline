@@ -134,6 +134,19 @@ class continuous_outline(inkex.EffectExtension):
         params_df = pd.DataFrame(param_data)
         return data_ret.level_of_update(params_df)
 
+    def set_params_into_db(self, data_ret:dataret.DataRetrieval):
+        # Collect parameter names and values into a list of dictionaries
+        param_data = []
+        for param_name, param_value in vars(self.options).items():
+            param_data.append({'param_name': param_name, 'param_val': param_value})
+
+        # Create a pandas DataFrame from the list of dictionaries
+        params_df = pd.DataFrame(param_data)
+
+        #Set into db
+        data_ret.clear_and_set_single_table("ParamsVals", params_df)
+
+
 
     def retrieve_image(self, image):
         self.path = self.checkImagePath(image)  # This also ensures the file exists
@@ -387,7 +400,6 @@ class continuous_outline(inkex.EffectExtension):
             case 1:
                 svg_image = images[0]
                 image_path = self.checkImagePath(svg_image)
-                update_level = 0
 
                 #Check to verify selection/doc/params haven't changed since last run
                 img_and_focus_specs_df = self.det_img_and_focus_specs(image_path, detail_bounds)
@@ -401,6 +413,9 @@ class continuous_outline(inkex.EffectExtension):
                 match update_level:
                     case 0, 1:
                         import helpers.build_objects as buildscr
+                        import helpers.caching.set_data_by_level as setdb
+                        #Retrieve Level 1 objects from db
+                        _, dataframes = data_ret.retrieve_and_wipe_data(0)
 
                         #Form up normalized focus regions
                         normalized_focus_region_specs = self.form_focus_region_specs_normalized(detail_bounds, svg_image)
@@ -410,49 +425,84 @@ class continuous_outline(inkex.EffectExtension):
                         buildscr.build_level_2_scratch(self.options, objects)
                         buildscr.build_level_3_scratch(self.options, objects)
                         buildscr.build_level_4_scratch(self.options, objects)
+
+                        #Build Level 1-4 data into dataframes
+                        setdb.set_level_1_data(dataframes, objects)
+                        setdb.set_level_2_data(dataframes, objects)
+                        setdb.set_level_3_data(dataframes, objects)
+                        setdb.set_level_4_data(dataframes, objects)
+
+                        #Set data into db
+                        data_ret.set_data(dataframes, min_level=0)
+
                     case 2:
                         import helpers.caching.build_objects_from_db as builddb
                         import helpers.build_objects as buildscr
+                        import helpers.caching.set_data_by_level as setdb
 
                         #Retrieve Level 1 objects from db
-                        retrieved, discarded = data_ret.retrieve_and_wipe_data(1)
+                        retrieved, dataframes = data_ret.retrieve_and_wipe_data(1)
                         builddb.build_level_1_data(retrieved, objects)
 
                         #Levels 2-4 objects from scratch
                         buildscr.build_level_2_scratch(self.options, objects)
                         buildscr.build_level_3_scratch(self.options, objects)
                         buildscr.build_level_4_scratch(self.options, objects)
+
+                        #Build Level 2-4 data into dataframes
+                        setdb.set_level_2_data(dataframes, objects)
+                        setdb.set_level_3_data(dataframes, objects)
+                        setdb.set_level_4_data(dataframes, objects)
+
+                        #Set data into db
+                        data_ret.set_data(dataframes, min_level=2)
                     case 3:
                         import helpers.caching.build_objects_from_db as builddb
                         import helpers.build_objects as buildscr
+                        import helpers.caching.set_data_by_level as setdb
 
                         #Retrieve Level 1-2 objects from db
-                        retrieved, discarded = data_ret.retrieve_and_wipe_data(2)
+                        retrieved, dataframes = data_ret.retrieve_and_wipe_data(2)
                         builddb.build_level_1_data(retrieved, objects)
                         builddb.build_level_2_data(retrieved, objects)
 
                         #Levels 3-4 objects from scratch
                         buildscr.build_level_3_scratch(self.options, objects)
                         buildscr.build_level_4_scratch(self.options, objects)
+
+                        #Build Level 3-4 data into dataframes
+                        setdb.set_level_3_data(dataframes, objects)
+                        setdb.set_level_4_data(dataframes, objects)
+
+                        #Set data into db
+                        data_ret.set_data(dataframes, min_level=3)
                     case 4:
                         import helpers.caching.build_objects_from_db as builddb
                         import helpers.build_objects as buildscr
+                        import helpers.caching.set_data_by_level as setdb
 
                         #Retrieve Level 3 objects from db
                         #NOTE: we dont need earlier since this is just forming up from raw path
-                        retrieved, discarded = data_ret.retrieve_and_wipe_data(3)
+                        retrieved, dataframes = data_ret.retrieve_and_wipe_data(3)
                         #TODO: Only retrieve from raw table, wipe formed
                         builddb.build_level_3_data(retrieved, objects)
 
                         #Levels 4 objects from scratch
                         buildscr.build_level_4_scratch(self.options, objects)
+
+                        #Build Level 4 data into dataframes
+                        setdb.set_level_4_data(dataframes, objects)
+
+                        #Set data into db
+                        data_ret.set_data(dataframes, min_level=4)
                     case _:
                         import helpers.caching.build_objects_from_db as builddb
 
-                        #Retrieve Level 4 objects
+                        #Retrieve Level 4 objects (no setting required)
                         retrieved = {}
                         retrieved['FormedPath'] = data_ret.read_sql_table('FormedPath', data_ret.conn)
                         builddb.build_level_4_data(retrieved, objects)
+
 
                 #Format output curve to fit into doc
                 #NOTE: Going from y, x to x, y
@@ -471,23 +521,8 @@ class continuous_outline(inkex.EffectExtension):
                 #Offset main contour to line up with master photo on svg
                 formed_path_shifted = (formed_path_xy/scale_nd + main_image_offsets).tolist()
 
-
-                # for detail_sub_dict in detail_sub_dicts:
-                #     path = detail_sub_dict["imagepath"]
-                #     detail_outline = edge.detect_edges(path)
-                #
-                #     #Offset detail to line up with master photo
-                #     for contour in detail_outline:
-                #         new_contour = []
-                #         for point in contour:
-                #             new_contour.append(list(((point + detail_sub_dict["localorigin"])/scale_nd +
-                #                                      main_image_offsets)[0]))
-                #         contours_transformed.append(new_contour)
-
-                #TODO: need to save temp sub images?
-                # Build the path commands
+                #Build the path commands
                 commands = []
-
                 for i, point in enumerate(formed_path_shifted):
                     if i == 0:
                         commands.append(['M', point])  # Move to the first point
@@ -499,61 +534,30 @@ class continuous_outline(inkex.EffectExtension):
                 # Create the inkex.Path
                 path = inkex.paths.Path(commands)
 
-                # Add a new path element to the SVG
-                path_element = inkex.PathElement()
-                path_element.style = {'stroke': 'black', 'fill': 'none'}
-                path_element.set('d', str(path))  # Set the path data
-                self.svg.get_current_layer().append(path_element)
-                #TODO: units are in pixels, scaling it's way too big why
+                if self.options.preview:
+                    # Create a temporary group for the preview
+                    preview_group = inkex.etree.SubElement(self.svg.get_current_layer(), inkex.addNS('g', 'svg'))
+                    preview_group.set('id', 'preview_group')  # give the group an id so it can be found later.
 
-                # nodeclipath = os.path.join("imagetracerjs-master", "nodecli", "nodecli.js")
-                #
-                # ## Build up imagetracerjs command according to your settings from extension GUI
-                # command = "node --trace-deprecation " # "node.exe" or "node" on Windows or just "node" on Linux
-                # if os.name=="nt": # your OS is Windows. We handle path separator as "\\" instead of unix-like "/"
-                #     command += str(nodeclipath).replace("\\", "\\\\")
-                # else:
-                #     command += str(nodeclipath)
-                # command += " " + exportfile
-                # command += " ltres "             + str(self.options.ltres)
-                # command += " qtres "             + str(self.options.qtres)
-                # command += " pathomit "          + str(self.options.pathomit)
-                # command += " rightangleenhance " + str(self.options.rightangleenhance).lower()
-                # command += " colorsampling "     + str(self.options.colorsampling)
-                # command += " numberofcolors "    + str(self.options.numberofcolors)
-                # command += " mincolorratio "     + str(self.options.mincolorratio)
-                # command += " numberofcolors "    + str(self.options.numberofcolors)
-                # command += " colorquantcycles "  + str(self.options.colorquantcycles)
-                # command += " layering "          + str(self.options.layering)
-                # command += " strokewidth "       + str(self.options.strokewidth)
-                # command += " linefilter "        + str(self.options.linefilter).lower()
-                # command += " scale "             + str(self.options.scale)
-                # command += " roundcoords "       + str(self.options.roundcoords)
-                # command += " viewbox "           + str(self.options.viewbox).lower()
-                # command += " desc "              + str(self.options.desc).lower()
-                # command += " blurradius "        + str(self.options.blurradius)
-                # command += " blurdelta "         + str(self.options.blurdelta)
-                #
-                # # Create the vector traced SVG file
-                # with os.popen(command, "r") as tracerprocess:
-                #     result = tracerprocess.read()
-                #     if "was saved!" not in result:
-                #         self.msg("Error while processing input: " + result)
-                #         self.msg("Check the image file (maybe convert and save as new file) and try again.")
-                #         self.msg("\nYour parser command:")
-                #         self.msg(command)
-                #
-                #
-                # # proceed if traced SVG file was successfully created
-                # if os.path.exists(exportfile + ".svg"):
-                #     self.fit_svg(exportfile, image)
+                    # Create the path element
+                    path_string = path.to_svg()
+                    path_element = inkex.etree.SubElement(preview_group, inkex.addNS('path', 'svg'))
+                    path_element.set('d', path_string)
+                    path_element.set('style', 'stroke:red; stroke-width:2; fill:none;')  # style the line.
 
-                #remove the old image or not
-                #TODO: re-enable this?
-                # if self.options.keeporiginal is not True:
-                    # image.delete()
-                    # for sub_image in detail_sub_images:
-                    #     sub_image.delete()
+                    # Set updated params into db
+                    self.set_params_into_db(data_ret)
+                else:
+                    # Add a new path element to the SVG
+                    path_element = inkex.PathElement()
+                    path_element.style = {'stroke': 'black', 'fill': 'none'}
+                    path_element.set('d', str(path))  # Set the path data
+                    self.svg.get_current_layer().append(path_element)
+                    #TODO: units are in pixels, scaling it's way too big why
+
+                    #Clear the database
+                    data_ret.wipe_data()
+
             case _:
                 if len(self.svg.selected) > 0:
                     self.msg("Multiple images found in selection! Please select only 1, plus any focal regions desired.")

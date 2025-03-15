@@ -44,13 +44,23 @@ class DataRetrieval:
         return retrieved, discarded
 
     def wipe_data(self):
+        cursor = self.conn.cursor()
         for index, row in self.table_mappings.iterrows():
             table_name = row['table']
-            with self.conn.cursor() as cursor:
-                cursor.execute(f"DELETE FROM {table_name}")
-                self.conn.commit()
+            cursor.execute(f"DELETE FROM {table_name}")
 
-    def set_data(self, set_data, only_level=-1):
+        #Also clear the params table
+        cursor.execute("DELETE FROM ParamsVals")
+        self.conn.commit()
+        cursor.close()
+
+    def clear_and_set_single_table(self, table_name, df):
+        cursor = self.conn.cursor()
+        cursor.execute(f"DELETE FROM {table_name}")
+        self.conn.commit()
+        df.to_sql(table_name, self.conn, if_exists='append', index=False)
+
+    def set_data(self, set_data, only_level=-1, min_level=0):
         """
         Bulk inserts data from a dictionary into SQLite3 tables using pandas.
 
@@ -60,7 +70,11 @@ class DataRetrieval:
         try:
             for table_name, df in set_data.items():
                 if (only_level != -1 and
-                        self.table_mappings.loc[self.table_mappings['table'] == table_name, 'level'].values[0] != only_level):
+                        self.table_mappings.loc[self.table_mappings['table'] == table_name,
+                        'level'].values[0] != only_level):
+                    continue
+                elif self.table_mappings.loc[self.table_mappings['table'] == table_name,
+                        'level'].values[0] < min_level:
                     continue
                 start = time.time_ns()
                 df.to_sql(table_name, self.conn, if_exists='append', index=False)
