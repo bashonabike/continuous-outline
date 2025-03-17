@@ -124,11 +124,11 @@ class continuous_outline(inkex.EffectExtension):
         # Collect parameter names and values into a list of dictionaries
         param_data = []
         for param_name, param_value in vars(self.options).items():
-            param_data.append({'param_name': param_name, 'param_val': param_value})
+            param_data.append({'param_name': str(param_name), 'param_val': str(param_value)})
 
         # Create a pandas DataFrame from the list of dictionaries
         params_df = pd.DataFrame(param_data)
-        return data_ret.level_of_update(params_df)
+        return data_ret.level_of_update(self, params_df)
 
     def set_params_into_db(self, data_ret:dataret.DataRetrieval):
         # Collect parameter names and values into a list of dictionaries
@@ -252,22 +252,22 @@ class continuous_outline(inkex.EffectExtension):
 
     def det_img_and_focus_specs(self, image_path, detail_bounds):
         img_focus_specs = []
-        img_focus_specs.append(image_path)
+        img_focus_specs.append(str(image_path))
         for bounds in detail_bounds:
             # Check if ellipse or rect
             if bounds.tag == inkex.addNS('rect', 'svg'):
                 # Get rectangle properties
-                img_focus_specs.append(float(bounds.attrib.get('x', 0)))
-                img_focus_specs.append(float(bounds.attrib.get('y', 0)))
-                img_focus_specs.append(float(bounds.attrib.get('width', 0)))
-                img_focus_specs.append(float(bounds.attrib.get('height', 0)))
+                img_focus_specs.append(str(float(bounds.attrib.get('x', 0))))
+                img_focus_specs.append(str(float(bounds.attrib.get('y', 0))))
+                img_focus_specs.append(str(float(bounds.attrib.get('width', 0))))
+                img_focus_specs.append(str(float(bounds.attrib.get('height', 0))))
             elif bounds.tag == inkex.addNS('ellipse', 'svg'):
                 # Get ellipse properties
                 # Get rectangle properties
-                img_focus_specs.append(float(bounds.attrib.get('cx', 0)))
-                img_focus_specs.append(float(bounds.attrib.get('cy', 0)))
-                img_focus_specs.append(float(bounds.attrib.get('rx', 0)))
-                img_focus_specs.append(float(bounds.attrib.get('ry', 0)))
+                img_focus_specs.append(str(float(bounds.attrib.get('cx', 0))))
+                img_focus_specs.append(str(float(bounds.attrib.get('cy', 0))))
+                img_focus_specs.append(str(float(bounds.attrib.get('rx', 0))))
+                img_focus_specs.append(str(float(bounds.attrib.get('ry', 0))))
             else:
                 raise inkex.AbortExtension("Only ellipses and rectangles are supported as bounds.")
 
@@ -421,8 +421,8 @@ class continuous_outline(inkex.EffectExtension):
                     img_is_embedded = True
 
                 #Check to verify selection/doc/params haven't changed since last run
-                img_and_focus_specs_df = self.det_img_and_focus_specs(image_path, detail_bounds)
-                update_level = data_ret.get_selection_match_level(img_and_focus_specs_df)
+                img_and_focus_specs_df = self.det_img_and_focus_specs(image_path, detail_bounds).dropna()
+                update_level = data_ret.get_selection_match_level(self, img_and_focus_specs_df)
 
                 self.msg("post get selection match update level: " + str(update_level))
 
@@ -431,6 +431,8 @@ class continuous_outline(inkex.EffectExtension):
                     update_level = min(self.check_level_to_update(data_ret), update_level)
 
                 self.msg("update level: " + str(update_level))
+                #TODO: Get object creation working maybe, might not be worth it???
+                if update_level == 3: update_level = 2
 
                 #Retrieve or calculate data as needed
                 objects = {}
@@ -538,6 +540,11 @@ class continuous_outline(inkex.EffectExtension):
 
                         #Set data into db
                         data_ret.set_data(dataframes, min_level=4)
+
+                        #Retrieve img height and width (since cannot retrieve direct from non-existent Sections object)
+                        sections_df = data_ret.read_sql_table("Sections", data_ret.conn)
+                        objects["img_height"], objects["img_width"] = (sections_df.at[0, 'img_height'],
+                                                                       sections_df.at[0, 'img_width'])
                     case _:
                         import helpers.caching.build_objects_from_db as builddb
 
@@ -545,6 +552,11 @@ class continuous_outline(inkex.EffectExtension):
                         retrieved = {}
                         retrieved['FormedPath'] = data_ret.read_sql_table('FormedPath', data_ret.conn)
                         builddb.build_level_4_data(self.options, retrieved, objects)
+
+                        #Retrieve img height and width (since cannot retrieve direct from non-existent Sections object)
+                        sections_df = data_ret.read_sql_table("Sections", data_ret.conn)
+                        objects["img_height"], objects["img_width"] = (sections_df.at[0, 'img_height'],
+                                                                       sections_df.at[0, 'img_width'])
                 attributes = vars(self.options)
                 # for key, value in attributes.items():
                 #     self.msg(f"{key}: {value}")
@@ -563,7 +575,7 @@ class continuous_outline(inkex.EffectExtension):
                     formed_path_xy = formed_path_nd[:, [1, 0]]
 
                     #Determine scaling
-                    image_size = (objects['maze_sections'].img_width, objects['maze_sections'].img_height)
+                    image_size = (objects["img_width"], objects["img_height"])
                     x_scale = image_size[0] / float(svg_image.get('width'))
                     y_scale = image_size[1] / float(svg_image.get('height'))
                     scale_nd = np.array([x_scale, y_scale])

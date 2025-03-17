@@ -2,7 +2,7 @@ from logging import exception
 import itertools
 import numpy as np
 from scipy.spatial import ConvexHull
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from scipy.signal import convolve2d
 
 # import helpers.mazify.temp_options as options
@@ -68,25 +68,25 @@ class MazeAgent:
 
     #endregion
     #region Run
-    def plot_path(self, path_coords, image):
-        """
-        Plots a path defined by a list of tuple coordinates.
-
-        Args:
-            path_coords: A list of tuples, where each tuple represents (x, y) coordinates.
-        """
-
-        if not path_coords:
-            print("Path is empty.")
-            return
-
-        x_coords, y_coords = zip(*path_coords)
-
-        plt.imshow(image)  # Display the image
-        plt.plot(x_coords, y_coords, color='red', linewidth=1, marker='o', markersize=1)  # Plot the path
-
-        plt.axis('off')  # Turn off axis labels and ticks
-        plt.show(block=True)
+    # def plot_path(self, path_coords, image):
+    #     """
+    #     Plots a path defined by a list of tuple coordinates.
+    #
+    #     Args:
+    #         path_coords: A list of tuples, where each tuple represents (x, y) coordinates.
+    #     """
+    #
+    #     if not path_coords:
+    #         print("Path is empty.")
+    #         return
+    #
+    #     x_coords, y_coords = zip(*path_coords)
+    #
+    #     plt.imshow(image)  # Display the image
+    #     plt.plot(x_coords, y_coords, color='red', linewidth=1, marker='o', markersize=1)  # Plot the path
+    #
+    #     plt.axis('off')  # Turn off axis labels and ticks
+    #     plt.show(block=True)
 
     def run_round_trace(self, technique:TraceTechnique):
         match technique:

@@ -228,8 +228,12 @@ def build_level_3_scratch(options, objects: dict):
         raw_path = shift_contours([raw_path_coords_cropped], (-1)*objects['shift_y'], (-1)*objects['shift_x'])[0]
     else:
         raw_path=raw_path_coords_cropped
+
+    #Get img heignt and width
+    img_height, img_width = objects['maze_agent'].maze_sections.img_height, objects['maze_agent'].maze_sections.img_width
+
     # Set objects into dict
-    inst_out_objects = objects_to_dict(["raw_path"])
+    inst_out_objects = objects_to_dict(["raw_path", "img_height", "img_width"])
     objects.update(inst_out_objects)
 
 def build_level_4_scratch(options, objects: dict):

@@ -56,7 +56,10 @@ def build_level_1_data(options, dataframes:dict, out_data:dict):
         mask_array[y_coords, x_coords] = True
         focus_masks.append(mask_array)
 
-    out_data["focus_masks"] = focus_masks
+    out_data["detail_req_masks"] = focus_masks
+
+    #Set up shifts
+    out_data["shift_y"], out_data["shift_x"] = contours_hdr_df["shift_y"][0], contours_hdr_df["shift_x"][0]
 
 def build_level_2_data(options, dataframes:dict, objects_data:dict):
     """
@@ -135,16 +138,6 @@ def build_level_2_data(options, dataframes:dict, objects_data:dict):
         path_graph.add_edges_from(edges_to_add)
 
 
-    #Build focus region sections
-    focus_sections_df = dataframes["FocusSection"]
-    focus_sections_df.sort_values(['focus_mask'], inplace=True)
-    focus_sections = []
-    for i, group_df in focus_sections_df.groupby(['focus_mask']):
-        y_coords = group_df['y_sec'].to_numpy()
-        x_coords = group_df['x_sec'].to_numpy()
-        focus_sections.append(list(zip(y_coords, x_coords)))
-
-
     #Build section details (except adding nodes)
     from helpers.mazify.MazeSections import MazeSections, MazeSection, MazeSectionTracker
     sections_df = dataframes["Section"]
@@ -161,6 +154,18 @@ def build_level_2_data(options, dataframes:dict, objects_data:dict):
     sections_nd[y_coords, x_coords] = np.array(maze_sections_flat_l)
     end = time.time_ns()
     print(str((end - start) / 1e6) + " ms to do NEW sections")
+
+
+    #Build focus region sections
+    focus_sections_df = dataframes["FocusSection"]
+    focus_sections_df.sort_values(['focus_mask'], inplace=True)
+    focus_sections = []
+    for i, group_df in focus_sections_df.groupby(['focus_mask']):
+        y_coords = group_df['y_sec'].to_numpy()
+        x_coords = group_df['x_sec'].to_numpy()
+        focus_sections_coords = list(zip(y_coords, x_coords))
+        focus_sections.append([sections_nd[y_sec, x_sec] for y_sec, x_sec in focus_sections_coords])
+
 
     # try:
     start = time.time_ns()
@@ -204,7 +209,6 @@ def build_level_2_data(options, dataframes:dict, objects_data:dict):
     edge_paths_all_df['tracker_object'] = np.array(all_trackers_l)[edge_paths_all_df['path_tracker_seq']]
     nodes_setting_df = edge_paths_all_df[['y', 'x', 'path_num', 'node', 'is_outer', 'section', 'path_object',
                                           'tracker_object']]
-    nodes_setting_df['options'] = options
     all_nodes_l = [EdgeNode.from_df(**row) for row in nodes_setting_df.to_dict('records')]
 
     #Set into trackers and paths
@@ -245,7 +249,7 @@ def build_level_2_data(options, dataframes:dict, objects_data:dict):
     #Configure sections object
     sections_object = MazeSections.from_df(options, options.maze_sections_across, options.maze_sections_across, focus_sections,
                                            sections_nd, y_grade, x_grade, img_height, img_width, path_graph)
-    objects_data['sections'] = sections_object
+    objects_data['maze_sections'] = sections_object
 
 
     #Configure agent object
@@ -256,7 +260,7 @@ def build_level_2_data(options, dataframes:dict, objects_data:dict):
     agent = MazeAgent.from_df(options, objects_data['outer_edges'], objects_data['outer_contours'],
                               objects_data['inner_edges'], objects_data['inner_contours'],
                               sections_object, all_paths_l, agent_df.at[0, 'max_tracker_size'], start_node, end_node)
-    objects_data['agent'] = agent
+    objects_data['maze_agent'] = agent
 def build_level_3_data(options, dataframes:dict, out_data:dict):
     """
     Set the level 2 data for the contours and edges.

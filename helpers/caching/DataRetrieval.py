@@ -83,7 +83,7 @@ class DataRetrieval:
         except Exception as e:
             print(f"An error occurred: {e}")
 
-    def level_of_update(self, new_params_df):
+    def level_of_update(self, parent_inkex, new_params_df):
         """
         Logs mismatched parameters and their lowest matching param_level.
 
@@ -99,31 +99,49 @@ class DataRetrieval:
         param_levels_df.set_index('param_name', inplace=True)
         new_params_df.set_index('param_name', inplace=True)
 
-        merged_df = pd.merge(new_params_df, old_params_df, suffixes=('_new', '_old'),
-                             how='left')
+        merged_df = pd.merge(new_params_df, old_params_df, left_index=True, right_index=True, suffixes=('_new', '_old')
+                             ,how='left')
 
         mismatched_params = merged_df[merged_df['param_val_old'] != merged_df['param_val_new']]
         if mismatched_params.empty:
             return 9999
 
-        mismatched_levels = pd.merge(mismatched_params, param_levels_df)
+        mismatched_levels = pd.merge(mismatched_params, param_levels_df, left_index=True, right_index=True)
         level = mismatched_levels['param_level'].min()
         return level
 
-    def get_selection_match_level(self, select_info_df):
+    def get_selection_match_level(self, parent_inkex, select_info_df):
         """
         Checks if the selection matches the old selection in the database.
 
         Args:
             select_info_df (pd.DataFrame): DataFrame with 'param_name' and 'param_val'..
         """
-        old_select_df = self.read_sql_table('SelectionInfo', self.conn)
-        if old_select_df.empty: return 0
+        # select_info_df.map(str)
+        # select_info_df.sort_values('selection_info', inplace=True)
+        # select_info_df.reset_index(inplace=True)
 
-        old_select_df.set_index('line', inplace=True)
+        old_select_df = self.read_sql_table('SelectionInfo', self.conn).dropna()
+        if old_select_df.empty:
+            self.clear_and_set_single_table('SelectionInfo', select_info_df)
+            return 0
+
+        # old_select_df.set_index('line', inplace=True)
+        # old_select_df.map(str)
+        # old_select_df.sort_values('selection_info', inplace=True)
+        # old_select_df.reset_index(inplace=True)
+        # select_info_df.reset_index(inplace=True)
         concat_df = pd.concat([select_info_df, old_select_df], axis=1)
 
-        mismatched_params = concat_df[concat_df.iloc[:, 0]!= concat_df.iloc[:, 1]]
+        mismatched_params = concat_df[concat_df.iloc[:, 0]!= concat_df.iloc[:, 2]]
+        # temppdf = concat_df.iloc[:, [0]]
+        # temppdf['selection_info_old'] = concat_df.iloc[:, 2]
+        #
+        # self.clear_and_set_single_table("TempMismatchDump", temppdf)
+
+        #Update selection info
+        # parent_inkex.msg(select_info_df.iloc[0, 0])
+        self.clear_and_set_single_table('SelectionInfo', select_info_df)
 
         if mismatched_params.empty: return 9999
         elif mismatched_params.iloc[0, 0] != select_info_df.iloc[0, 0]:

@@ -15,6 +15,8 @@ def set_level_1_data(dataframes:dict, input_data:dict):
     inner_contours = input_data["inner_contours"]
     inner_edges = input_data["inner_edges"]
     focus_masks = input_data["detail_req_masks"]
+    shift_y = input_data["shift_y"]
+    shift_x = input_data["shift_x"]
 
 
     #Set contours headers
@@ -25,7 +27,8 @@ def set_level_1_data(dataframes:dict, input_data:dict):
         is_outer_values = pd.Series([1] if outer else [0] * num_rows)
         is_inner_values = pd.Series([0] if outer else [1]  * num_rows)
         partial_df = pd.DataFrame({'contour': contour_values, 'is_outer': is_outer_values, 'is_inner': is_inner_values,
-                                   'img_height': outer_edges.shape[0], 'img_width': outer_edges.shape[1]})
+                                   'img_height': outer_edges.shape[0], 'img_width': outer_edges.shape[1],
+                                   'shift_y': shift_y, 'shift_x': shift_x})
         partial_df = partial_df[dataframes["Contours"].columns]
         dataframes["Contours"] = pd.concat([dataframes["Contours"], partial_df], ignore_index=True)
         contour_idx_offset = num_rows

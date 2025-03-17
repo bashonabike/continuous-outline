@@ -4,21 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Now actually i think got it done, test time next week">
-      <change afterPath="$PROJECT_DIR$/OLD XML CONFIG STUFF" afterDir="false" />
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Interface is base working woo!">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/continuous-outline.inx" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.inx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/build_objects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/build_objects.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/caching/DataRetrieval.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/DataRetrieval.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/caching/build_objects_from_db.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/build_objects_from_db.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/caching/set_data_by_level.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/set_data_by_level.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -179,14 +173,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1736210770875</updated>
-    </task>
-    <task id="LOCAL-00006" summary="Not sure">
-      <option name="closed" value="true" />
-      <created>1737048733640</created>
-      <option name="number" value="00006" />
-      <option name="presentableId" value="LOCAL-00006" />
-      <option name="project" value="LOCAL" />
-      <updated>1737048733640</updated>
     </task>
     <task id="LOCAL-00007" summary="ACtually getting stuff going!  comparing various algorithms etc">
       <option name="closed" value="true" />
@@ -572,7 +558,15 @@
       <option name="project" value="LOCAL" />
       <updated>1742006498244</updated>
     </task>
-    <option name="localTasksCounter" value="55" />
+    <task id="LOCAL-00055" summary="Interface is base working woo!">
+      <option name="closed" value="true" />
+      <created>1742232100574</created>
+      <option name="number" value="00055" />
+      <option name="presentableId" value="LOCAL-00055" />
+      <option name="project" value="LOCAL" />
+      <updated>1742232100574</updated>
+    </task>
+    <option name="localTasksCounter" value="56" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -587,7 +581,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Started working on improved more eff set distances while running along paths, more accurate should be faster, still need to do conjoined dists" />
     <MESSAGE value="Attempt on more eff dist calc semi-abandoned, maybe get to in future" />
     <MESSAGE value="Working on getting better fiddling with settings" />
     <MESSAGE value="Working on making edge map for new technique" />
@@ -612,7 +605,8 @@
     <MESSAGE value="Workingon extension, got build objects from scratch func going" />
     <MESSAGE value="Finished coding extension wooo!!! now debug time, also params etc" />
     <MESSAGE value="Now actually i think got it done, test time next week" />
-    <option name="LAST_COMMIT_MESSAGE" value="Now actually i think got it done, test time next week" />
+    <MESSAGE value="Interface is base working woo!" />
+    <option name="LAST_COMMIT_MESSAGE" value="Interface is base working woo!" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
