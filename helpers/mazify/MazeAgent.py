@@ -5,7 +5,7 @@ from scipy.spatial import ConvexHull
 import matplotlib.pyplot as plt
 from scipy.signal import convolve2d
 
-import helpers.mazify.temp_options as options
+# import helpers.mazify.temp_options as options
 import helpers.mazify.MazeSections as sections
 from helpers.Enums import TraceTechnique
 from helpers.mazify.EdgePath import EdgePath
@@ -16,9 +16,10 @@ import helpers.mazify.NetworkxExtension as nxex
 #TODO: Also check if focal regions or expl control points changed since last rev, if so regen sections agent (split focus masks level between)
 
 class MazeAgent:
-    def __init__(self, outer_edges, outer_contours, inner_edges, inner_contours,
+    def __init__(self, options, outer_edges, outer_contours, inner_edges, inner_contours,
                  maze_sections: sections.MazeSections, from_db=False, all_contours_objects:list=None,
                 max_tracker_size=-1, start_node=None, end_node=None):
+        self.options = options
         #NOTE: edges are codified numerically to correspond with outer contours
         self.outer_edges, self.outer_contours = outer_edges, outer_contours
         self.inner_edges, self.inner_contours = inner_edges, inner_contours
@@ -32,7 +33,7 @@ class MazeAgent:
             max_inner_contour_len = max([len(contour) for contour in self.inner_contours])
             self.max_tracker_size = 0
             for i in range(len(self.all_contours)):
-                new_path = EdgePath(i + 1, self.all_contours[i], maze_sections, i < len(self.outer_contours),
+                new_path = EdgePath(options, i + 1, self.all_contours[i], maze_sections, i < len(self.outer_contours),
                                     max_inner_contour_len)
                 self.all_contours_objects.append(new_path)
                 if new_path.outer: self.outer_contours_objects.append(new_path)
@@ -58,10 +59,10 @@ class MazeAgent:
         self.edge_rev = False
 
     @classmethod
-    def from_df(cls, outer_edges, outer_contours, inner_edges, inner_contours,
+    def from_df(cls, options, outer_edges, outer_contours, inner_edges, inner_contours,
                  maze_sections: sections.MazeSections, all_contours_objects:list,
                 max_tracker_size, start_node, end_node):
-        return cls(outer_edges, outer_contours, inner_edges, inner_contours,
+        return cls(options, outer_edges, outer_contours, inner_edges, inner_contours,
                  maze_sections, from_db=True, all_contours_objects=all_contours_objects,
                    max_tracker_size=max_tracker_size, start_node=start_node, end_node=end_node)
 
@@ -89,11 +90,11 @@ class MazeAgent:
 
     def run_round_trace(self, technique:TraceTechnique):
         match technique:
-            case TraceTechnique.snake:
+            case TraceTechnique.snake | 2:
                 return self.find_trace_section_tour_snake()
-            case TraceTechnique.typewriter:
+            case TraceTechnique.typewriter | 1:
                 return self.find_trace_section_tour_typewriter()
-            case TraceTechnique.zigzag_typewriter:
+            case TraceTechnique.zigzag_typewriter | 3:
                 return self.find_trace_section_tour_zigzag_typewriter()
             case TraceTechnique.vertical_zigzag:
                 return self.find_trace_section_tour_vertical_zigzag()
@@ -147,7 +148,7 @@ class MazeAgent:
             focus_poly_points = self.find_maximal_polygon_optimized(p['focus_sections'],
                                                                    p['focus_in_section'].coords_sec,
                                                                    p['focus_out_section'].coords_sec,
-                                                                    options.snake_details_polygon_faces)
+                                                                    self.options.snake_details_polygon_faces)
             for h in range(len(focus_poly_points) - 1):
                 sections_nodes_path.extend(
                     nxex.shortest_path(self.maze_sections.path_graph, focus_poly_points[h], focus_poly_points[h + 1],
@@ -173,17 +174,17 @@ class MazeAgent:
         outer_path = self.all_contours_objects[0].section_tracker
         outer_sects = list(set([t.section.coords_sec for t in outer_path]))
         typewriter_points = []
-        line_height_sects = options.maze_sections_across//(options.typewriter_lines - 1)
-        for l in range(options.typewriter_lines):
+        line_height_sects = self.options.maze_sections_across//(self.options.typewriter_lines - 1)
+        for l in range(self.options.typewriter_lines):
             #Find line start & end points
             left_sect = self.find_closest_sect((l*line_height_sects, 0), outer_sects)
-            right_sect = self.find_closest_sect((l*line_height_sects, options.maze_sections_across - 1),
+            right_sect = self.find_closest_sect((l*line_height_sects, self.options.maze_sections_across - 1),
                                                 outer_sects)
             typewriter_points.extend([left_sect, right_sect])
 
         #Determine focus section inclusion
-        carriage_returns = [[] for _ in range(options.typewriter_lines)]
-        carriage_return_zigzags = [[] for _ in range(options.typewriter_lines)]
+        carriage_returns = [[] for _ in range(self.options.typewriter_lines)]
+        carriage_return_zigzags = [[] for _ in range(self.options.typewriter_lines)]
         for focus_region in self.maze_sections.focus_region_sections:
             if len(focus_region) == 0: continue
             sections_coords = np.atleast_2d([s.coords_sec for s in focus_region])
@@ -199,7 +200,7 @@ class MazeAgent:
 
             section_coords_ls = [tuple(s) for s in sections_coords.tolist()]
 
-            if reg_height/line_height_sects < options.typewriter_traverse_threshold:
+            if reg_height/line_height_sects < self.options.typewriter_traverse_threshold:
                 #Traverse in line with typewriting,
                 right_insert, left_insert = (self.find_closest_sect((min_y, max_x), section_coords_ls),
                                              self.find_closest_sect((max_y, min_x), section_coords_ls))
@@ -217,7 +218,7 @@ class MazeAgent:
 
         #Build focus regions into typewriter points
         typewriter_points_final = []
-        for l in range(options.typewriter_lines):
+        for l in range(self.options.typewriter_lines):
             typewriter_points_final.extend(typewriter_points[2*l:2*(l + 1)])
             straights, zigs = carriage_returns[l], carriage_return_zigzags[l]
             return_line = []
@@ -263,18 +264,18 @@ class MazeAgent:
         outer_path = self.all_contours_objects[0].section_tracker
         outer_sects = list(set([t.section.coords_sec for t in outer_path]))
         typewriter_points = []
-        line_height_sects = options.maze_sections_across // (options.zigzag_typewriter_lines - 1)
-        for l in range(options.zigzag_typewriter_lines):
+        line_height_sects = self.options.maze_sections_across // (self.options.zigzag_typewriter_lines - 1)
+        for l in range(self.options.zigzag_typewriter_lines):
             # Find line start & end points
             left_sect = self.find_closest_sect((l * line_height_sects, 0), outer_sects)
             right_sect = self.find_closest_sect((l * line_height_sects + line_height_sects//2,
-                                                 options.maze_sections_across - 1),
+                                                 self.options.maze_sections_across - 1),
                                                 outer_sects)
             typewriter_points.extend([left_sect, right_sect])
 
         # Determine focus section inclusion
-        main_zigzags_straights = [[] for _ in range(2*options.zigzag_typewriter_lines)]
-        main_zigzags_subzigzags = [[] for _ in range(2*options.zigzag_typewriter_lines)]
+        main_zigzags_straights = [[] for _ in range(2*self.options.zigzag_typewriter_lines)]
+        main_zigzags_subzigzags = [[] for _ in range(2*self.options.zigzag_typewriter_lines)]
         for focus_region in self.maze_sections.focus_region_sections:
             if len(focus_region) == 0: continue
             sections_coords = np.atleast_2d([s.coords_sec for s in focus_region])
@@ -291,7 +292,7 @@ class MazeAgent:
 
             section_coords_ls = [tuple(s) for s in sections_coords.tolist()]
 
-            if reg_height / line_height_sects < options.zigzag_typewriter_traverse_threshold:
+            if reg_height / line_height_sects < self.options.zigzag_typewriter_traverse_threshold:
                 # Traverse in line with typewriting,
                 if is_zig:
                     right_insert, left_insert = (max_y, max_x), (min_y, min_x)
@@ -317,7 +318,7 @@ class MazeAgent:
 
         # Build focus regions into typewriter points
         zigzag_typewriter_points_final = []
-        for l in range(2*options.zigzag_typewriter_lines):
+        for l in range(2*self.options.zigzag_typewriter_lines):
             zigzag_typewriter_points_final.extend(typewriter_points[l:l + 1])
             straights, zigs = main_zigzags_straights[l], main_zigzags_subzigzags[l]
             main_zigorzag_line = []
@@ -363,12 +364,12 @@ class MazeAgent:
         outer_path = self.all_contours_objects[0].section_tracker
         outer_sects = list(set([t.section.coords_sec for t in outer_path]))
         typewriter_points = []
-        line_height_sects = options.maze_sections_across // (options.back_forth_lines - 1)
+        line_height_sects = self.options.maze_sections_across // (self.options.back_forth_lines - 1)
         back = False
-        for l in range(options.back_forth_lines):
+        for l in range(self.options.back_forth_lines):
             # Find line start & end points
             left_sect = self.find_closest_sect((l * line_height_sects, 0), outer_sects)
-            right_sect = self.find_closest_sect((l * line_height_sects, options.maze_sections_across - 1),
+            right_sect = self.find_closest_sect((l * line_height_sects, self.options.maze_sections_across - 1),
                                                 outer_sects)
             if not back:
                 typewriter_points.extend([left_sect, right_sect])
@@ -378,8 +379,8 @@ class MazeAgent:
             back = ~back
 
         # Determine focus section inclusion
-        main_forthbacks_straights = [[] for _ in range(2*options.back_forth_lines)]
-        main_forthbacks_subforthbacks = [[] for _ in range(2*options.back_forth_lines)]
+        main_forthbacks_straights = [[] for _ in range(2*self.options.back_forth_lines)]
+        main_forthbacks_subforthbacks = [[] for _ in range(2*self.options.back_forth_lines)]
         for focus_region in self.maze_sections.focus_region_sections:
             if len(focus_region) == 0: continue
             sections_coords = np.atleast_2d([s.coords_sec for s in focus_region])
@@ -396,7 +397,7 @@ class MazeAgent:
 
             section_coords_ls = [tuple(s) for s in sections_coords.tolist()]
 
-            if reg_height / line_height_sects < options.back_forth_traverse_threshold:
+            if reg_height / line_height_sects < self.options.back_forth_traverse_threshold:
                 # Traverse in line with typewriting,
                 if is_forth:
                     right_insert, left_insert = (max_y, max_x), (min_y, min_x)
@@ -422,7 +423,7 @@ class MazeAgent:
 
         # Build focus regions into typewriter points
         back_forth_points_final = []
-        for l in range(2*options.back_forth_lines):
+        for l in range(2*self.options.back_forth_lines):
             back_forth_points_final.extend(typewriter_points[l:l + 1])
             straights, forths = main_forthbacks_straights[l], main_forthbacks_subforthbacks[l]
             main_forthorback_line = []
@@ -468,18 +469,18 @@ class MazeAgent:
         outer_path = self.all_contours_objects[0].section_tracker
         outer_sects = list(set([t.section.coords_sec for t in outer_path]))
         typewriter_points = []
-        line_width_sects = options.maze_sections_across // (options.vertical_zigzag_lines - 1)
-        for l in range(options.vertical_zigzag_lines):
+        line_width_sects = self.options.maze_sections_across // (self.options.vertical_zigzag_lines - 1)
+        for l in range(self.options.vertical_zigzag_lines):
             # Find line start & end points
             top_sect = self.find_closest_sect((0, l * line_width_sects), outer_sects)
-            bottom_sect = self.find_closest_sect((options.maze_sections_across - 1,
+            bottom_sect = self.find_closest_sect((self.options.maze_sections_across - 1,
                                                  l * line_width_sects + line_width_sects//2),
                                                 outer_sects)
             typewriter_points.extend([top_sect, bottom_sect])
 
         # Determine focus section inclusion
-        main_zigzags_straights = [[] for _ in range(2*options.vertical_zigzag_lines)]
-        main_zigzags_subzigzags = [[] for _ in range(2*options.vertical_zigzag_lines)]
+        main_zigzags_straights = [[] for _ in range(2*self.options.vertical_zigzag_lines)]
+        main_zigzags_subzigzags = [[] for _ in range(2*self.options.vertical_zigzag_lines)]
         for focus_region in self.maze_sections.focus_region_sections:
             if len(focus_region) == 0: continue
             sections_coords = np.atleast_2d([s.coords_sec for s in focus_region])
@@ -496,7 +497,7 @@ class MazeAgent:
 
             section_coords_ls = [tuple(s) for s in sections_coords.tolist()]
 
-            if reg_width / line_width_sects < options.vertical_zigzag_traverse_threshold:
+            if reg_width / line_width_sects < self.options.vertical_zigzag_traverse_threshold:
                 # Traverse in line with typewriting,
                 if is_zig:
                     bottom_insert, top_insert = (max_y, max_x), (min_y, min_x)
@@ -522,7 +523,7 @@ class MazeAgent:
 
         # Build focus regions into typewriter points
         vertical_zigzag_points_final = []
-        for l in range(2*options.vertical_zigzag_lines):
+        for l in range(2*self.options.vertical_zigzag_lines):
             vertical_zigzag_points_final.extend(typewriter_points[l:l + 1])
             straights, zigs = main_zigzags_straights[l], main_zigzags_subzigzags[l]
             main_zigorzag_line = []
@@ -783,7 +784,7 @@ class MazeAgent:
         distances = np.linalg.norm(outer_sections[:, None, :] - focus_sections[None, :, :], axis=2)
 
         # Find pairings within the distance threshold
-        outer_indices, focus_indices = np.where(distances < options.snake_trace_max_jump_from_outer)
+        outer_indices, focus_indices = np.where(distances < self.options.snake_trace_max_jump_from_outer)
         if outer_indices.size == 0:
             return None, None
         #TODO: Figure out some way sort by asc distance first
@@ -807,7 +808,7 @@ class MazeAgent:
 
     def find_cluster_max_start_node(self):
         # Convolve with ones to find tightest cluster
-        kernel = np.ones((options.cluster_start_point_size, options.cluster_start_point_size), dtype=np.uint8)
+        kernel = np.ones((self.options.cluster_start_point_size, self.options.cluster_start_point_size), dtype=np.uint8)
         convolved = convolve2d(self.all_edges_bool.astype(np.uint8), kernel, mode='same')
         max_index = np.argmax(convolved)
         cluster_point = np.unravel_index(max_index, self.all_edges_bool.shape)

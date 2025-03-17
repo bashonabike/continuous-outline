@@ -1,13 +1,12 @@
+from logging import exception
+
 import inkex
 import os
 import urllib.parse as urllib_parse
 import urllib.request as urllib_request
-from PIL import Image, ImageDraw
-from io import BytesIO
-from lxml import etree
-import base64
-import helpers.edge_detection as edge
-import copy as cp
+# from PIL import Image
+# from io import BytesIO
+# import base64
 import numpy as np
 import pandas as pd
 
@@ -28,12 +27,7 @@ Used version of imagetracerjs: https://github.com/jankovicsandras/imagetracerjs/
 
 """
 
-#TODO: Input all svg paths elipses, rectangles, etc. pick all pixels inside bounds as areas to emphasize detail
-
 class continuous_outline(inkex.EffectExtension):
-
-
-
     def checkImagePath(self, element):
         xlink = element.get('xlink:href')
         if xlink and xlink[:5] == 'data:':
@@ -79,6 +73,7 @@ class continuous_outline(inkex.EffectExtension):
         # pars.add_argument("--blurdelta", type=float, default=20.0, help="RGBA delta treshold for selective Gaussian blur preprocessing")
         #
         pars.add_argument("--slic_regions", type=int, default=12, help="Number of SLIC regions")
+        pars.add_argument("--maze_sections_across", type=int, default=70, help="Gridding density for approx path formation")
         pars.add_argument("--dumb_node_optional_weight", type=int, default=1, help="Weight for optional dumb nodes")
         pars.add_argument("--dumb_node_optional_max_variable_weight", type=int, default=6,
                           help="Max variable weight for optional dumb nodes")
@@ -122,6 +117,7 @@ class continuous_outline(inkex.EffectExtension):
         pars.add_argument("--back_forth_traverse_threshold", type=float, default=0.3,
                           help="Traverse threshold for back and forth lines")
         pars.add_argument("--simplify_tolerance", type=float, default=0.7, help="Simplify tolerance")
+        pars.add_argument("--preview", type=inkex.Boolean, default=True, help="Preview before committing")
 
 
     def check_level_to_update(self, data_ret:dataret.DataRetrieval):
@@ -140,115 +136,119 @@ class continuous_outline(inkex.EffectExtension):
         for param_name, param_value in vars(self.options).items():
             param_data.append({'param_name': param_name, 'param_val': param_value})
 
-        # Create a pandas DataFrame from the list of dictionaries
+        # Create a pandas DataFrame from the list of dictionaries, set col type to str
         params_df = pd.DataFrame(param_data)
+        params_df = params_df.map(str)
 
         #Set into db
         data_ret.clear_and_set_single_table("ParamsVals", params_df)
 
 
 
-    def retrieve_image(self, image):
-        self.path = self.checkImagePath(image)  # This also ensures the file exists
-        if self.path is None:  # check if image is embedded or linked
-            image_string = image.get('{http://www.w3.org/1999/xlink}href')
-            # find comma position
-            i = 0
-            while i < 40:
-                if image_string[i] == ',':
-                    break
-                i = i + 1
-            img = Image.open(BytesIO(base64.b64decode(image_string[i + 1:len(image_string)])))
-        else:
-            img = Image.open(self.path)
-
-        # Write the embedded or linked image to temporary directory
-        if os.name == "nt":
-            exportfile = "helpers.png"
-        else:
-            exportfile = "/tmp/helpers.png"
-
-        # if img.mode != 'RGB':
-        #     img = img.convert('RGB')
-        # img.save(exportfile, "png")
-
-        return img
+    # def retrieve_image(self, image):
+    #     self.path = self.checkImagePath(image)  # This also ensures the file exists
+    #     if self.path is None:  # check if image is embedded or linked
+    #         image_string = image.get('{http://www.w3.org/1999/xlink}href')
+    #         # find comma position
+    #         i = 0
+    #         while i < 40:
+    #             if image_string[i] == ',':
+    #                 break
+    #             i = i + 1
+    #         img = Image.open(BytesIO(base64.b64decode(image_string[i + 1:len(image_string)])))
+    #     else:
+    #         img = Image.open(self.path)
+    #
+    #     # Write the embedded or linked image to temporary directory
+    #     if os.name == "nt":
+    #         exportfile = "helpers.png"
+    #     else:
+    #         exportfile = "/tmp/helpers.png"
+    #
+    #     # if img.mode != 'RGB':
+    #     #     img = img.convert('RGB')
+    #     # img.save(exportfile, "png")
+    #
+    #     return img
 
     def get_image_offsets(self, svg_image):
         # Determine image offsets
         parent = svg_image.getparent()
+        x, y = svg_image.get('x'), svg_image.get('y')
+        if x is None: x = 0
+        if y is None: y = 0
         if parent is not None and parent != self.document.getroot():
             tpc = parent.composed_transform()
-            x_offset = tpc.e + float(svg_image.get('x'))
-            y_offset = tpc.f + float(svg_image.get('y'))
+            x_offset = tpc.e + float(x)
+            y_offset = tpc.f + float(y)
         else:
-            x_offset = float(svg_image.get('x'))
-            y_offset = float(svg_image.get('y'))
+            x_offset = float(x)
+            y_offset = float(y)
 
         return (x_offset, y_offset)
 
-    def fit_svg(self, exportfile, image):
-        # Delete the temporary png file again because we do not need it anymore
-        if os.path.exists(exportfile):
-            os.remove(exportfile)
-
-        # new parse the SVG file and insert it as new group into the current document tree
-        doc = etree.parse(exportfile + ".svg").getroot()
-        newGroup = self.document.getroot().add(inkex.Group())
-        trace_width = None
-        trace_height = None
-        if doc.get('width') is not None and doc.get('height') is not None:
-            trace_width = doc.get('width')
-            trace_height = doc.get('height')
-        else:
-            viewBox = doc.get('viewBox')  # eg "0 0 700 600"
-            trace_width = viewBox.split(' ')[2]
-            trace_height = viewBox.split(' ')[3]
-
-        # add transformation to fit previous XY coordinates and width/height
-        # image might also be influenced by other transformations from parent:
-        parent = image.getparent()
-        if parent is not None and parent != self.document.getroot():
-            tpc = parent.composed_transform()
-            x_offset = tpc.e
-            y_offset = tpc.f
-        else:
-            x_offset = 0.0
-            y_offset = 0.0
-        img_w = image.get('width')
-        img_h = image.get('height')
-        img_x = image.get('x')
-        img_y = image.get('y')
-        if img_w is not None and img_h is not None and img_x is not None and img_y is not None:
-            # if width/height are not unitless but end with px, mm, in etc. we have to convert to a float number
-            if img_w[-1].isdigit() is False:
-                img_w = self.svg.uutounit(img_w)
-            if img_h[-1].isdigit() is False:
-                img_h = self.svg.uutounit(img_h)
-
-            transform = "matrix({:1.6f}, 0, 0, {:1.6f}, {:1.6f}, {:1.6f})" \
-                .format(float(img_w) / float(trace_width), float(img_h) / float(trace_height), float(img_x) + x_offset,
-                        float(img_y) + y_offset)
-            newGroup.attrib['transform'] = transform
-        else:
-            t = image.composed_transform()
-            img_w = t.a
-            img_h = t.d
-            img_x = t.e
-            img_y = t.f
-            transform = "matrix({:1.6f}, 0, 0, {:1.6f}, {:1.6f}, {:1.6f})" \
-                .format(float(img_w) / float(trace_width), float(img_h) / float(trace_height), float(img_x) + x_offset,
-                        float(img_y) + y_offset)
-            newGroup.attrib['transform'] = transform
-
-        for child in doc.getchildren():
-            newGroup.append(child)
-
-        # Delete the temporary svg file
-        if os.path.exists(exportfile + ".svg"):
-            os.remove(exportfile + ".svg")
-
-        return newGroup
+    # def fit_svg(self, exportfile, image):
+    #     # Delete the temporary png file again because we do not need it anymore
+    #     if os.path.exists(exportfile):
+    #         os.remove(exportfile)
+    #
+    #     # new parse the SVG file and insert it as new group into the current document tree
+    #     doc = etree.parse(exportfile + ".svg").getroot()
+    #     newGroup = self.document.getroot().add(inkex.Group())
+    #     trace_width = None
+    #     trace_height = None
+    #     if doc.get('width') is not None and doc.get('height') is not None:
+    #         trace_width = doc.get('width')
+    #         trace_height = doc.get('height')
+    #     else:
+    #         viewBox = doc.get('viewBox')  # eg "0 0 700 600"
+    #         trace_width = viewBox.split(' ')[2]
+    #         trace_height = viewBox.split(' ')[3]
+    #
+    #     # add transformation to fit previous XY coordinates and width/height
+    #     # image might also be influenced by other transformations from parent:
+    #     parent = image.getparent()
+    #     if parent is not None and parent != self.document.getroot():
+    #         tpc = parent.composed_transform()
+    #         x_offset = tpc.e
+    #         y_offset = tpc.f
+    #     else:
+    #         x_offset = 0.0
+    #         y_offset = 0.0
+    #     img_w = image.get('width')
+    #     img_h = image.get('height')
+    #     img_x = image.get('x')
+    #     img_y = image.get('y')
+    #     if img_w is not None and img_h is not None and img_x is not None and img_y is not None:
+    #         # if width/height are not unitless but end with px, mm, in etc. we have to convert to a float number
+    #         if img_w[-1].isdigit() is False:
+    #             img_w = self.svg.uutounit(img_w)
+    #         if img_h[-1].isdigit() is False:
+    #             img_h = self.svg.uutounit(img_h)
+    #
+    #         transform = "matrix({:1.6f}, 0, 0, {:1.6f}, {:1.6f}, {:1.6f})" \
+    #             .format(float(img_w) / float(trace_width), float(img_h) / float(trace_height), float(img_x) + x_offset,
+    #                     float(img_y) + y_offset)
+    #         newGroup.attrib['transform'] = transform
+    #     else:
+    #         t = image.composed_transform()
+    #         img_w = t.a
+    #         img_h = t.d
+    #         img_x = t.e
+    #         img_y = t.f
+    #         transform = "matrix({:1.6f}, 0, 0, {:1.6f}, {:1.6f}, {:1.6f})" \
+    #             .format(float(img_w) / float(trace_width), float(img_h) / float(trace_height), float(img_x) + x_offset,
+    #                     float(img_y) + y_offset)
+    #         newGroup.attrib['transform'] = transform
+    #
+    #     for child in doc.getchildren():
+    #         newGroup.append(child)
+    #
+    #     # Delete the temporary svg file
+    #     if os.path.exists(exportfile + ".svg"):
+    #         os.remove(exportfile + ".svg")
+    #
+    #     return newGroup
 
     def det_img_and_focus_specs(self, image_path, detail_bounds):
         img_focus_specs = []
@@ -274,10 +274,10 @@ class continuous_outline(inkex.EffectExtension):
         selection_info_df = pd.DataFrame(img_focus_specs, columns=['selection_info'])
 
         # Add the 'line' column from the index
-        selection_info_df['line'] = selection_info_df.index
+        # selection_info_df['line'] = selection_info_df.index
 
         # Reset the index if you want 'line' to be the first column
-        selection_info_df = selection_info_df[['line', 'selection_info']]  # reorders columns
+        # selection_info_df = selection_info_df[['line', 'selection_info']]  # reorders columns
 
         return selection_info_df
 
@@ -309,87 +309,99 @@ class continuous_outline(inkex.EffectExtension):
 
         return bounds_out
 
-    def isolate_sub_images(self, detail_bounds, export_file, image_in_svg):
-        #Determine image offsets
-        (x_offset, y_offset) = self.get_image_offsets(image_in_svg)
-
-        with Image.open(export_file) as image:
-            image_size = image.size
-
-            x_scale = image_size[0]/float(image_in_svg.get('width'))
-            y_scale = image_size[1]/float(image_in_svg.get('height'))
-
-            sub_image_counter = 0
-            bounds_dicts = []
-
-            for bounds in detail_bounds:
-
-                # Check if ellipse or rect
-                if bounds.tag == inkex.addNS('rect', 'svg'):
-                    # Get rectangle properties
-                    #TODO: figure out way to crop by float
-                    x = int((float(bounds.attrib.get('x', 0)) - x_offset)*x_scale)
-                    y = int((float(bounds.attrib.get('y', 0)) - y_offset)*y_scale)
-                    width = int(float(bounds.attrib.get('width', 0))*x_scale)
-                    height = int(float(bounds.attrib.get('height', 0))*y_scale)
-                    local_origin = (x, y)
-
-                    # Crop the image to the rectangle
-                    bbox = (x, y, x + width, y + height)
-
-                    cropped_image = image
-
-                elif bounds.tag == inkex.addNS('ellipse', 'svg'):
-                    # Get ellipse properties
-                    cx = int((float(bounds.attrib.get('cx', 0)) - x_offset)*x_scale)
-                    cy = int((float(bounds.attrib.get('cy', 0)) - y_offset)*y_scale)
-                    rx = int(float(bounds.attrib.get('rx', 0))*x_scale)
-                    ry = int(float(bounds.attrib.get('ry', 0))*y_scale)
-                    local_origin = np.array([cx - rx, cy - ry])
-
-                    # Create a mask for the ellipse
-                    mask = Image.new('L', image.size, 0)
-                    draw = ImageDraw.Draw(mask)
-                    bbox = (cx - rx, cy - ry,
-                            cx + rx, cy + ry)
-                    draw.ellipse(bbox, fill=255)
-
-                    # Apply the mask to the image
-                    cropped_image = Image.new('RGBA', image.size)
-                    self.msg(str(image.size[0]))
-                    cropped_image.paste(image, (0, 0), mask)
-                else:
-                    raise inkex.AbortExtension("Only ellipses and rectangles are supported as bounds.")
-
-                # Crop the bounding box of the rect or ellipse
-                cropped_image = cropped_image.crop(bbox)
-
-                # Save the resulting image
-                #TODO: need to save temp sub images?
-                output_path = "sub_image_" + str(sub_image_counter) + ".png"
-                sub_image_counter += 1
-                cropped_image.save(output_path)
-                inkex.utils.debug(f"Saved cropped image to {output_path}")
-
-                #Save to dict
-                bounds_dicts.append({"localorigin": local_origin, "imageobject": cropped_image,
-                    "imagepath": output_path})
-
-        return bounds_dicts
+    # def isolate_sub_images(self, detail_bounds, export_file, image_in_svg):
+    #     #Determine image offsets
+    #     (x_offset, y_offset) = self.get_image_offsets(image_in_svg)
+    #
+    #     with Image.open(export_file) as image:
+    #         image_size = image.size
+    #
+    #         x_scale = image_size[0]/float(image_in_svg.get('width'))
+    #         y_scale = image_size[1]/float(image_in_svg.get('height'))
+    #
+    #         sub_image_counter = 0
+    #         bounds_dicts = []
+    #
+    #         for bounds in detail_bounds:
+    #
+    #             # Check if ellipse or rect
+    #             if bounds.tag == inkex.addNS('rect', 'svg'):
+    #                 # Get rectangle properties
+    #                 #TODO: figure out way to crop by float
+    #                 x = int((float(bounds.attrib.get('x', 0)) - x_offset)*x_scale)
+    #                 y = int((float(bounds.attrib.get('y', 0)) - y_offset)*y_scale)
+    #                 width = int(float(bounds.attrib.get('width', 0))*x_scale)
+    #                 height = int(float(bounds.attrib.get('height', 0))*y_scale)
+    #                 local_origin = (x, y)
+    #
+    #                 # Crop the image to the rectangle
+    #                 bbox = (x, y, x + width, y + height)
+    #
+    #                 cropped_image = image
+    #
+    #             elif bounds.tag == inkex.addNS('ellipse', 'svg'):
+    #                 # Get ellipse properties
+    #                 cx = int((float(bounds.attrib.get('cx', 0)) - x_offset)*x_scale)
+    #                 cy = int((float(bounds.attrib.get('cy', 0)) - y_offset)*y_scale)
+    #                 rx = int(float(bounds.attrib.get('rx', 0))*x_scale)
+    #                 ry = int(float(bounds.attrib.get('ry', 0))*y_scale)
+    #                 local_origin = np.array([cx - rx, cy - ry])
+    #
+    #                 # Create a mask for the ellipse
+    #                 mask = Image.new('L', image.size, 0)
+    #                 draw = ImageDraw.Draw(mask)
+    #                 bbox = (cx - rx, cy - ry,
+    #                         cx + rx, cy + ry)
+    #                 draw.ellipse(bbox, fill=255)
+    #
+    #                 # Apply the mask to the image
+    #                 cropped_image = Image.new('RGBA', image.size)
+    #                 self.msg(str(image.size[0]))
+    #                 cropped_image.paste(image, (0, 0), mask)
+    #             else:
+    #                 raise inkex.AbortExtension("Only ellipses and rectangles are supported as bounds.")
+    #
+    #             # Crop the bounding box of the rect or ellipse
+    #             cropped_image = cropped_image.crop(bbox)
+    #
+    #             # Save the resulting image
+    #             #TODO: need to save temp sub images?
+    #             output_path = "sub_image_" + str(sub_image_counter) + ".png"
+    #             sub_image_counter += 1
+    #             cropped_image.save(output_path)
+    #             inkex.utils.debug(f"Saved cropped image to {output_path}")
+    #
+    #             #Save to dict
+    #             bounds_dicts.append({"localorigin": local_origin, "imageobject": cropped_image,
+    #                 "imagepath": output_path})
+    #
+    #     return bounds_dicts
 
     def effect(self):
         # internal overwrite for scale:
         self.options.scale = 1.0
         data_ret = dataret.DataRetrieval()
-    
-        if len(self.svg.selected) > 0:
-            #Grab selected items if selected
-            images = self.svg.selection.filter(inkex.Image).values()
-            detail_bounds= self.svg.selection.filter(inkex.Rectangle, inkex.Ellipse).values()
-        else:
-            #Else grab all on doc
-            images = self.svg.filter(inkex.Image).values()
-            detail_bounds = self.svg.filter(inkex.Rectangle, inkex.Ellipse).values()
+
+        images, detail_bounds = [], []
+        if len(self.svg.selected) == 0: self.svg.selection = self.svg.descendants().filter(*self.select_all)
+        images = self.svg.selection.filter(inkex.Image).values()
+        detail_bounds= self.svg.selection.filter(inkex.Rectangle, inkex.Ellipse).values()
+
+        # if len(self.svg.selected) > 0:
+        #     #Grab selected items if selected
+        #     images = self.svg.selection.filter(inkex.Image).values()
+        #     detail_bounds= self.svg.selection.filter(inkex.Rectangle, inkex.Ellipse).values()
+        # else:
+        #     #Else grab all on doc
+        #     for child in self.svg.getchildren():
+        #         if str(child) == "g":
+        #             for sub_child in child:
+        #                 if str(sub_child) in ("image"):
+        #                     self.svg.selected[sub_child.get('id')] = sub_child
+        #                 elif str(sub_child) in ("ellipse", "rect"):
+        #                     detail_bounds.append(sub_child)
+        #     images = self.svg.selection.filter(inkex.Image).values()
+        #     detail_bounds = self.svg.selection.filter(inkex.Rectangle, inkex.Ellipse).values()
 
         match len(images):
             case 0:
@@ -398,22 +410,51 @@ class continuous_outline(inkex.EffectExtension):
                 else:
                     self.msg("No images found in document!")
             case 1:
-                svg_image = images[0]
+                svg_image = None
+                for img in images:
+                    svg_image = img
+                    break
                 image_path = self.checkImagePath(svg_image)
+                img_is_embedded = False
+                if image_path is None:  # check if image is embedded or linked
+                    image_path = svg_image.get('{http://www.w3.org/1999/xlink}href')
+                    img_is_embedded = True
 
                 #Check to verify selection/doc/params haven't changed since last run
                 img_and_focus_specs_df = self.det_img_and_focus_specs(image_path, detail_bounds)
                 update_level = data_ret.get_selection_match_level(img_and_focus_specs_df)
+
+                self.msg("post get selection match update level: " + str(update_level))
+
                 if update_level > 0:
                     #If selection matches, check if params have changed
                     update_level = min(self.check_level_to_update(data_ret), update_level)
 
+                self.msg("update level: " + str(update_level))
+
                 #Retrieve or calculate data as needed
                 objects = {}
                 match update_level:
-                    case 0, 1:
+                    case 0 | 1:
                         import helpers.build_objects as buildscr
                         import helpers.caching.set_data_by_level as setdb
+                        import cv2
+
+                        #Build up image data
+                        if img_is_embedded:
+                            import base64
+                            # find comma position
+                            i = 0
+                            while i < 40:
+                                if image_path[i] == ',':
+                                    break
+                                i = i + 1
+                            img_data = base64.b64decode(image_path[i + 1:len(image_path)])
+                            img_array = np.frombuffer(img_data, dtype=np.uint8)
+                            img_cv = cv2.imdecode(img_array, cv2.IMREAD_UNCHANGED)
+                        else:
+                            img_cv = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+
                         #Retrieve Level 1 objects from db
                         _, dataframes = data_ret.retrieve_and_wipe_data(0)
 
@@ -421,10 +462,11 @@ class continuous_outline(inkex.EffectExtension):
                         normalized_focus_region_specs = self.form_focus_region_specs_normalized(detail_bounds, svg_image)
 
                         #Levels 1-4 objects from scratch
-                        buildscr.build_level_1_scratch(image_path, normalized_focus_region_specs, self.options, objects)
+                        buildscr.build_level_1_scratch(img_cv, normalized_focus_region_specs, self.options, objects)
                         buildscr.build_level_2_scratch(self.options, objects)
                         buildscr.build_level_3_scratch(self.options, objects)
                         buildscr.build_level_4_scratch(self.options, objects)
+                        # for key in objects.keys(): self.msg(key)
 
                         #Build Level 1-4 data into dataframes
                         setdb.set_level_1_data(dataframes, objects)
@@ -434,6 +476,7 @@ class continuous_outline(inkex.EffectExtension):
 
                         #Set data into db
                         data_ret.set_data(dataframes, min_level=0)
+                        # self.msg(str(update_level))
 
                     case 2:
                         import helpers.caching.build_objects_from_db as builddb
@@ -442,7 +485,7 @@ class continuous_outline(inkex.EffectExtension):
 
                         #Retrieve Level 1 objects from db
                         retrieved, dataframes = data_ret.retrieve_and_wipe_data(1)
-                        builddb.build_level_1_data(retrieved, objects)
+                        builddb.build_level_1_data(self.options, retrieved, objects)
 
                         #Levels 2-4 objects from scratch
                         buildscr.build_level_2_scratch(self.options, objects)
@@ -463,8 +506,8 @@ class continuous_outline(inkex.EffectExtension):
 
                         #Retrieve Level 1-2 objects from db
                         retrieved, dataframes = data_ret.retrieve_and_wipe_data(2)
-                        builddb.build_level_1_data(retrieved, objects)
-                        builddb.build_level_2_data(retrieved, objects)
+                        builddb.build_level_1_data(self.options, retrieved, objects)
+                        builddb.build_level_2_data(self.options, retrieved, objects)
 
                         #Levels 3-4 objects from scratch
                         buildscr.build_level_3_scratch(self.options, objects)
@@ -485,7 +528,7 @@ class continuous_outline(inkex.EffectExtension):
                         #NOTE: we dont need earlier since this is just forming up from raw path
                         retrieved, dataframes = data_ret.retrieve_and_wipe_data(3)
                         #TODO: Only retrieve from raw table, wipe formed
-                        builddb.build_level_3_data(retrieved, objects)
+                        builddb.build_level_3_data(self.options, retrieved, objects)
 
                         #Levels 4 objects from scratch
                         buildscr.build_level_4_scratch(self.options, objects)
@@ -501,68 +544,93 @@ class continuous_outline(inkex.EffectExtension):
                         #Retrieve Level 4 objects (no setting required)
                         retrieved = {}
                         retrieved['FormedPath'] = data_ret.read_sql_table('FormedPath', data_ret.conn)
-                        builddb.build_level_4_data(retrieved, objects)
-
-
+                        builddb.build_level_4_data(self.options, retrieved, objects)
+                attributes = vars(self.options)
+                # for key, value in attributes.items():
+                #     self.msg(f"{key}: {value}")
                 #Format output curve to fit into doc
                 #NOTE: Going from y, x to x, y
-                formed_path_nd = np.array(objects['FormedPath'])
-                formed_path_xy = formed_path_nd[:, [1, 0]]
-
-                #Determine scaling
-                image_size = (objects['sections'].shape[1], objects['sections'].shape[0])
-                x_scale = image_size[0] / float(svg_image.get('width'))
-                y_scale = image_size[1] / float(svg_image.get('height'))
-                scale_nd = np.array([x_scale, y_scale])
-
-                # Determine image offsets
-                main_image_offsets = np.array(self.get_image_offsets(svg_image))
-
-                #Offset main contour to line up with master photo on svg
-                formed_path_shifted = (formed_path_xy/scale_nd + main_image_offsets).tolist()
-
-                #Build the path commands
-                commands = []
-                for i, point in enumerate(formed_path_shifted):
-                    if i == 0:
-                        commands.append(['M', point])  # Move to the first point
+                if len(objects['formed_path']) == 0:
+                    self.msg("No path was possible, please change up settings/bounding rects/ellipses and try again")
+                    if self.options.preview:
+                        # Set updated params into db
+                        self.set_params_into_db(data_ret)
                     else:
-                        commands.append(['L', point])  # Line to the next point
-                    # self.msg(str(point))
-                # commands.append(['Z'])  # Close path
-
-                # Create the inkex.Path
-                path = inkex.paths.Path(commands)
-
-                if self.options.preview:
-                    # Create a temporary group for the preview
-                    preview_group = inkex.etree.SubElement(self.svg.get_current_layer(), inkex.addNS('g', 'svg'))
-                    preview_group.set('id', 'preview_group')  # give the group an id so it can be found later.
-
-                    # Create the path element
-                    path_string = path.to_svg()
-                    path_element = inkex.etree.SubElement(preview_group, inkex.addNS('path', 'svg'))
-                    path_element.set('d', path_string)
-                    path_element.set('style', 'stroke:red; stroke-width:2; fill:none;')  # style the line.
-
-                    # Set updated params into db
-                    self.set_params_into_db(data_ret)
+                        #Clear the database
+                        data_ret.wipe_data()
                 else:
-                    # Add a new path element to the SVG
-                    path_element = inkex.PathElement()
-                    path_element.style = {'stroke': 'black', 'fill': 'none'}
-                    path_element.set('d', str(path))  # Set the path data
-                    self.svg.get_current_layer().append(path_element)
-                    #TODO: units are in pixels, scaling it's way too big why
+                    formed_path_nd = np.array(objects['formed_path'])
+                    formed_path_xy = formed_path_nd[:, [1, 0]]
 
-                    #Clear the database
-                    data_ret.wipe_data()
+                    #Determine scaling
+                    image_size = (objects['maze_sections'].img_width, objects['maze_sections'].img_height)
+                    x_scale = image_size[0] / float(svg_image.get('width'))
+                    y_scale = image_size[1] / float(svg_image.get('height'))
+                    scale_nd = np.array([x_scale, y_scale])
+
+                    # Determine image offsets
+                    main_image_offsets = np.array(self.get_image_offsets(svg_image))
+
+                    #Offset main contour to line up with master photo on svg
+                    formed_path_shifted = (formed_path_xy/scale_nd + main_image_offsets).tolist()
+
+                    #Build the path commands
+                    commands = []
+                    for i, point in enumerate(formed_path_shifted):
+                        if i == 0:
+                            commands.append(['M', point])  # Move to the first point
+                        else:
+                            commands.append(['L', point])  # Line to the next point
+                        # self.msg(str(point))
+                    # commands.append(['Z'])  # Close path
+                    command_strings = [
+                        f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
+                    ]
+                    commands_str = " ".join(command_strings)
+
+                    # Remove old preview layers, whenever preview mode is enabled
+                    for node in self.svg:
+                        if node.tag in ('{http://www.w3.org/2000/svg}g', 'g'):
+                            if node.get('{http://www.inkscape.org/namespaces/inkscape}groupmode') == 'layer':
+                                layer_name = node.get('{http://www.inkscape.org/namespaces/inkscape}label')
+                                if layer_name == 'Preview':
+                                    self.svg.remove(node)
+
+                    if self.options.preview:
+                        # Create a temporary layer & group for the preview
+                        preview_layer = inkex.etree.Element(inkex.addNS('g', 'svg'),
+                                                      None, nsmap=inkex.NSS)
+                        preview_layer.set(inkex.addNS('groupmode', 'inkscape'), 'layer')
+                        preview_layer.set(inkex.addNS('label', 'inkscape'), 'Preview')
+                        preview_group = inkex.etree.SubElement(preview_layer, inkex.addNS('g', 'svg'))
+                        preview_group.set('id', 'preview_group')  # give the group an id so it can be found later.
+
+                        # Create the path element
+                        path_element = inkex.etree.SubElement(preview_group, inkex.addNS('path', 'svg'))
+                        path_element.set('d', commands_str)
+                        path_element.set('style', 'stroke:red; stroke-width:2; fill:none;')
+
+                        self.svg.append(preview_layer)
+
+                        # Set updated params into db
+                        self.set_params_into_db(data_ret)
+                    else:
+                        # Add a new path element to the SVG
+                        path_element = inkex.PathElement()
+                        path_element.set('d', commands_str)  # Set the path data
+                        path_element.style = {'stroke': 'black', 'fill': 'none'}
+                        self.svg.get_current_layer().add(path_element)
+
+                        #Clear the database
+                        data_ret.wipe_data()
 
             case _:
                 if len(self.svg.selected) > 0:
                     self.msg("Multiple images found in selection! Please select only 1, plus any focal regions desired.")
                 else:
                     self.msg("Multiple images found in document, please select only 1, plus any focal regions desired.")
+
+        data_ret.close_connection()
 
 if __name__ == '__main__':
     try:

@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 # from simplification.cutil import simplify_coords
 import time
 
-import helpers.mazify.temp_options as options
+# import helpers.mazify.temp_options as options
 
 
 # testimg = "C:\\Users\\liamc\\PycharmProjects\\continuous-outline\\Trial-AI-Base-Images\\image_fx_(18).jpg"
@@ -85,7 +85,7 @@ def pixel_map_from_edge_contours(shape, contours, offset_idx):
 						  contour_idx + 1 + offset_idx))
 	return edges_final
 
-def mask_boundary_edges(img_unchanged):
+def mask_boundary_edges(options, img_unchanged):
 	start = time.time_ns()
 	#NOTE: only work PNG with transparent bg, or where background is all white
 	mask = None
@@ -166,7 +166,7 @@ def mask_boundary_edges(img_unchanged):
 	print(str((end - start)/1e6) + " ms to do mask stuff")
 	return edges_final, flipped_contours,  mask, ((min_y, min_x), (max_y, max_x))
 
-def slic_image_boundary_edges(im_float, num_segments:int =2, enforce_connectivity:bool = True, contour_offset = 0):
+def slic_image_boundary_edges(options, im_float, num_segments:int =2, enforce_connectivity:bool = True, contour_offset = 0):
 	segments = None
 	num_segs_actual = -1
 	start = time.time_ns()
@@ -229,7 +229,7 @@ def slic_image_boundary_edges(im_float, num_segments:int =2, enforce_connectivit
 		max_y, max_x = max(max_y, max(ys)), max(max_x, max(xs))
 
 		#Remove portion of contours along perimeter
-		processed_contours = remove_perimeter_ghosting(cur_contour, edges.shape[0] - 1, edges.shape[1] - 1)
+		processed_contours = remove_perimeter_ghosting(options, cur_contour, edges.shape[0] - 1, edges.shape[1] - 1)
 
 		flipped_contours.extend(processed_contours)
 
@@ -238,7 +238,7 @@ def slic_image_boundary_edges(im_float, num_segments:int =2, enforce_connectivit
 
 	return edges, flipped_contours, segments, num_segs_actual, ((min_y, min_x), (max_y, max_x))
 
-def remove_perimeter_ghosting(points_list, max_y, max_x):
+def remove_perimeter_ghosting(options, points_list, max_y, max_x):
 	"""
 	Eliminates points where x or y is 0 or 1023 from a NumPy array.
 

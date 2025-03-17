@@ -8,85 +8,100 @@
                 <vbox>
                     <label appearance="header">Continuous Outline</label>
                     <separator/>
-                    <param name="slic_regions" type="int" min="1" max="9999" gui-text="Number of SLIC regions">12</param>
-                    <param name="dumb_node_optional_weight" type="int" min="0" max="9999" gui-text="Weight for optional dumb nodes">1</param>
-                    <param name="dumb_node_optional_max_variable_weight" type="int" min="0" max="9999" gui-text="Max variable weight for optional dumb nodes">6</param>
-                    <param name="dumb_node_min_opt_weight_reduced" type="int" min="0" max="9999" gui-text="Minimum reduced weight for optional dumb nodes">1</param>
-                    <param name="dumb_node_blank_weight" type="int" min="0" max="9999" gui-text="Weight for blank dumb nodes">200</param>
-                    <param name="dumb_node_opt_jump_weight" type="int" min="0" max="9999" gui-text="Weight for optional dumb node jumps">1</param>
-                    <param name="dumb_node_req_jump_weight" type="int" min="0" max="9999" gui-text="Weight for required dumb node jumps">1</param>
-                    <param name="dumb_node_required_weight" type="int" min="0" max="9999" gui-text="Weight for required dumb nodes">1</param>
-                    <param name="max_inner_path_seg_manhatten_length" type="int" min="0" max="9999" gui-text="Maximum Manhattan length for inner path segments">50</param>
-                    <param name="outer_contour_length_cutoff" type="int" min="0" max="9999" gui-text="Length cutoff for outer contours">200</param>
-                    <param name="inner_contour_length_cutoff" type="int" min="0" max="9999" gui-text="Length cutoff for inner contours">20</param>
-                    <param name="inner_contour_variable_weights" type="bool" gui-text="Enable variable weights for inner contours">true</param>
+                    <param name="maze_sections_across" type="int" min="1" max="9999"
+                           gui-text="Gridding density for approx path formation">70
+                    </param>
+                    <param name="slic_regions" type="int" min="1" max="9999" gui-text="Number of SLIC regions">12
+                    </param>
+                    <param name="dumb_node_optional_weight" type="int" min="0" max="9999"
+                           gui-text="Weight for optional dumb nodes">1
+                    </param>
+                    <param name="dumb_node_optional_max_variable_weight" type="int" min="0" max="9999"
+                           gui-text="Max variable weight for optional dumb nodes">6
+                    </param>
+                    <param name="dumb_node_min_opt_weight_reduced" type="int" min="0" max="9999"
+                           gui-text="Minimum reduced weight for optional dumb nodes">1
+                    </param>
+                    <param name="dumb_node_blank_weight" type="int" min="0" max="9999"
+                           gui-text="Weight for blank dumb nodes">200
+                    </param>
+                    <param name="dumb_node_opt_jump_weight" type="int" min="0" max="9999"
+                           gui-text="Weight for optional dumb node jumps">1
+                    </param>
+                    <param name="dumb_node_req_jump_weight" type="int" min="0" max="9999"
+                           gui-text="Weight for required dumb node jumps">1
+                    </param>
+                    <param name="dumb_node_required_weight" type="int" min="0" max="9999"
+                           gui-text="Weight for required dumb nodes">1
+                    </param>
+                    <param name="max_inner_path_seg_manhatten_length" type="int" min="0" max="9999"
+                           gui-text="Maximum Manhattan length for inner path segments">50
+                    </param>
+                    <param name="outer_contour_length_cutoff" type="int" min="0" max="9999"
+                           gui-text="Length cutoff for outer contours">200
+                    </param>
+                    <param name="inner_contour_length_cutoff" type="int" min="0" max="9999"
+                           gui-text="Length cutoff for inner contours">20
+                    </param>
+                    <param name="inner_contour_variable_weights" type="bool"
+                           gui-text="Enable variable weights for inner contours">true
+                    </param>
                     <param name="scorched_earth" type="bool" gui-text="Enable scorched earth mode">true</param>
-                    <param name="scorched_earth_weight_multiplier" type="int" min="0" max="9999" gui-text="Weight multiplier for scorched earth mode">6</param>
+                    <param name="scorched_earth_weight_multiplier" type="int" min="0" max="9999"
+                           gui-text="Weight multiplier for scorched earth mode">6
+                    </param>
 
                     <param name="trace_technique" type="int" min="1" max="5" gui-text="TEMP!! Trace technique">2</param>
 
-                    <param name="snake_trace_max_jump_from_outer" type="int" min="0" max="9999" gui-text="Maximum jump from outer contour for snake trace">2</param>
-                    <param name="snake_details_polygon_faces" type="int" min="0" max="9999" gui-text="Number of polygon faces for snake details">7</param>
-                    <param name="typewriter_lines" type="int" min="2" max="9999" gui-text="Number of typewriter lines">5</param>
-                    <param name="typewriter_traverse_threshold" type="float" min="0.0" max="1.0" gui-text="Traverse threshold for typewriter lines">0.5</param>
-                    <param name="zigzag_typewriter_lines" type="int" min="2" max="9999" gui-text="Number of zigzag typewriter lines">5</param>
-                    <param name="zigzag_typewriter_traverse_threshold" type="float" min="0.0" max="1.0" gui-text="Traverse threshold for zigzag typewriter lines">0.3</param>
-                    <param name="vertical_zigzag_lines" type="int" min="2" max="9999" gui-text="Number of vertical zigzag lines">5</param>
-                    <param name="vertical_zigzag_traverse_threshold" type="float" min="0.0" max="1.0" gui-text="Traverse threshold for vertical zigzag lines">0.3</param>
-                    <param name="back_forth_lines" type="int" min="2" max="9999" gui-text="Number of back and forth lines">12</param>
-                    <param name="back_forth_traverse_threshold" type="float" min="0.0" max="1.0" gui-text="Traverse threshold for back and forth lines">0.3</param>
-                    <param name="simplify_tolerance" type="float" min="0.0" max="1.0" gui-text="Simplify tolerance">0.7</param>
+                    <param name="snake_trace_max_jump_from_outer" type="int" min="0" max="9999"
+                           gui-text="Maximum jump from outer contour for snake trace">2
+                    </param>
+                    <param name="snake_details_polygon_faces" type="int" min="0" max="9999"
+                           gui-text="Number of polygon faces for snake details">7
+                    </param>
+                    <param name="typewriter_lines" type="int" min="2" max="9999" gui-text="Number of typewriter lines">
+                        5
+                    </param>
+                    <param name="typewriter_traverse_threshold" type="float" min="0.0" max="1.0"
+                           gui-text="Traverse threshold for typewriter lines">0.5
+                    </param>
+                    <param name="zigzag_typewriter_lines" type="int" min="2" max="9999"
+                           gui-text="Number of zigzag typewriter lines">5
+                    </param>
+                    <param name="zigzag_typewriter_traverse_threshold" type="float" min="0.0" max="1.0"
+                           gui-text="Traverse threshold for zigzag typewriter lines">0.3
+                    </param>
+                    <param name="vertical_zigzag_lines" type="int" min="2" max="9999"
+                           gui-text="Number of vertical zigzag lines">5
+                    </param>
+                    <param name="vertical_zigzag_traverse_threshold" type="float" min="0.0" max="1.0"
+                           gui-text="Traverse threshold for vertical zigzag lines">0.3
+                    </param>
+                    <param name="back_forth_lines" type="int" min="2" max="9999"
+                           gui-text="Number of back and forth lines">12
+                    </param>
+                    <param name="back_forth_traverse_threshold" type="float" min="0.0" max="1.0"
+                           gui-text="Traverse threshold for back and forth lines">0.3
+                    </param>
+                    <param name="simplify_tolerance" type="float" min="0.0" max="1.0" gui-text="Simplify tolerance">
+                        0.7
+                    </param>
+                    <param name="preview" type="bool" indent="4"
+                           gui-text="Preview mode">true
+                    </param>
                 </vbox>
                 <spacer/>
                 <separator/>
                 <spacer/>
-                <vbox>
-                    <label appearance="header">Tracing</label>
-                    <separator/>
-                    <param name="keeporiginal" type="bool" gui-text="Keep original image on canvas">false</param>
-                    <param name="ltres" type="float" min="0.0" gui-text="Error treshold straight lines">1.0</param>
-                    <param name="qtres" type="float" min="0.0" gui-text="Error treshold quadratic splines">1.0</param>
-                    <param name="pathomit" type="int" min="0" max="9999" gui-text="Noise reduction - discard edge node paths shorter than">8</param>           
-                    <param name="rightangleenhance" type="bool" gui-text="Enhance right angle corners">true</param>
-                    <spacer/>
-                    <label appearance="header">Color Quantization and Layering</label>
-                    <separator/>
-                    <param name="colorsampling" appearance="combo" type="optiongroup" gui-text="Color sampling">
-                       <option value="0">disabled, generating a palette</option>
-                       <option value="1">random sampling</option>
-                       <option value="2">deterministic sampling</option>
-                    </param>           
-                    <param name="numberofcolors" type="int" min="1" max="9999" gui-text="Number of colors to use on palette">16</param>
-                    <param name="mincolorratio" type="int" gui-text="Color randomization ratio">0</param>
-                    <param name="colorquantcycles" type="int" min="1" max="20" gui-text="Color quantization will be repeated this many times">3</param>   
-                    <param name="layering" appearance="combo" type="optiongroup" gui-text="Layering">
-                       <option value="0">sequential</option>
-                       <option value="1">parallel</option>
-                    </param>   
-                </vbox>
-                <spacer/>
-                <separator/>
-                <spacer/>
-                <vbox>
-                    <label appearance="header">SVG Rendering</label>
-                    <separator/>
-                    <param name="strokewidth" type="float" min="0.0" max="9999" gui-text="SVG stroke-width">1.0</param>
-                    <param name="linefilter" type="bool" gui-text="Noise reduction line filter">false</param>
-                    <!--<param name="scale" type="float" min="0.0" max="9999" gui-text="Coordinate scale factor">1.0</param> disabled because we resize to the size of the original image-->
-                    <param name="roundcoords" type="int" min="0" max="10" gui-text="Decimal places for rounding">1</param>
-                    <param name="viewbox" type="bool" gui-text="Resize to SVG viewBox">false</param>
-                    <param name="desc" type="bool" gui-text="SVG descriptions">false</param> 
-                    <spacer/>
-                    <label appearance="header">Blur Preprocessing</label>
-                    <separator/>
-                    <param name="blurradius" type="int" min="1" max="5" gui-text="Selective Gaussian blur preprocessing">0</param>
-                    <param name="blurdelta" type="float" min="0.0" max="9999" gui-text="RGBA delta treshold for selective Gaussian blur preprocessing">20.0</param>
-                </vbox>
+
             </hbox>
         </page>
         <page name="tab_about" gui-text="About">
             <label appearance="header">Imagetracer.js</label>
-            <label>imagetracerjs - Simple raster image tracer and vectorizer written in JavaScript, ported to Inkscape. It will vectorize your beautiful image into a more beautiful SVG trace with separated infills(break apart into single surfaces like a puzzle).</label>
+            <label>imagetracerjs - Simple raster image tracer and vectorizer written in JavaScript, ported to Inkscape.
+                It will vectorize your beautiful image into a more beautiful SVG trace with separated infills(break
+                apart into single surfaces like a puzzle).
+            </label>
             <label>2020 - 2023 / written by Mario Voigt (Stadtfabrikanten e.V. / FabLab Chemnitz)</label>
             <spacer/>
             <label appearance="header">Online Documentation</label>
@@ -100,17 +115,19 @@
             <label appearance="url">https://github.com/jankovicsandras/continuous-outline</label>
             <spacer/>
             <label appearance="header">MightyScape Extension Collection</label>
-            <label>This piece of software is part of the MightyScape for Inkscape Extension Collection and is licensed under GNU GPL v3</label>
+            <label>This piece of software is part of the MightyScape for Inkscape Extension Collection and is licensed
+                under GNU GPL v3
+            </label>
             <label appearance="url">https://y.stadtfabrikanten.org/mightyscape-overview</label>
         </page>
     </param>
-    <effect needs-live-preview="true">
+    <effect needs-live-preview="false">
         <object-type>all</object-type>
-		<effects-menu>
-         <submenu name="clinetime">
-            <submenu name="Tracing/Images/Edge Detection"/>
-         </submenu>
-		</effects-menu>
+        <effects-menu>
+            <submenu name="clinetime">
+                <submenu name="Tracing/Images/Edge Detection"/>
+            </submenu>
+        </effects-menu>
     </effect>
     <script>
         <command location="inx" interpreter="python">continuous-outline.py</command>

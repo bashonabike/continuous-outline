@@ -102,7 +102,7 @@ def rect_mask(x, y, width, height, shape):
 
     return inside
 
-def objects_to_dict(*args, **kwargs):
+def objects_to_dict(obj_names):
     """
     Creates a dictionary where keys are variable names and values are objects.
 
@@ -113,21 +113,23 @@ def objects_to_dict(*args, **kwargs):
     Returns:
         dict: A dictionary of variable names and objects.
     """
-    import inspect
+    import sys
 
     result = {}
 
-    # Handle positional arguments
-    frame = inspect.currentframe().f_back
-    names = frame.f_code.co_varnames[frame.f_code.co_argcount:]
-    for i, obj in enumerate(args):
-        if i < len(names):
-            result[names[i]] = obj
-        else:
-            result[f"arg_{i}"] = obj # if more args than names, arg_0, arg_1, etc.
-
-    # Handle keyword arguments
-    result.update(kwargs)
+    # # Handle positional arguments
+    # frame = inspect.currentframe().f_back
+    # names = frame.f_code.co_varnames[frame.f_code.co_argcount:]
+    # for i, obj in enumerate(args):
+    #     if i < len(names):
+    #         result[names[i]] = obj
+    #     else:
+    #         result[f"arg_{i}"] = obj # if more args than names, arg_0, arg_1, etc.
+    #
+    # # Handle keyword arguments
+    # result.update(kwargs)
+    for name in obj_names:
+        result[name] = sys._getframe(1).f_locals[name]
 
     return result
 
@@ -135,14 +137,14 @@ def objects_to_dict(*args, **kwargs):
 
 
 #region Builders
-def build_level_1_scratch(img_path, focus_regions, options, objects: dict):
+def build_level_1_scratch(img_cv, focus_regions, options, objects: dict):
     import cv2
     import numpy as np
     from skimage.util import img_as_float
     import helpers.edge_detect.SLIC_Segmentation as slic
     import time
 
-    im_unch = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
+    im_unch = img_cv
 
     # im_bgrem = bgrem.remove_background(im_unch, "jit")
 
@@ -160,8 +162,8 @@ def build_level_1_scratch(img_path, focus_regions, options, objects: dict):
     # near_boudaries_contours, segments = slic.slic_image_test_boundaries(im_float, split_contours)
     # near_boudaries_contours, segments = slic.mask_test_boundaries(image_path, split_contours)
 
-    outer_edges, outer_contours_yx, mask, bounds_outer = slic.mask_boundary_edges(im_unch)
-    inner_edges, inner_contours_yx, segments, num_segs, bounds_inner = slic.slic_image_boundary_edges(im_float,
+    outer_edges, outer_contours_yx, mask, bounds_outer = slic.mask_boundary_edges(options, im_unch)
+    inner_edges, inner_contours_yx, segments, num_segs, bounds_inner = slic.slic_image_boundary_edges(options, im_float,
                                                                                         num_segments=options.slic_regions,
                                                                                         enforce_connectivity=False,
                                                                                         contour_offset = len(outer_contours_yx))
@@ -183,10 +185,24 @@ def build_level_1_scratch(img_path, focus_regions, options, objects: dict):
                                         detail_req_masks)
 
     #Set objects into dict
-    inst_out_objects = objects_to_dict(outer_edges_cropped, inner_edges_cropped,
-     outer_contours_yx_cropped, inner_contours_yx_cropped,
-     shift_y, shift_x, detail_req_masks_cropped)
-    objects.update(inst_out_objects)
+    inst_out_objects = objects_to_dict([
+    "outer_edges_cropped",
+    "inner_edges_cropped",
+    "outer_contours_yx_cropped",
+    "inner_contours_yx_cropped",
+    "shift_y",
+    "shift_x",
+    "detail_req_masks_cropped"])
+    final_out_objs = {}
+    for key, value in inst_out_objects.items():
+        if key.endswith("_yx_cropped"):
+            new_key = key[:-len("_yx_cropped")]  # Remove the suffix
+        elif key.endswith("_cropped"):
+            new_key = key[:-len("_cropped")]  # Remove the suffix
+        else:
+            new_key = key
+        final_out_objs[new_key] = value
+    objects.update(final_out_objs)
 
 
 def build_level_2_scratch(options, objects: dict):
@@ -194,40 +210,45 @@ def build_level_2_scratch(options, objects: dict):
     from helpers.mazify.MazeAgent import MazeAgent
 
     #Set up sections & agent
-    maze_sections = MazeSections(objects['outer_edges_cropped'], options.maze_sections_across,
-                                 options.maze_sections_across, objects['detail_req_masks_cropped'])
+    maze_sections = MazeSections(options, objects['outer_edges'], options.maze_sections_across,
+                                 options.maze_sections_across, objects['detail_req_masks'])
 
-    maze_agent = MazeAgent(objects['outer_edges_cropped'], objects['outer_contours_yx_cropped'],
-                           objects['inner_edges_cropped'], objects['inner_contours_yx_cropped'],
-                           objects['maze_sections'])
+    maze_agent = MazeAgent(options, objects['outer_edges'], objects['outer_contours'],
+                           objects['inner_edges'], objects['inner_contours'],
+                           maze_sections)
 
     # Set objects into dict
-    inst_out_objects = objects_to_dict(maze_sections, maze_agent)
+    inst_out_objects = objects_to_dict(["maze_sections", "maze_agent"])
     objects.update(inst_out_objects)
 
 def build_level_3_scratch(options, objects: dict):
     #Trace n center
     raw_path_coords_cropped = objects['maze_agent'].run_round_trace(options.trace_technique)
-    raw_path = shift_contours([raw_path_coords_cropped], (-1)*objects['shift_y'], (-1)*objects['shift_x'])[0]
-
+    if len(raw_path_coords_cropped) > 0:
+        raw_path = shift_contours([raw_path_coords_cropped], (-1)*objects['shift_y'], (-1)*objects['shift_x'])[0]
+    else:
+        raw_path=raw_path_coords_cropped
     # Set objects into dict
-    inst_out_objects = objects_to_dict(raw_path)
+    inst_out_objects = objects_to_dict(["raw_path"])
     objects.update(inst_out_objects)
 
 def build_level_4_scratch(options, objects: dict):
-    import helpers.post_proc.smooth_path as smooth
-    import helpers.post_proc.path_cleanup as clean
-    import helpers.post_proc.post_effects as fx
+    if len(objects['raw_path']) == 0:
+        formed_path = objects['raw_path']
+    else:
+        import helpers.post_proc.smooth_path as smooth
+        import helpers.post_proc.path_cleanup as clean
+        import helpers.post_proc.post_effects as fx
 
-    #Process raw path
-    remove_blips = clean.remove_inout(objects['raw_path'], 50, 100)
-    dithered = fx.lfo_dither(remove_blips, 20, 1000, 3.0)
+        #Process raw path
+        remove_blips = clean.remove_inout(objects['raw_path'], 50, 100)
+        dithered = fx.lfo_dither(remove_blips, 20, 1000, 3.0)
 
-    simplified = smooth.simplify_line(dithered, tolerance=options.simplify_tolerance)
+        simplified = smooth.simplify_line(dithered, tolerance=options.simplify_tolerance)
 
-    formed_path = simplified
+        formed_path = simplified
 
     # Set objects into dict
-    inst_out_objects = objects_to_dict(formed_path)
+    inst_out_objects = objects_to_dict(["formed_path"])
     objects.update(inst_out_objects)
 #endregion

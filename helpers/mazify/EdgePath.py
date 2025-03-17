@@ -1,15 +1,16 @@
 import numpy as np
 from scipy.ndimage import convolve1d
 
-import helpers.mazify.temp_options as options
+# import helpers.mazify.temp_options as options
 import helpers.mazify.EdgeNode as EdgeNode
 import helpers.mazify.MazeSections as sections
 from helpers.Enums import NodeType
 
 class EdgePath:
-    def __init__(self, path_num, path_raw, maze_sections: sections.MazeSections, is_outer=False,
+    def __init__(self, options, path_num, path_raw, maze_sections: sections.MazeSections, is_outer=False,
                  max_inner_contour_len=0, from_db=False, is_closed=None, custom_weight=None,
                  num_nodes=None):
+        self.options = options
         if not from_db:
             self.path, self.num = [], path_num
             self.from_db_num_nodes = 0
@@ -17,11 +18,11 @@ class EdgePath:
             self.closed = True #assert closed
             self.section_tracker, self.section_tracker_red_nd_doubled = [], None
             self.custom_weight = 0
-            if options.inner_contour_variable_weights and not is_outer and max_inner_contour_len > 0:
+            if self.options.inner_contour_variable_weights and not is_outer and max_inner_contour_len > 0:
                 #Set custom weight based on contour length
-                self.custom_weight = options.dumb_node_optional_weight + ((max_inner_contour_len - len(path_raw))//
+                self.custom_weight = self.options.dumb_node_optional_weight + ((max_inner_contour_len - len(path_raw))//
                           (max_inner_contour_len//
-                           (options.dumb_node_optional_max_variable_weight - options.dumb_node_optional_weight + 1)))
+                           (self.options.dumb_node_optional_max_variable_weight - self.options.dumb_node_optional_weight + 1)))
                 self.parse_path(path_raw, maze_sections, is_outer, self.custom_weight)
             else:
                 self.parse_path(path_raw, maze_sections, is_outer)
@@ -34,8 +35,8 @@ class EdgePath:
             self.from_db_num_nodes = num_nodes
 
     @classmethod
-    def from_df(cls, path_num, is_outer, is_closed, custom_weight, num_nodes):
-        return cls(path_num, None,  None, is_outer=is_outer, from_db=True, is_closed=is_closed,
+    def from_df(cls, options, path_num, is_outer, is_closed, custom_weight, num_nodes):
+        return cls(options, path_num, None,  None, is_outer=is_outer, from_db=True, is_closed=is_closed,
                    custom_weight=custom_weight, num_nodes=num_nodes)
 
     def set_path_and_trackers(self, path, trackers):
@@ -51,7 +52,7 @@ class EdgePath:
         prev_tracker, cur_tracker = None, None
         first_graph_node, prev_graph_node, last_graph_node = None, None, None
         first_section = None
-        edge_weight = options.dumb_node_required_weight if is_outer else options.dumb_node_optional_weight
+        edge_weight = self.options.dumb_node_required_weight if is_outer else self.options.dumb_node_optional_weight
         if custom_weight > 0: edge_weight = custom_weight
         is_focus, section_edge_weight = False, edge_weight
         for i in range(len(path)):
@@ -67,14 +68,16 @@ class EdgePath:
                 section_tracker_num += 1
                 #If not focus region, turn off (persist if prev was focus region)
                 if cur_section.focus_region or (prev_section is not None and prev_section.focus_region): is_focus = True
-                section_edge_weight = options.dumb_node_required_weight if is_focus else edge_weight
+                section_edge_weight = self.options.dumb_node_required_weight if is_focus else edge_weight
 
-                cur_tracker = sections.MazeSectionTracker(cur_section, node, section_tracker_num,
+                cur_tracker = sections.MazeSectionTracker(self.options, cur_section, node, section_tracker_num,
                                                           prev_tracker=prev_tracker)
                 if section_tracker_num > 0: self.section_tracker[-1].next_tracker = cur_tracker
                 self.section_tracker.append(cur_tracker)
                 #NOTE: this one lags behind by one
-                if section_tracker_num > 0: self.section_tracker[section_tracker_num - 1].out_node = self.path[i-1]
+                if section_tracker_num > 0:
+                    self.section_tracker[section_tracker_num - 1].out_node = self.path[i-1]
+                    self.section_tracker[section_tracker_num - 1].rev_in_node = self.path[i-1]
 
                 #Set graph nodes in
                 cur_graph_node = (cur_section.y_sec, cur_section.x_sec, self.num, section_tracker_num)
@@ -86,8 +89,8 @@ class EdgePath:
                     maze_sections.path_graph.add_edge(prev_graph_node, cur_graph_node, weight=section_edge_weight)
 
                 maze_sections.path_graph.add_edge(cur_graph_node, (cur_section.y_sec, cur_section.x_sec),
-                                                  weight=options.dumb_node_req_jump_weight if is_focus or is_outer
-                                                  else options.dumb_node_opt_jump_weight)
+                                                  weight=self.options.dumb_node_req_jump_weight if is_focus or is_outer
+                                                  else self.options.dumb_node_opt_jump_weight)
                 if is_outer or cur_section.focus_region:
                     cur_section.dumb_req = True
                 else:
@@ -102,12 +105,14 @@ class EdgePath:
             cur_tracker.nodes.append(node)
 
         self.section_tracker[-1].out_node = self.path[-1]
+        self.section_tracker[-1].rev_in_node = self.section_tracker[-1].out_node
+        self.section_tracker[0].rev_in_node = self.section_tracker[0].out_node
 
         #Check if contour is closed
         circ_dist = 0
         circ_dist += abs(self.path[0].y - self.path[-1].y)
         circ_dist += abs(self.path[0].x - self.path[-1].x)
-        if circ_dist > options.max_inner_path_seg_manhatten_length + 1:
+        if circ_dist > self.options.max_inner_path_seg_manhatten_length + 1:
             self.closed = False
         else:
             self.section_tracker[-1].next_tracker = self.section_tracker[0]
@@ -115,7 +120,7 @@ class EdgePath:
             self.path[-1].set_next_node(self.path[0])
             self.path[0].set_prev_node(self.path[-1])
 
-            if first_section.focus_region: section_edge_weight = options.dumb_node_required_weight
+            if first_section.focus_region: section_edge_weight = self.options.dumb_node_required_weight
             maze_sections.path_graph.add_edge(last_graph_node, first_graph_node, weight=section_edge_weight)
 
         self.section_tracker_red_nd_doubled = np.array([t.section for t in (self.section_tracker + self.section_tracker)])

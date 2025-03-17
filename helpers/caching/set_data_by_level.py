@@ -14,7 +14,7 @@ def set_level_1_data(dataframes:dict, input_data:dict):
     outer_edges = input_data["outer_edges"]
     inner_contours = input_data["inner_contours"]
     inner_edges = input_data["inner_edges"]
-    focus_masks = input_data["focus_masks"]
+    focus_masks = input_data["detail_req_masks"]
 
 
     #Set contours headers
@@ -100,8 +100,8 @@ def set_level_2_data(dataframes:dict, input_data:dict):
     """
 
     #Retrieve input data
-    sections = input_data["sections"]
-    agent = input_data["agent"]
+    sections = input_data["maze_sections"]
+    agent = input_data["maze_agent"]
     path_graph = sections.path_graph
     focus_sections = sections.focus_region_sections
     edge_paths = agent.all_contours_objects
@@ -284,12 +284,13 @@ def set_level_3_data(dataframes:dict, input_data:dict):
 
     #Retrieve raw path data
     raw_path = input_data["raw_path"]
-    indices, y, x = zip(*[(index, n[0], n[1]) for index, n in enumerate(raw_path)])
-    dataframes["RawPath"] = pd.DataFrame({
-        'path_num': indices,
-        'y': y,
-        'x': x
-    })[dataframes["RawPath"].columns]
+    if len(raw_path) > 0:
+        indices, y, x = zip(*[(index, n[0], n[1]) for index, n in enumerate(raw_path)])
+        dataframes["RawPath"] = pd.DataFrame({
+            'path_num': indices,
+            'y': y,
+            'x': x
+        })[dataframes["RawPath"].columns]
 
 def set_level_4_data(dataframes:dict, input_data:dict):
     """
@@ -301,9 +302,10 @@ def set_level_4_data(dataframes:dict, input_data:dict):
 
     #Retrieve raw path data
     formed_path = input_data["formed_path"]
-    indices, y, x = zip(*[(index, n[0], n[1]) for index, n in enumerate(formed_path)])
-    dataframes["FormedPath"] = pd.DataFrame({
-        'path_num': indices,
-        'y': y,
-        'x': x
-    })[dataframes["FormedPath"].columns]
+    if len(formed_path) > 0:
+        indices, y, x = zip(*[(index, n[0], n[1]) for index, n in enumerate(formed_path)])
+        dataframes["FormedPath"] = pd.DataFrame({
+            'path_num': indices,
+            'y': y,
+            'x': x
+        })[dataframes["FormedPath"].columns]

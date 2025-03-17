@@ -105,6 +105,13 @@ def draw_object_node_path(image, object_path, color=(0, 0, 255), thickness=2):
 
 # remover = spr.StrayPixelRemover(1, 10)
 
+
+
+import helpers.build_objects as build
+test = np.zeros((100, 100), dtype=np.uint8)
+build.objects_to_dict(["test"])
+
+
 imports_time.sort(key=lambda x: x["time"], reverse=True)
 
 for i in range(min(len(imports_time), 20)):
@@ -167,8 +174,8 @@ for file in os.listdir("Trial-AI-Base-Images\\bg_removed"):
       # near_boudaries_contours, segments = slic.slic_image_test_boundaries(im_float, split_contours)
       # near_boudaries_contours, segments = slic.mask_test_boundaries(image_path, split_contours)
 
-      outer_edges, outer_contours_yx, mask, bounds_outer = slic.mask_boundary_edges(im_unch)
-      inner_edges, inner_contours_yx, segments, num_segs, bounds_inner = slic.slic_image_boundary_edges(im_float,
+      outer_edges, outer_contours_yx, mask, bounds_outer = slic.mask_boundary_edges(options, im_unch)
+      inner_edges, inner_contours_yx, segments, num_segs, bounds_inner = slic.slic_image_boundary_edges(options, im_float,
                                                                                           num_segments=options.slic_regions,
                                                                                           enforce_connectivity=False,
                                                                                           contour_offset = len(outer_contours_yx))

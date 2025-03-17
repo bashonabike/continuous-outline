@@ -3,14 +3,15 @@ import numpy as np
 import networkx as nx
 # import copy as cp
 
-import helpers.mazify.temp_options as options
+# import helpers.mazify.temp_options as options
 from helpers.mazify.EdgeNode import EdgeNode
 from helpers.Enums import NodeType
 
 class MazeSections:
-    def __init__(self, outer_edge, m, n, req_details_mask, from_db=False, focus_region_sections=None,
+    def __init__(self, options, outer_edge, m, n, req_details_mask, from_db=False, focus_region_sections=None,
                  sections=None, y_grade=None, x_grade=None, img_height=None, img_width=None, path_graph=None):
         self.m, self.n = m, n
+        self.options = options
         if not from_db:
             self.focus_region_sections = []
             self.img_height, self.img_width = outer_edge.shape
@@ -28,9 +29,9 @@ class MazeSections:
             self.path_graph = path_graph
 
     @classmethod
-    def from_df(cls, m, n, focus_region_sections:list, sections:np.ndarray,
+    def from_df(cls, options, m, n, focus_region_sections:list, sections:np.ndarray,
                  y_grade, x_grade, img_height, img_width, path_graph: nx.Graph):
-        return cls(None, m, n, None, from_db=True, focus_region_sections=focus_region_sections,
+        return cls(options, None, m, n, None, from_db=True, focus_region_sections=focus_region_sections,
                    sections=sections, y_grade=y_grade, x_grade=x_grade, img_height=img_height, img_width=img_width,
                    path_graph=path_graph)
 
@@ -56,7 +57,8 @@ class MazeSections:
                         neighbor_node = (ni, nj)
                         # Add edge only if it doesn't already exist (undirected)
                         if not self.path_graph.has_edge(current_node, neighbor_node):
-                            self.path_graph.add_edge(current_node, neighbor_node, weight=options.dumb_node_blank_weight)
+                            self.path_graph.add_edge(current_node, neighbor_node,
+                                                     weight=self.options.dumb_node_blank_weight)
 
     def set_section_node_cats(self):
         for i in range(self.m):
@@ -121,7 +123,7 @@ class MazeSections:
                     if np.any(req_section):
                         focus_region_nums.append(k)
 
-                sections[i, j] = MazeSection((y_start, y_end, x_start, x_end), count, i, j,
+                sections[i, j] = MazeSection(self.options, (y_start, y_end, x_start, x_end), count, i, j,
                                              len(focus_region_nums) > 0, focus_region_nums)
                 for k in focus_region_nums: self.focus_region_sections[k].append(sections[i, j])
 
@@ -134,8 +136,9 @@ class MazeSections:
         return min(y // self.y_grade, self.m - 1), min(x // self.x_grade, self.n - 1)
 
 class MazeSection:
-    def __init__(self, bounds, edge_pixels, y_sec, x_sec, focus_region, focus_region_nums=None, from_df=False,
+    def __init__(self, options, bounds, edge_pixels, y_sec, x_sec, focus_region, focus_region_nums=None, from_df=False,
                  dumb_req=False, dumb_opt=False):
+        self.options = options
         (self.ymin, self.ymax, self.xmin, self.xmax) = bounds
         self.y_sec, self.x_sec = y_sec, x_sec
         self.coords_sec = (y_sec, x_sec)
@@ -148,14 +151,14 @@ class MazeSection:
         self.dumb_opt = dumb_opt
 
     @classmethod
-    def from_df(cls, y_start, y_end, x_start, x_end, num_edge_pixels, y_sec, x_sec,
+    def from_df(cls, options, y_start, y_end, x_start, x_end, num_edge_pixels, y_sec, x_sec,
                 is_focus_region, focus_region_nums,
                 dumb_req, dumb_opt):
         if len(focus_region_nums) > 0:
             focus_region_nums = [int(n) for n in focus_region_nums.split(",")]
         else:
             focus_region_nums = []
-        new_section = cls((y_start, y_end, x_start, x_end), num_edge_pixels, y_sec, x_sec, is_focus_region,
+        new_section = cls(options, (y_start, y_end, x_start, x_end), num_edge_pixels, y_sec, x_sec, is_focus_region,
                           focus_region_nums=focus_region_nums, from_df=True, dumb_req=dumb_req, dumb_opt=dumb_opt)
         return new_section
 
@@ -187,9 +190,10 @@ class MazeSection:
         return nodes
 
 class MazeSectionTracker:
-    def __init__(self, section:MazeSection, in_node:EdgeNode=None, tracker_num:int=None,
+    def __init__(self, options, section:MazeSection, in_node:EdgeNode=None, tracker_num:int=None,
                  prev_tracker=None, next_tracker=None, out_node:EdgeNode=None, from_db=False, path_num=None,
                  from_db_num_nodes=None):
+        self.options = options
         self.section = section
         self.tracker_num = tracker_num
         self.nodes = []
@@ -212,8 +216,8 @@ class MazeSectionTracker:
             self.from_db_num_nodes = from_db_num_nodes
 
     @classmethod
-    def from_df(cls, section:MazeSection, tracker_num:int, path_num:int, num_nodes):
-        return cls(section, from_db=True, tracker_num=tracker_num, path_num=path_num,
+    def from_df(cls, options, section:MazeSection, tracker_num:int, path_num:int, num_nodes):
+        return cls(options, section, from_db=True, tracker_num=tracker_num, path_num=path_num,
                    from_db_num_nodes=num_nodes)
 
     def set_nodes_and_neighbours(self, nodes:list, prev_tracker, next_tracker):

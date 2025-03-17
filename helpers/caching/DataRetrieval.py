@@ -92,13 +92,15 @@ class DataRetrieval:
         """
 
         old_params_df = self.read_sql_table('ParamsVals', self.conn)
+        if old_params_df.empty: return 0
+
         old_params_df.set_index('param_name', inplace=True)
-        param_levels_df = self.read_sql_table('ParamsLevels', self.conn)
+        param_levels_df = self.read_sql_table('ParamsLevel', self.conn)
         param_levels_df.set_index('param_name', inplace=True)
         new_params_df.set_index('param_name', inplace=True)
 
         merged_df = pd.merge(new_params_df, old_params_df, suffixes=('_new', '_old'),
-                             join='left')
+                             how='left')
 
         mismatched_params = merged_df[merged_df['param_val_old'] != merged_df['param_val_new']]
         if mismatched_params.empty:
@@ -116,13 +118,15 @@ class DataRetrieval:
             select_info_df (pd.DataFrame): DataFrame with 'param_name' and 'param_val'..
         """
         old_select_df = self.read_sql_table('SelectionInfo', self.conn)
+        if old_select_df.empty: return 0
+
         old_select_df.set_index('line', inplace=True)
-        merged_df = pd.merge(select_info_df, old_select_df, suffixes=('_new', '_old'),
-                             join='left')
-        mismatched_params = merged_df[merged_df['selection_info_old'] != merged_df['selection_info_new']]
+        concat_df = pd.concat([select_info_df, old_select_df], axis=1)
+
+        mismatched_params = concat_df[concat_df.iloc[:, 0]!= concat_df.iloc[:, 1]]
 
         if mismatched_params.empty: return 9999
-        elif mismatched_params.at[0, 'selection_info_new'] != select_info_df.at[0, 'selection_info_new']:
+        elif mismatched_params.iloc[0, 0] != select_info_df.iloc[0, 0]:
             #If only focus regions changed, dont need to rerun img proc
             return 2
 
