@@ -108,7 +108,8 @@ class DataRetrieval:
 
         mismatched_levels = pd.merge(mismatched_params, param_levels_df, left_index=True, right_index=True)
         level = mismatched_levels['param_level'].min()
-        return level
+        if pd.isna(level): return 0
+        return int(level)
 
     def get_selection_match_level(self, parent_inkex, select_info_df):
         """

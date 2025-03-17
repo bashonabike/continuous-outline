@@ -105,6 +105,30 @@ class MazeAgent:
             case _:
                 return []
 
+    def run_round_trace_approx_path(self,  parent_inkex, approx_ctrl_points_nd:np.array):
+        #Find inflection points
+        inflection_points = []
+        outer_path = self.all_contours_objects[0].section_tracker
+        outer_sects = list(set([t.section.coords_sec for t in outer_path]))
+        sectionized_ctrl_points = approx_ctrl_points_nd//np.array((self.maze_sections.y_grade,
+                                                                   self.maze_sections.x_grade))
+        for ctrl in sectionized_ctrl_points.tolist():
+            inflection_points.append(self.find_closest_sect(ctrl, outer_sects))
+            # parent_inkex.msg(inflection_points[-1])
+
+        # Determine best path for typewriter
+        section_path = []
+        for t in range(len(inflection_points) - 1):
+            section_path.extend(nxex.shortest_path(self.maze_sections.path_graph,
+                                                   inflection_points[t], inflection_points[t + 1],
+                                                   weight='weight')[:-1])
+        section_path.append(inflection_points[-1])
+
+        # Trace path from tracker path
+        nodes_path = self.set_node_path_from_sec_path(section_path)
+        raw_path_coords = [n.point for n in nodes_path]
+        return raw_path_coords
+
     def find_trace_section_tour_snake(self):
         #TODO: Implement start, need to wrap around
         #Find start track

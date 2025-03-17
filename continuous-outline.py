@@ -53,27 +53,11 @@ class continuous_outline(inkex.EffectExtension):
 
     def add_arguments(self, pars):
         pars.add_argument("--tab")
-        # pars.add_argument("--keeporiginal", type=inkex.Boolean, default=False, help="Keep original image on canvas")
-        # pars.add_argument("--ltres", type=float, default=1.0, help="Error treshold straight lines")
-        # pars.add_argument("--qtres", type=float, default=1.0, help="Error treshold quadratic splines")
-        # pars.add_argument("--pathomit", type=int, default=8, help="Noise reduction - discard edge node paths shorter than")
-        # pars.add_argument("--rightangleenhance", type=inkex.Boolean, default=True, help="Enhance right angle corners")
-        # pars.add_argument("--colorsampling", default="2",help="Color sampling")
-        # pars.add_argument("--numberofcolors", type=int, default=16, help="Number of colors to use on palette")
-        # pars.add_argument("--mincolorratio", type=int, default=0, help="Color randomization ratio")
-        # pars.add_argument("--colorquantcycles", type=int, default=3, help="Color quantization will be repeated this many times")
-        # pars.add_argument("--layering", default="0",help="Layering")
-        # pars.add_argument("--strokewidth", type=float, default=1.0, help="SVG stroke-width")
-        # pars.add_argument("--linefilter", type=inkex.Boolean, default=False, help="Noise reduction line filter")
-        # #pars.add_argument("--scale", type=float, default=1.0, help="Coordinate scale factor")
-        # pars.add_argument("--roundcoords", type=int, default=1, help="Decimal places for rounding")
-        # pars.add_argument("--viewbox", type=inkex.Boolean, default=False, help="Enable or disable SVG viewBox")
-        # pars.add_argument("--desc", type=inkex.Boolean, default=False, help="SVG descriptions")
-        # pars.add_argument("--blurradius", type=int, default=0, help="Selective Gaussian blur preprocessing")
-        # pars.add_argument("--blurdelta", type=float, default=20.0, help="RGBA delta treshold for selective Gaussian blur preprocessing")
-        #
         pars.add_argument("--slic_regions", type=int, default=12, help="Number of SLIC regions")
+        pars.add_argument("--transparancy_cutoff", type=float, default=0.1, help="max % transparent considered background")
         pars.add_argument("--maze_sections_across", type=int, default=70, help="Gridding density for approx path formation")
+        pars.add_argument("--constrain_slic_within_mask", type=inkex.Boolean, default=False,
+                          help="Omit lines outside of mask")
         pars.add_argument("--dumb_node_optional_weight", type=int, default=1, help="Weight for optional dumb nodes")
         pars.add_argument("--dumb_node_optional_max_variable_weight", type=int, default=6,
                           help="Max variable weight for optional dumb nodes")
@@ -143,34 +127,6 @@ class continuous_outline(inkex.EffectExtension):
         #Set into db
         data_ret.clear_and_set_single_table("ParamsVals", params_df)
 
-
-
-    # def retrieve_image(self, image):
-    #     self.path = self.checkImagePath(image)  # This also ensures the file exists
-    #     if self.path is None:  # check if image is embedded or linked
-    #         image_string = image.get('{http://www.w3.org/1999/xlink}href')
-    #         # find comma position
-    #         i = 0
-    #         while i < 40:
-    #             if image_string[i] == ',':
-    #                 break
-    #             i = i + 1
-    #         img = Image.open(BytesIO(base64.b64decode(image_string[i + 1:len(image_string)])))
-    #     else:
-    #         img = Image.open(self.path)
-    #
-    #     # Write the embedded or linked image to temporary directory
-    #     if os.name == "nt":
-    #         exportfile = "helpers.png"
-    #     else:
-    #         exportfile = "/tmp/helpers.png"
-    #
-    #     # if img.mode != 'RGB':
-    #     #     img = img.convert('RGB')
-    #     # img.save(exportfile, "png")
-    #
-    #     return img
-
     def get_image_offsets(self, svg_image):
         # Determine image offsets
         parent = svg_image.getparent()
@@ -187,70 +143,7 @@ class continuous_outline(inkex.EffectExtension):
 
         return (x_offset, y_offset)
 
-    # def fit_svg(self, exportfile, image):
-    #     # Delete the temporary png file again because we do not need it anymore
-    #     if os.path.exists(exportfile):
-    #         os.remove(exportfile)
-    #
-    #     # new parse the SVG file and insert it as new group into the current document tree
-    #     doc = etree.parse(exportfile + ".svg").getroot()
-    #     newGroup = self.document.getroot().add(inkex.Group())
-    #     trace_width = None
-    #     trace_height = None
-    #     if doc.get('width') is not None and doc.get('height') is not None:
-    #         trace_width = doc.get('width')
-    #         trace_height = doc.get('height')
-    #     else:
-    #         viewBox = doc.get('viewBox')  # eg "0 0 700 600"
-    #         trace_width = viewBox.split(' ')[2]
-    #         trace_height = viewBox.split(' ')[3]
-    #
-    #     # add transformation to fit previous XY coordinates and width/height
-    #     # image might also be influenced by other transformations from parent:
-    #     parent = image.getparent()
-    #     if parent is not None and parent != self.document.getroot():
-    #         tpc = parent.composed_transform()
-    #         x_offset = tpc.e
-    #         y_offset = tpc.f
-    #     else:
-    #         x_offset = 0.0
-    #         y_offset = 0.0
-    #     img_w = image.get('width')
-    #     img_h = image.get('height')
-    #     img_x = image.get('x')
-    #     img_y = image.get('y')
-    #     if img_w is not None and img_h is not None and img_x is not None and img_y is not None:
-    #         # if width/height are not unitless but end with px, mm, in etc. we have to convert to a float number
-    #         if img_w[-1].isdigit() is False:
-    #             img_w = self.svg.uutounit(img_w)
-    #         if img_h[-1].isdigit() is False:
-    #             img_h = self.svg.uutounit(img_h)
-    #
-    #         transform = "matrix({:1.6f}, 0, 0, {:1.6f}, {:1.6f}, {:1.6f})" \
-    #             .format(float(img_w) / float(trace_width), float(img_h) / float(trace_height), float(img_x) + x_offset,
-    #                     float(img_y) + y_offset)
-    #         newGroup.attrib['transform'] = transform
-    #     else:
-    #         t = image.composed_transform()
-    #         img_w = t.a
-    #         img_h = t.d
-    #         img_x = t.e
-    #         img_y = t.f
-    #         transform = "matrix({:1.6f}, 0, 0, {:1.6f}, {:1.6f}, {:1.6f})" \
-    #             .format(float(img_w) / float(trace_width), float(img_h) / float(trace_height), float(img_x) + x_offset,
-    #                     float(img_y) + y_offset)
-    #         newGroup.attrib['transform'] = transform
-    #
-    #     for child in doc.getchildren():
-    #         newGroup.append(child)
-    #
-    #     # Delete the temporary svg file
-    #     if os.path.exists(exportfile + ".svg"):
-    #         os.remove(exportfile + ".svg")
-    #
-    #     return newGroup
-
-    def det_img_and_focus_specs(self, image_path, detail_bounds):
+    def det_img_and_focus_specs(self, image_path, detail_bounds, approx_trace_path_string):
         img_focus_specs = []
         img_focus_specs.append(str(image_path))
         for bounds in detail_bounds:
@@ -271,6 +164,9 @@ class continuous_outline(inkex.EffectExtension):
             else:
                 raise inkex.AbortExtension("Only ellipses and rectangles are supported as bounds.")
 
+        #TODO: If only this changes level=3 once config setting up modify with ext input screen open
+        img_focus_specs.append(str(approx_trace_path_string))
+
         selection_info_df = pd.DataFrame(img_focus_specs, columns=['selection_info'])
 
         # Add the 'line' column from the index
@@ -280,6 +176,20 @@ class continuous_outline(inkex.EffectExtension):
         # selection_info_df = selection_info_df[['line', 'selection_info']]  # reorders columns
 
         return selection_info_df
+
+    def form_approx_control_points_normalized(self, approx_ctrl_points:list, image_in_svg):
+        #Convert ctrl points to img yx format
+        approx_ctrl_points_nd = np.array([(p[1], p[0]) for p in approx_ctrl_points])
+
+        #Determine image offsets
+        offsets_xy = self.get_image_offsets(image_in_svg)
+        offsets_nd = np.array((offsets_xy[1], offsets_xy[0]))
+        norms = np.array((float(image_in_svg.get('height')), float(image_in_svg.get('width'))))
+
+        #Determined shifted and normalized points
+        formed_points_nd = (approx_ctrl_points_nd - offsets_nd)/norms
+        return formed_points_nd
+
 
     def form_focus_region_specs_normalized(self, detail_bounds, image_in_svg):
         #Determine image offsets
@@ -309,73 +219,31 @@ class continuous_outline(inkex.EffectExtension):
 
         return bounds_out
 
-    # def isolate_sub_images(self, detail_bounds, export_file, image_in_svg):
-    #     #Determine image offsets
-    #     (x_offset, y_offset) = self.get_image_offsets(image_in_svg)
-    #
-    #     with Image.open(export_file) as image:
-    #         image_size = image.size
-    #
-    #         x_scale = image_size[0]/float(image_in_svg.get('width'))
-    #         y_scale = image_size[1]/float(image_in_svg.get('height'))
-    #
-    #         sub_image_counter = 0
-    #         bounds_dicts = []
-    #
-    #         for bounds in detail_bounds:
-    #
-    #             # Check if ellipse or rect
-    #             if bounds.tag == inkex.addNS('rect', 'svg'):
-    #                 # Get rectangle properties
-    #                 #TODO: figure out way to crop by float
-    #                 x = int((float(bounds.attrib.get('x', 0)) - x_offset)*x_scale)
-    #                 y = int((float(bounds.attrib.get('y', 0)) - y_offset)*y_scale)
-    #                 width = int(float(bounds.attrib.get('width', 0))*x_scale)
-    #                 height = int(float(bounds.attrib.get('height', 0))*y_scale)
-    #                 local_origin = (x, y)
-    #
-    #                 # Crop the image to the rectangle
-    #                 bbox = (x, y, x + width, y + height)
-    #
-    #                 cropped_image = image
-    #
-    #             elif bounds.tag == inkex.addNS('ellipse', 'svg'):
-    #                 # Get ellipse properties
-    #                 cx = int((float(bounds.attrib.get('cx', 0)) - x_offset)*x_scale)
-    #                 cy = int((float(bounds.attrib.get('cy', 0)) - y_offset)*y_scale)
-    #                 rx = int(float(bounds.attrib.get('rx', 0))*x_scale)
-    #                 ry = int(float(bounds.attrib.get('ry', 0))*y_scale)
-    #                 local_origin = np.array([cx - rx, cy - ry])
-    #
-    #                 # Create a mask for the ellipse
-    #                 mask = Image.new('L', image.size, 0)
-    #                 draw = ImageDraw.Draw(mask)
-    #                 bbox = (cx - rx, cy - ry,
-    #                         cx + rx, cy + ry)
-    #                 draw.ellipse(bbox, fill=255)
-    #
-    #                 # Apply the mask to the image
-    #                 cropped_image = Image.new('RGBA', image.size)
-    #                 self.msg(str(image.size[0]))
-    #                 cropped_image.paste(image, (0, 0), mask)
-    #             else:
-    #                 raise inkex.AbortExtension("Only ellipses and rectangles are supported as bounds.")
-    #
-    #             # Crop the bounding box of the rect or ellipse
-    #             cropped_image = cropped_image.crop(bbox)
-    #
-    #             # Save the resulting image
-    #             #TODO: need to save temp sub images?
-    #             output_path = "sub_image_" + str(sub_image_counter) + ".png"
-    #             sub_image_counter += 1
-    #             cropped_image.save(output_path)
-    #             inkex.utils.debug(f"Saved cropped image to {output_path}")
-    #
-    #             #Save to dict
-    #             bounds_dicts.append({"localorigin": local_origin, "imageobject": cropped_image,
-    #                 "imagepath": output_path})
-    #
-    #     return bounds_dicts
+    def get_straight_line_points(self, path_string):
+        """Extracts points from a straight line path string without using re."""
+        #TODO: Make this less hokey!!
+        parts = path_string.split(" ")
+        if not parts:
+            self.msg("Fail split")
+            return None
+
+        if not parts[0].upper().startswith('M'):
+            self.msg("Fail M")
+            return None
+
+        try:
+            points = [[float(x) for x in parts[1].split(',')]]
+            # self.msg(points[0])
+            for part in parts[2:]:
+                # self.msg(part)
+                if part.upper().startswith('L'): continue
+                point = [float(x) for x in part.split(',')]
+                points.append(point)
+                # self.msg(point)
+
+            return points
+        except ValueError:
+            return None
 
     def effect(self):
         # internal overwrite for scale:
@@ -383,9 +251,17 @@ class continuous_outline(inkex.EffectExtension):
         data_ret = dataret.DataRetrieval()
 
         images, detail_bounds = [], []
-        if len(self.svg.selected) == 0: self.svg.selection = self.svg.descendants().filter(*self.select_all)
+        if len(self.svg.selected) == 0: self.svg.selection = self.svg.get_current_layer().descendants().filter(*self.select_all)
         images = self.svg.selection.filter(inkex.Image).values()
         detail_bounds= self.svg.selection.filter(inkex.Rectangle, inkex.Ellipse).values()
+
+        approx_traces = []
+        for id, node in self.svg.selected.items():
+            # Check if the node is a path element
+            if node.tag == inkex.addNS('path', 'svg'):
+                approx_traces.append(node)
+        for child in approx_traces:
+            self.msg(child)
 
         # if len(self.svg.selected) > 0:
         #     #Grab selected items if selected
@@ -402,6 +278,18 @@ class continuous_outline(inkex.EffectExtension):
         #                     detail_bounds.append(sub_child)
         #     images = self.svg.selection.filter(inkex.Image).values()
         #     detail_bounds = self.svg.selection.filter(inkex.Rectangle, inkex.Ellipse).values()
+
+        match(len(approx_traces)):
+            case 0:
+                self.msg("Please build an approx trace line")
+                data_ret.close_connection()
+                return
+            case 1:
+                pass
+            case _:
+                self.msg("Please build a single approx trace line, also remove or deselect all other existing paths")
+                data_ret.close_connection()
+                return
 
         match len(images):
             case 0:
@@ -421,10 +309,16 @@ class continuous_outline(inkex.EffectExtension):
                     img_is_embedded = True
 
                 #Check to verify selection/doc/params haven't changed since last run
-                img_and_focus_specs_df = self.det_img_and_focus_specs(image_path, detail_bounds).dropna()
+                approx_trace = None
+                for path in approx_traces:
+                    approx_trace = path
+                    break
+                approx_trace_path_string = approx_trace.get('d')
+                img_and_focus_specs_df = self.det_img_and_focus_specs(image_path, detail_bounds,
+                                                                      approx_trace_path_string).dropna()
                 update_level = data_ret.get_selection_match_level(self, img_and_focus_specs_df)
 
-                self.msg("post get selection match update level: " + str(update_level))
+                self.msg("post-get selection match update level: " + str(update_level))
 
                 if update_level > 0:
                     #If selection matches, check if params have changed
@@ -433,6 +327,11 @@ class continuous_outline(inkex.EffectExtension):
                 self.msg("update level: " + str(update_level))
                 #TODO: Get object creation working maybe, might not be worth it???
                 if update_level == 3: update_level = 2
+
+                #Get approx control points for final path
+                approx_ctrl_points = self.get_straight_line_points(approx_trace_path_string)
+                formed_normalized_ctrl_points_nd = self.form_approx_control_points_normalized(approx_ctrl_points,
+                                                                                             svg_image)
 
                 #Retrieve or calculate data as needed
                 objects = {}
@@ -466,7 +365,7 @@ class continuous_outline(inkex.EffectExtension):
                         #Levels 1-4 objects from scratch
                         buildscr.build_level_1_scratch(img_cv, normalized_focus_region_specs, self.options, objects)
                         buildscr.build_level_2_scratch(self.options, objects)
-                        buildscr.build_level_3_scratch(self.options, objects)
+                        buildscr.build_level_3_scratch(self, self.options, objects, formed_normalized_ctrl_points_nd)
                         buildscr.build_level_4_scratch(self.options, objects)
                         # for key in objects.keys(): self.msg(key)
 
@@ -491,7 +390,7 @@ class continuous_outline(inkex.EffectExtension):
 
                         #Levels 2-4 objects from scratch
                         buildscr.build_level_2_scratch(self.options, objects)
-                        buildscr.build_level_3_scratch(self.options, objects)
+                        buildscr.build_level_3_scratch(self, self.options, objects, formed_normalized_ctrl_points_nd)
                         buildscr.build_level_4_scratch(self.options, objects)
 
                         #Build Level 2-4 data into dataframes
@@ -512,7 +411,7 @@ class continuous_outline(inkex.EffectExtension):
                         builddb.build_level_2_data(self.options, retrieved, objects)
 
                         #Levels 3-4 objects from scratch
-                        buildscr.build_level_3_scratch(self.options, objects)
+                        buildscr.build_level_3_scratch(self, self.options, objects, formed_normalized_ctrl_points_nd)
                         buildscr.build_level_4_scratch(self.options, objects)
 
                         #Build Level 3-4 data into dataframes
@@ -525,6 +424,11 @@ class continuous_outline(inkex.EffectExtension):
                         import helpers.caching.build_objects_from_db as builddb
                         import helpers.build_objects as buildscr
                         import helpers.caching.set_data_by_level as setdb
+
+                        #Retrieve img height and width (since cannot retrieve direct from non-existent Sections object)
+                        sections_df = data_ret.read_sql_table("Sections", data_ret.conn)
+                        objects["img_height"], objects["img_width"] = (sections_df.at[0, 'img_height'],
+                                                                       sections_df.at[0, 'img_width'])
 
                         #Retrieve Level 3 objects from db
                         #NOTE: we dont need earlier since this is just forming up from raw path
@@ -540,11 +444,6 @@ class continuous_outline(inkex.EffectExtension):
 
                         #Set data into db
                         data_ret.set_data(dataframes, min_level=4)
-
-                        #Retrieve img height and width (since cannot retrieve direct from non-existent Sections object)
-                        sections_df = data_ret.read_sql_table("Sections", data_ret.conn)
-                        objects["img_height"], objects["img_width"] = (sections_df.at[0, 'img_height'],
-                                                                       sections_df.at[0, 'img_width'])
                     case _:
                         import helpers.caching.build_objects_from_db as builddb
 

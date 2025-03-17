@@ -91,14 +91,18 @@ def mask_boundary_edges(options, img_unchanged):
 	mask = None
 	if img_unchanged.shape[2] == 4:  # Check if it has an alpha channel
 		alpha = img_unchanged[:, :, 3]  # Get the alpha channel
-		mask = np.where(alpha > 0, 255, 0).astype(np.uint8)  # Create binary mask
+		max_alpha = np.max(alpha)
+		transparancy_cutoff = options.transparancy_cutoff * max_alpha
+		mask = np.where(alpha > transparancy_cutoff, 255, 0).astype(np.uint8)  # Create binary mask
 	elif img_unchanged.shape[2] == 2:  # Check if it has an alpha channel
 		alpha = img_unchanged[:, :, 1]  # Get the alpha channel
-		mask = np.where(alpha > 0, 255, 0).astype(np.uint8)  # Create binary mask
+		max_alpha = np.max(alpha)
+		transparancy_cutoff = options.transparancy_cutoff * max_alpha
+		mask = np.where(alpha > transparancy_cutoff, 255, 0).astype(np.uint8)  # Create binary mask
 	else:
 		# Image has no alpha channel, treat white as background
 		grey = cv2.cvtColor(img_unchanged, cv2.COLOR_BGR2GRAY)
-		_, inverted = cv2.threshold(grey, 0.9*np.max(grey), 1, cv2.THRESH_BINARY)
+		_, inverted = cv2.threshold(grey, (1.0-options.transparancy_cutoff)*np.max(grey), 1, cv2.THRESH_BINARY)
 		mask = np.where(inverted == 0, 255, 0).astype(np.uint8)  # Create binary mask
 
 	#Blur n rebinarize n find edges
@@ -166,7 +170,7 @@ def mask_boundary_edges(options, img_unchanged):
 	print(str((end - start)/1e6) + " ms to do mask stuff")
 	return edges_final, flipped_contours,  mask, ((min_y, min_x), (max_y, max_x))
 
-def slic_image_boundary_edges(options, im_float, num_segments:int =2, enforce_connectivity:bool = True, contour_offset = 0):
+def slic_image_boundary_edges(options, im_float, mask, num_segments:int =2, enforce_connectivity:bool = True, contour_offset = 0):
 	segments = None
 	num_segs_actual = -1
 	start = time.time_ns()
@@ -179,6 +183,10 @@ def slic_image_boundary_edges(options, im_float, num_segments:int =2, enforce_co
 	if segments is None: raise Exception("Segmentation failed, image too disparate for outlining")
 	end = time.time_ns()
 	print(str((end - start)/1e6) + " ms to segment image with " + str(num_segs_actual) + " segments")
+
+	if options.constrain_slic_within_mask:
+		#Blank outside of mask
+		segments[~mask] = 0
 
 	#Determine contours
 	start = time.time_ns()

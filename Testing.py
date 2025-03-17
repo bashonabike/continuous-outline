@@ -176,6 +176,7 @@ for file in os.listdir("Trial-AI-Base-Images\\bg_removed"):
 
       outer_edges, outer_contours_yx, mask, bounds_outer = slic.mask_boundary_edges(options, im_unch)
       inner_edges, inner_contours_yx, segments, num_segs, bounds_inner = slic.slic_image_boundary_edges(options, im_float,
+                                                                                                        mask,
                                                                                           num_segments=options.slic_regions,
                                                                                           enforce_connectivity=False,
                                                                                           contour_offset = len(outer_contours_yx))

@@ -164,6 +164,7 @@ def build_level_1_scratch(img_cv, focus_regions, options, objects: dict):
 
     outer_edges, outer_contours_yx, mask, bounds_outer = slic.mask_boundary_edges(options, im_unch)
     inner_edges, inner_contours_yx, segments, num_segs, bounds_inner = slic.slic_image_boundary_edges(options, im_float,
+                                                                                                        mask,
                                                                                         num_segments=options.slic_regions,
                                                                                         enforce_connectivity=False,
                                                                                         contour_offset = len(outer_contours_yx))
@@ -221,16 +222,24 @@ def build_level_2_scratch(options, objects: dict):
     inst_out_objects = objects_to_dict(["maze_sections", "maze_agent"])
     objects.update(inst_out_objects)
 
-def build_level_3_scratch(options, objects: dict):
+def build_level_3_scratch(parent_inkex, options, objects: dict, approx_normalized_ctrl_points):
+    #Get img heignt and width
+    img_height, img_width = objects['maze_agent'].maze_sections.img_height, objects['maze_agent'].maze_sections.img_width
+
+    #Scale & shift control points
+    import numpy as np
+    shift_nd = np.array([objects['shift_y'], objects['shift_x']])
+    scale_nd = np.array([img_height, img_width])
+    approx_ctrl_points_nd = (approx_normalized_ctrl_points*scale_nd) + shift_nd
+
+    # for ctrl in approx_ctrl_points_nd.tolist():
+    #     parent_inkex.msg(ctrl)
     #Trace n center
-    raw_path_coords_cropped = objects['maze_agent'].run_round_trace(options.trace_technique)
+    raw_path_coords_cropped = objects['maze_agent'].run_round_trace_approx_path(parent_inkex, approx_ctrl_points_nd)
     if len(raw_path_coords_cropped) > 0:
         raw_path = shift_contours([raw_path_coords_cropped], (-1)*objects['shift_y'], (-1)*objects['shift_x'])[0]
     else:
         raw_path=raw_path_coords_cropped
-
-    #Get img heignt and width
-    img_height, img_width = objects['maze_agent'].maze_sections.img_height, objects['maze_agent'].maze_sections.img_width
 
     # Set objects into dict
     inst_out_objects = objects_to_dict(["raw_path", "img_height", "img_width"])

@@ -8,10 +8,16 @@
                 <vbox>
                     <label appearance="header">Continuous Outline</label>
                     <separator/>
+
+                    <param name="transparancy_cutoff" type="float" min="0.0" max="1.0"
+                           gui-text="Max transparency % considered background">0.1
+                    </param>
                     <param name="maze_sections_across" type="int" min="1" max="9999"
                            gui-text="Gridding density for approx path formation">70
                     </param>
                     <param name="slic_regions" type="int" min="1" max="9999" gui-text="Number of SLIC regions">12
+                    </param>
+                    <param name="constrain_slic_within_mask" type="bool" gui-text="Omit lines outside of mask">false
                     </param>
                     <param name="dumb_node_optional_weight" type="int" min="0" max="9999"
                            gui-text="Weight for optional dumb nodes">1
