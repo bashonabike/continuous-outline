@@ -4,21 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="DB stuff working except objects recreate, not sure mad gains on that one tho">
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Rough path trace working!!">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Test 1.svg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TestAgent.svg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/autotrace.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Test SVGs/jack starter.svg" beforeDir="false" afterPath="$PROJECT_DIR$/Test SVGs/jack starter.svg" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/continuous-outline.inx" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.inx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/build_objects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/build_objects.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/caching/DataRetrieval.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/DataRetrieval.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test.svg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test2.svg" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -179,14 +172,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1736210770875</updated>
-    </task>
-    <task id="LOCAL-00008" summary="Add SLIC starter">
-      <option name="closed" value="true" />
-      <created>1738884586880</created>
-      <option name="number" value="00008" />
-      <option name="presentableId" value="LOCAL-00008" />
-      <option name="project" value="LOCAL" />
-      <updated>1738884586880</updated>
     </task>
     <task id="LOCAL-00009" summary="Working on slic, drawing alg">
       <option name="closed" value="true" />
@@ -572,7 +557,15 @@
       <option name="project" value="LOCAL" />
       <updated>1742237979729</updated>
     </task>
-    <option name="localTasksCounter" value="57" />
+    <task id="LOCAL-00057" summary="Rough path trace working!!">
+      <option name="closed" value="true" />
+      <created>1742252763531</created>
+      <option name="number" value="00057" />
+      <option name="presentableId" value="LOCAL-00057" />
+      <option name="project" value="LOCAL" />
+      <updated>1742252763531</updated>
+    </task>
+    <option name="localTasksCounter" value="58" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -587,7 +580,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Working on getting better fiddling with settings" />
     <MESSAGE value="Working on making edge map for new technique" />
     <MESSAGE value="Got ssssnake path coded!  need to test tho" />
     <MESSAGE value="Snake working!! Super fast woohoo" />
@@ -612,7 +604,8 @@
     <MESSAGE value="Now actually i think got it done, test time next week" />
     <MESSAGE value="Interface is base working woo!" />
     <MESSAGE value="DB stuff working except objects recreate, not sure mad gains on that one tho" />
-    <option name="LAST_COMMIT_MESSAGE" value="DB stuff working except objects recreate, not sure mad gains on that one tho" />
+    <MESSAGE value="Rough path trace working!!" />
+    <option name="LAST_COMMIT_MESSAGE" value="Rough path trace working!!" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -634,7 +627,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/mazify/MazeAgent.py</url>
-          <line>216</line>
+          <line>214</line>
           <option name="timeStamp" value="343" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">

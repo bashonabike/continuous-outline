@@ -45,7 +45,7 @@ def shift_and_crop(outer_edges, outer_contours_yx, bounds_outer,
     return (outer_edges_cropped, inner_edges_cropped, outer_contours_yx_cropped, inner_contours_yx_cropped,
             detail_req_masks_cropped, shift_y, shift_x)
 
-def ellipse_mask(cx, cy, rx, ry, shape):
+def ellipse_mask(parent_inkex, cx, cy, rx, ry, shape):
     """
     Determines which pixels in an m x n ndarray are contained in an ellipse.
 
@@ -63,19 +63,32 @@ def ellipse_mask(cx, cy, rx, ry, shape):
     import numpy as np
     # Create coordinate grids, scale up mask
     m, n = shape
+    parent_inkex.msg("shape: " + str(shape))
     cy_scaled, ry_scaled = cy * m, ry * m
     cx_scaled, rx_scaled = cx * n, rx * n
-    x, y = np.meshgrid(np.arange(n), np.arange(m))
+    x, y = np.meshgrid(np.arange(m), np.arange(n))
+
+    parent_inkex.msg("cy scaled: " + str(cy_scaled))
+    parent_inkex.msg("cx scaled: " + str(cx_scaled))
+    parent_inkex.msg("ry scaled: " + str(ry_scaled))
+    parent_inkex.msg("rx scaled: " + str(rx_scaled))
 
     # Calculate the normalized distance from the ellipse center
     distance = ((x - cx_scaled) / rx_scaled)**2 + ((y - cy_scaled) / ry_scaled)**2
 
     # Pixels inside the ellipse have a distance <= 1
     inside = distance <= 1
+    if np.count_nonzero(inside) > 0:
+        y_indices, x_indices = np.where(inside)
+        parent_inkex.msg("min y: " + str(np.min(y_indices)))
+        parent_inkex.msg("max y: " + str(np.max(y_indices)))
+        parent_inkex.msg("min x: " + str(np.min(x_indices)))
+        parent_inkex.msg("max x: " + str(np.max(x_indices)))
+
 
     return inside
 
-def rect_mask(x, y, width, height, shape):
+def rect_mask(parent_inkex, x, y, width, height, shape):
     """
     Determines which pixels in an m x n ndarray are contained in a rectangle.
 
@@ -95,7 +108,7 @@ def rect_mask(x, y, width, height, shape):
     m, n = shape
     y_scaled, height_scaled = y * m, height * m
     x_scaled, width_scaled = x * n, width * n
-    xx, yy = np.meshgrid(np.arange(n), np.arange(m))
+    yy,xx = np.meshgrid(np.arange(m), np.arange(n))
 
     # Check if pixels are within the rectangle bounds
     inside = (xx >= x_scaled) & (xx < x_scaled + width_scaled) & (yy >= y_scaled) & (yy < y_scaled + height_scaled)
@@ -137,7 +150,7 @@ def objects_to_dict(obj_names):
 
 
 #region Builders
-def build_level_1_scratch(img_cv, focus_regions, options, objects: dict):
+def build_level_1_scratch(parent_inkex, img_cv, focus_regions, options, objects: dict):
     import cv2
     import numpy as np
     from skimage.util import img_as_float
@@ -172,9 +185,13 @@ def build_level_1_scratch(img_cv, focus_regions, options, objects: dict):
     detail_req_masks = []
     for region in focus_regions:
         if region['form'] == "ellipse":
-            detail_req_masks.append(ellipse_mask(region['cx'], region['cy'], region['rx'], region['ry'], outer_edges.shape))
+            detail_req_mask = ellipse_mask(parent_inkex, region['cx'], region['cy'], region['rx'], region['ry'], outer_edges.shape)
+            if np.count_nonzero(detail_req_mask) > 0:
+                detail_req_masks.append(detail_req_mask)
         elif region['form'] == "rectangle":
-            detail_req_masks.append(rect_mask(region['x'], region['y'], region['width'], region['height'], outer_edges.shape))
+            detail_req_mask = rect_mask(parent_inkex, region['x'], region['y'], region['width'], region['height'], outer_edges.shape)
+            if np.count_nonzero(detail_req_mask) > 0:
+                detail_req_masks.append(detail_req_mask)
         else:
             raise exception("Invalid focus shape passed in: " + region['form'])
 

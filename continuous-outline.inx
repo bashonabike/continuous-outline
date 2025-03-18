@@ -41,7 +41,7 @@
                            gui-text="Weight for required dumb nodes">1
                     </param>
                     <param name="max_inner_path_seg_manhatten_length" type="int" min="0" max="9999"
-                           gui-text="Maximum Manhattan length for inner path segments">50
+                           gui-text="Perimeter ghosting threshold (max pixels in straight line before removal)">50
                     </param>
                     <param name="outer_contour_length_cutoff" type="int" min="0" max="9999"
                            gui-text="Length cutoff for outer contours">200
@@ -55,39 +55,6 @@
                     <param name="scorched_earth" type="bool" gui-text="Enable scorched earth mode">true</param>
                     <param name="scorched_earth_weight_multiplier" type="int" min="0" max="9999"
                            gui-text="Weight multiplier for scorched earth mode">6
-                    </param>
-
-                    <param name="trace_technique" type="int" min="1" max="5" gui-text="TEMP!! Trace technique">2</param>
-
-                    <param name="snake_trace_max_jump_from_outer" type="int" min="0" max="9999"
-                           gui-text="Maximum jump from outer contour for snake trace">2
-                    </param>
-                    <param name="snake_details_polygon_faces" type="int" min="0" max="9999"
-                           gui-text="Number of polygon faces for snake details">7
-                    </param>
-                    <param name="typewriter_lines" type="int" min="2" max="9999" gui-text="Number of typewriter lines">
-                        5
-                    </param>
-                    <param name="typewriter_traverse_threshold" type="float" min="0.0" max="1.0"
-                           gui-text="Traverse threshold for typewriter lines">0.5
-                    </param>
-                    <param name="zigzag_typewriter_lines" type="int" min="2" max="9999"
-                           gui-text="Number of zigzag typewriter lines">5
-                    </param>
-                    <param name="zigzag_typewriter_traverse_threshold" type="float" min="0.0" max="1.0"
-                           gui-text="Traverse threshold for zigzag typewriter lines">0.3
-                    </param>
-                    <param name="vertical_zigzag_lines" type="int" min="2" max="9999"
-                           gui-text="Number of vertical zigzag lines">5
-                    </param>
-                    <param name="vertical_zigzag_traverse_threshold" type="float" min="0.0" max="1.0"
-                           gui-text="Traverse threshold for vertical zigzag lines">0.3
-                    </param>
-                    <param name="back_forth_lines" type="int" min="2" max="9999"
-                           gui-text="Number of back and forth lines">12
-                    </param>
-                    <param name="back_forth_traverse_threshold" type="float" min="0.0" max="1.0"
-                           gui-text="Traverse threshold for back and forth lines">0.3
                     </param>
                     <param name="simplify_tolerance" type="float" min="0.0" max="1.0" gui-text="Simplify tolerance">
                         0.7

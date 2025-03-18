@@ -80,26 +80,6 @@ class continuous_outline(inkex.EffectExtension):
         pars.add_argument("--scorched_earth", type=inkex.Boolean, default=True, help="Enable scorched earth mode")
         pars.add_argument("--scorched_earth_weight_multiplier", type=int, default=6,
                           help="Weight multiplier for scorched earth mode")
-
-        pars.add_argument("--trace_technique", type=int, default=2,
-                          help="TEMP!! Trace technique")
-
-        pars.add_argument("--snake_trace_max_jump_from_outer", type=int, default=2,
-                          help="Maximum jump from outer contour for snake trace")
-        pars.add_argument("--snake_details_polygon_faces", type=int, default=7,
-                          help="Number of polygon faces for snake details")
-        pars.add_argument("--typewriter_lines", type=int, default=5, help="Number of typewriter lines")
-        pars.add_argument("--typewriter_traverse_threshold", type=float, default=0.5,
-                          help="Traverse threshold for typewriter lines")
-        pars.add_argument("--zigzag_typewriter_lines", type=int, default=5, help="Number of zigzag typewriter lines")
-        pars.add_argument("--zigzag_typewriter_traverse_threshold", type=float, default=0.3,
-                          help="Traverse threshold for zigzag typewriter lines")
-        pars.add_argument("--vertical_zigzag_lines", type=int, default=5, help="Number of vertical zigzag lines")
-        pars.add_argument("--vertical_zigzag_traverse_threshold", type=float, default=0.3,
-                          help="Traverse threshold for vertical zigzag lines")
-        pars.add_argument("--back_forth_lines", type=int, default=12, help="Number of back and forth lines")
-        pars.add_argument("--back_forth_traverse_threshold", type=float, default=0.3,
-                          help="Traverse threshold for back and forth lines")
         pars.add_argument("--simplify_tolerance", type=float, default=0.7, help="Simplify tolerance")
         pars.add_argument("--preview", type=inkex.Boolean, default=True, help="Preview before committing")
 
@@ -250,8 +230,16 @@ class continuous_outline(inkex.EffectExtension):
         self.options.scale = 1.0
         data_ret = dataret.DataRetrieval()
 
-        images, detail_bounds = [], []
-        if len(self.svg.selected) == 0: self.svg.selection = self.svg.get_current_layer().descendants().filter(*self.select_all)
+        # Remove old preview layers, whenever preview mode is enabled
+        for node in self.svg:
+            if node.tag in ('{http://www.w3.org/2000/svg}g', 'g'):
+                if node.get('{http://www.inkscape.org/namespaces/inkscape}groupmode') == 'layer':
+                    layer_name = node.get('{http://www.inkscape.org/namespaces/inkscape}label')
+                    if layer_name == 'Preview':
+                        self.svg.remove(node)
+
+        if len(self.svg.selected) == 0:
+            self.svg.selection = self.svg.descendants().filter(*self.select_all)
         images = self.svg.selection.filter(inkex.Image).values()
         detail_bounds= self.svg.selection.filter(inkex.Rectangle, inkex.Ellipse).values()
 
@@ -262,22 +250,6 @@ class continuous_outline(inkex.EffectExtension):
                 approx_traces.append(node)
         for child in approx_traces:
             self.msg(child)
-
-        # if len(self.svg.selected) > 0:
-        #     #Grab selected items if selected
-        #     images = self.svg.selection.filter(inkex.Image).values()
-        #     detail_bounds= self.svg.selection.filter(inkex.Rectangle, inkex.Ellipse).values()
-        # else:
-        #     #Else grab all on doc
-        #     for child in self.svg.getchildren():
-        #         if str(child) == "g":
-        #             for sub_child in child:
-        #                 if str(sub_child) in ("image"):
-        #                     self.svg.selected[sub_child.get('id')] = sub_child
-        #                 elif str(sub_child) in ("ellipse", "rect"):
-        #                     detail_bounds.append(sub_child)
-        #     images = self.svg.selection.filter(inkex.Image).values()
-        #     detail_bounds = self.svg.selection.filter(inkex.Rectangle, inkex.Ellipse).values()
 
         match(len(approx_traces)):
             case 0:
@@ -333,6 +305,8 @@ class continuous_outline(inkex.EffectExtension):
                 formed_normalized_ctrl_points_nd = self.form_approx_control_points_normalized(approx_ctrl_points,
                                                                                              svg_image)
 
+                self.msg("Constrain: " + str(self.options.constrain_slic_within_mask))
+
                 #Retrieve or calculate data as needed
                 objects = {}
                 match update_level:
@@ -363,7 +337,9 @@ class continuous_outline(inkex.EffectExtension):
                         normalized_focus_region_specs = self.form_focus_region_specs_normalized(detail_bounds, svg_image)
 
                         #Levels 1-4 objects from scratch
-                        buildscr.build_level_1_scratch(img_cv, normalized_focus_region_specs, self.options, objects)
+                        for region in normalized_focus_region_specs:
+                            self.msg(region)
+                        buildscr.build_level_1_scratch(self, img_cv, normalized_focus_region_specs, self.options, objects)
                         buildscr.build_level_2_scratch(self.options, objects)
                         buildscr.build_level_3_scratch(self, self.options, objects, formed_normalized_ctrl_points_nd)
                         buildscr.build_level_4_scratch(self.options, objects)
@@ -499,27 +475,24 @@ class continuous_outline(inkex.EffectExtension):
                     ]
                     commands_str = " ".join(command_strings)
 
-                    # Remove old preview layers, whenever preview mode is enabled
-                    for node in self.svg:
-                        if node.tag in ('{http://www.w3.org/2000/svg}g', 'g'):
-                            if node.get('{http://www.inkscape.org/namespaces/inkscape}groupmode') == 'layer':
-                                layer_name = node.get('{http://www.inkscape.org/namespaces/inkscape}label')
-                                if layer_name == 'Preview':
-                                    self.svg.remove(node)
-
                     if self.options.preview:
                         # Create a temporary layer & group for the preview
                         preview_layer = inkex.etree.Element(inkex.addNS('g', 'svg'),
                                                       None, nsmap=inkex.NSS)
                         preview_layer.set(inkex.addNS('groupmode', 'inkscape'), 'layer')
                         preview_layer.set(inkex.addNS('label', 'inkscape'), 'Preview')
+                        preview_layer.set(inkex.addNS('lock', 'inkscape'), 'true')
+                        preview_layer.set(inkex.addNS('insensitive', 'inkscape'), 'true')
+
                         preview_group = inkex.etree.SubElement(preview_layer, inkex.addNS('g', 'svg'))
                         preview_group.set('id', 'preview_group')  # give the group an id so it can be found later.
+                        preview_group.set(inkex.addNS('lock', 'inkscape'), 'true')  # give the group an id so it can be found later.
 
                         # Create the path element
                         path_element = inkex.etree.SubElement(preview_group, inkex.addNS('path', 'svg'))
                         path_element.set('d', commands_str)
                         path_element.set('style', 'stroke:red; stroke-width:2; fill:none;')
+                        path_element.set(inkex.addNS('lock', 'inkscape'), 'true')
 
                         self.svg.append(preview_layer)
 
