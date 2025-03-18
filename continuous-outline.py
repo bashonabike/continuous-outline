@@ -9,6 +9,7 @@ import urllib.request as urllib_request
 # import base64
 import numpy as np
 import pandas as pd
+import re
 
 import helpers.caching.DataRetrieval as dataret
 
@@ -77,12 +78,216 @@ class continuous_outline(inkex.EffectExtension):
                           help="Length cutoff for inner contours")
         pars.add_argument("--inner_contour_variable_weights", type=inkex.Boolean, default=True,
                           help="Enable variable weights for inner contours")
+        pars.add_argument("--trace_inner_too", type=inkex.Boolean, default=False,
+                          help="Enable tracing of inner contours (dep on rough trace input)")
         pars.add_argument("--scorched_earth", type=inkex.Boolean, default=True, help="Enable scorched earth mode")
         pars.add_argument("--scorched_earth_weight_multiplier", type=int, default=6,
                           help="Weight multiplier for scorched earth mode")
         pars.add_argument("--simplify_tolerance", type=float, default=0.7, help="Simplify tolerance")
         pars.add_argument("--preview", type=inkex.Boolean, default=True, help="Preview before committing")
 
+
+    def _tokenize_path(self, pathdef,COMMAND_RE,  COMMANDS, FLOAT_RE):
+        for x in COMMAND_RE.split(pathdef):
+            if x in COMMANDS:
+                yield x
+            for token in FLOAT_RE.findall(x):
+                yield token
+
+    def _parse_path(self, pathdef, current_pos=0j, tree_element=None):
+
+        COMMANDS = set('MmZzLlHhVvCcSsQqTtAa')
+        UPPERCASE = set('MZLHVCSQTA')
+
+        COMMAND_RE = re.compile(r"([MmZzLlHhVvCcSsQqTtAa])")
+        FLOAT_RE = re.compile(r"[-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?")
+        #PULLED FROM SVGPATHTOOLS (thanks!!)
+        # In the SVG specs, initial movetos are absolute, even if
+        # specified as 'm'. This is the default behavior here as well.
+        # But if you pass in a current_pos variable, the initial moveto
+        # will be relative to that current_pos. This is useful.
+        elements = list(self._tokenize_path(pathdef,COMMAND_RE,  COMMANDS, FLOAT_RE))
+        # Reverse for easy use of .pop()
+        elements.reverse()
+        start_pos = None
+        command = None
+        coord_points = []
+        absolute = False
+
+        while elements:
+
+            if elements[-1] in COMMANDS:
+                # New command.
+                last_command = command  # Used by S and T
+                command = elements.pop()
+                absolute = command in UPPERCASE
+                command = command.upper()
+            else:
+                # If this element starts with numbers, it is an implicit command
+                # and we don't change the command. Check that it's allowed:
+                if command is None:
+                    raise ValueError("Unallowed implicit command in %s, position %s" % (
+                        pathdef, len(pathdef.split()) - len(elements)))
+                last_command = command  # Used by S and T
+
+            if command == 'M':
+                # Moveto command.
+                x = elements.pop()
+                y = elements.pop()
+                coord_points.append((float(x), float(y)))
+                pos = float(x) + float(y) * 1j
+                if absolute:
+                    current_pos = pos
+                else:
+                    current_pos += pos
+
+                # when M is called, reset start_pos
+                # This behavior of Z is defined in svg spec:
+                # http://www.w3.org/TR/SVG/paths.html#PathDataClosePathCommand
+                start_pos = current_pos
+
+                # Implicit moveto commands are treated as lineto commands.
+                # So we set command to lineto here, in case there are
+                # further implicit commands after this moveto.
+                command = 'L'
+
+            elif command == 'Z':
+                # Close path
+                if not (current_pos == start_pos):
+                    coord_points.append((start_pos.real, start_pos.imag))
+                self._closed = True
+                current_pos = start_pos
+                command = None
+
+            elif command == 'L':
+                x = elements.pop()
+                y = elements.pop()
+                pos = float(x) + float(y) * 1j
+                if not absolute:
+                    pos += current_pos
+                coord_points.append((pos.real, pos.imag))
+                current_pos = pos
+
+            elif command == 'H':
+                x = elements.pop()
+                pos = float(x) + current_pos.imag * 1j
+                if not absolute:
+                    pos += current_pos.real
+                coord_points.append((pos.real, pos.imag))
+                current_pos = pos
+
+            elif command == 'V':
+                y = elements.pop()
+                pos = current_pos.real + float(y) * 1j
+                if not absolute:
+                    pos += current_pos.imag * 1j
+                coord_points.append((pos.real, pos.imag))
+                current_pos = pos
+
+            elif command == 'C':
+                control1 = float(elements.pop()) + float(elements.pop()) * 1j
+                control2 = float(elements.pop()) + float(elements.pop()) * 1j
+                end = float(elements.pop()) + float(elements.pop()) * 1j
+
+                if not absolute:
+                    control1 += current_pos
+                    control2 += current_pos
+                    end += current_pos
+
+                coord_points.append((control1.real, control1.imag))
+                coord_points.append((control2.real, control2.imag))
+                coord_points.append((end.real, end.imag))
+                current_pos = end
+
+            elif command == 'S':
+                # Smooth curve. First control point is the "reflection" of
+                # the second control point in the previous path.
+
+                if last_command not in 'CS':
+                    # If there is no previous command or if the previous command
+                    # was not an C, c, S or s, assume the first control point is
+                    # coincident with the current point.
+                    control1 = current_pos
+                else:
+                    # The first control point is assumed to be the reflection of
+                    # the second control point on the previous command relative
+                    # to the current point.
+                    control1 = current_pos + current_pos - coord_points[-2]
+
+                control2 = float(elements.pop()) + float(elements.pop()) * 1j
+                end = float(elements.pop()) + float(elements.pop()) * 1j
+
+                if not absolute:
+                    control2 += current_pos
+                    end += current_pos
+
+                coord_points.append((control1.real, control1.imag))
+                coord_points.append((control2.real, control2.imag))
+                coord_points.append((end.real, end.imag))
+                current_pos = end
+
+            elif command == 'Q':
+                control = float(elements.pop()) + float(elements.pop()) * 1j
+                end = float(elements.pop()) + float(elements.pop()) * 1j
+
+                if not absolute:
+                    control += current_pos
+                    end += current_pos
+
+                coord_points.append((control.real, control.imag))
+                coord_points.append((end.real, end.imag))
+                current_pos = end
+
+            elif command == 'T':
+                # Smooth curve. Control point is the "reflection" of
+                # the second control point in the previous path.
+
+                if last_command not in 'QT':
+                    # If there is no previous command or if the previous command
+                    # was not an Q, q, T or t, assume the first control point is
+                    # coincident with the current point.
+                    control = current_pos
+                else:
+                    # The control point is assumed to be the reflection of
+                    # the control point on the previous command relative
+                    # to the current point.
+                    control = current_pos + current_pos - coord_points[-2]
+
+                end = float(elements.pop()) + float(elements.pop()) * 1j
+
+                if not absolute:
+                    end += current_pos
+
+                coord_points.append((control.real, control.imag))
+                coord_points.append((end.real, end.imag))
+                current_pos = end
+
+            elif command == 'A':
+
+                radius = float(elements.pop()) + float(elements.pop()) * 1j
+                rotation = float(elements.pop())
+                arc = float(elements.pop())
+                sweep = float(elements.pop())
+                end = float(elements.pop()) + float(elements.pop()) * 1j
+
+                if not absolute:
+                    end += current_pos
+
+                if radius.real == 0 or radius.imag == 0:
+                    # Note: In browsers AFAIK, zero radius arcs are displayed
+                    # as lines (see "examples/zero-radius-arcs.svg").
+                    # Thus zero radius arcs are substituted for lines here.
+                    self.msg('Replacing degenerate (zero radius) Arc with a Line: '
+                         'Arc(start={}, radius={}, rotation={}, large_arc={}, '
+                         'sweep={}, end={})'.format(
+                        current_pos, radius, rotation, arc, sweep, end) +
+                         ' --> Line(start={}, end={})'
+                         ''.format(current_pos, end))
+                    coord_points.append((end.real, end.imag))
+                else:
+                    coord_points.append((end.real, end.imag))
+                current_pos = end
+        return coord_points
 
     def check_level_to_update(self, data_ret:dataret.DataRetrieval):
         # Collect parameter names and values into a list of dictionaries
@@ -121,6 +326,8 @@ class continuous_outline(inkex.EffectExtension):
             x_offset = float(x)
             y_offset = float(y)
 
+        self.msg(f"Transform: {svg_image.get('transform')}")
+        self.msg(f"Image offsets: (x: {x_offset}, y: {y_offset})")
         return (x_offset, y_offset)
 
     def det_img_and_focus_specs(self, image_path, detail_bounds, approx_trace_path_string):
@@ -201,29 +408,11 @@ class continuous_outline(inkex.EffectExtension):
 
     def get_straight_line_points(self, path_string):
         """Extracts points from a straight line path string without using re."""
-        #TODO: Make this less hokey!!
-        parts = path_string.split(" ")
-        if not parts:
-            self.msg("Fail split")
-            return None
+        path_coords = self._parse_path(path_string)
+        # for i, coord in enumerate(path_coords):
+        #     self.msg(f"Coord {i}: {coord}")
 
-        if not parts[0].upper().startswith('M'):
-            self.msg("Fail M")
-            return None
-
-        try:
-            points = [[float(x) for x in parts[1].split(',')]]
-            # self.msg(points[0])
-            for part in parts[2:]:
-                # self.msg(part)
-                if part.upper().startswith('L'): continue
-                point = [float(x) for x in part.split(',')]
-                points.append(point)
-                # self.msg(point)
-
-            return points
-        except ValueError:
-            return None
+        return path_coords
 
     def effect(self):
         # internal overwrite for scale:

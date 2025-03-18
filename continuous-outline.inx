@@ -52,6 +52,9 @@
                     <param name="inner_contour_variable_weights" type="bool"
                            gui-text="Enable variable weights for inner contours">true
                     </param>
+                    <param name="trace_inner_too" type="bool"
+                           gui-text="Enable tracing of inner contours (dep on rough trace input)">false
+                    </param>
                     <param name="scorched_earth" type="bool" gui-text="Enable scorched earth mode">true</param>
                     <param name="scorched_earth_weight_multiplier" type="int" min="0" max="9999"
                            gui-text="Weight multiplier for scorched earth mode">6
