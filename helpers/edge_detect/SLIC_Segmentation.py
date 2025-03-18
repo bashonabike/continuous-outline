@@ -1,12 +1,9 @@
 # import the necessary packages
-from skimage.segmentation import slic, mark_boundaries
-from skimage.measure import find_contours
-from scipy import signal
+# from skimage.measure import find_contours
 import numpy as np
 import cv2
-from typing import List
-import math
-import matplotlib.pyplot as plt
+# from typing import List
+# import matplotlib.pyplot as plt
 # from shapely.geometry import LineString
 # from simplification.cutil import simplify_coords
 import time
@@ -32,6 +29,8 @@ import time
 # plt.show()
 
 def find_transition_nodes(regioned_img: np.ndarray):
+	from scipy import signal
+	import math
 	num_regions = regioned_img.max()
 	#Encode each region in base 10 and run with ones 3x3
 	encoded_regions = np.pow(10, regioned_img - 1).astype(np.uint64)
@@ -86,6 +85,8 @@ def pixel_map_from_edge_contours(shape, contours, offset_idx):
 	return edges_final
 
 def mask_boundary_edges(options, img_unchanged):
+	from skimage.segmentation import mark_boundaries
+	import helpers.post_proc.smooth_path as smooth
 	start = time.time_ns()
 	#NOTE: only work PNG with transparent bg, or where background is all white
 	mask = None
@@ -156,13 +157,17 @@ def mask_boundary_edges(options, img_unchanged):
 	min_y, min_x, max_y, max_x = 99999, 99999, -1, -1
 	for c in final_contours:
 		if c[0].size == 1:
-			cur_contour = [c[1], c[0]]
+			cur_contour = smooth.simplify_line([c[1], c[0]], tolerance=options.simplify_tolerance)
 		else:
-			cur_contour = [[p[0][1], p[0][0]] for p in c]
+			cur_contour = smooth.simplify_line([[p[0][1], p[0][0]] for p in c], tolerance=options.simplify_tolerance)
+		# if c[0].size == 1:
+		# 	cur_contour = [c[1], c[0]]
+		# else:
+		# 	cur_contour = [[p[0][1], p[0][0]] for p in c]
 
 		ys, xs = zip(*cur_contour)
-		min_y, min_x = min(min_y, min(ys)), min(min_x, min(xs))
-		max_y, max_x = max(max_y, max(ys)), max(max_x, max(xs))
+		min_y, min_x = int(min(min_y, min(ys))), int(min(min_x, min(xs)))
+		max_y, max_x = int(max(max_y, max(ys))), int(max(max_x, max(xs)))
 
 		flipped_contours.append(cur_contour)
 
@@ -170,19 +175,28 @@ def mask_boundary_edges(options, img_unchanged):
 	print(str((end - start)/1e6) + " ms to do mask stuff")
 	return edges_final, flipped_contours,  mask, ((min_y, min_x), (max_y, max_x))
 
-def slic_image_boundary_edges(options, im_float, mask, num_segments:int =2, enforce_connectivity:bool = True, contour_offset = 0):
+def slic_image_boundary_edges(parent_inkex, options, im_float, mask, num_segments:int =2, enforce_connectivity:bool = True, contour_offset = 0):
+	if options.cuda_slic:
+		from cuda_slic.slic import slic
+	else:
+		from skimage.segmentation import slic
+	import helpers.post_proc.smooth_path as smooth
 	segments = None
 	num_segs_actual = -1
 	start = time.time_ns()
 	for num_segs in range(num_segments, num_segments+20):
-		segments_trial = slic(im_float, n_segments=num_segs, sigma=5, enforce_connectivity=enforce_connectivity)
+		parent_inkex.msg("Trying " + str(num_segs) + " segments")
+		if options.cuda_slic:
+			segments_trial = slic(im_float, n_segments=num_segs, enforce_connectivity=enforce_connectivity)
+		else:
+			segments_trial = slic(im_float, n_segments=num_segs, sigma=5, enforce_connectivity=enforce_connectivity)
 		if np.max(segments_trial) > 1:
 			segments = segments_trial
 			num_segs_actual = num_segs
 			break
 	if segments is None: raise Exception("Segmentation failed, image too disparate for outlining")
 	end = time.time_ns()
-	print(str((end - start)/1e6) + " ms to segment image with " + str(num_segs_actual) + " segments")
+	parent_inkex.msg(str((end - start)/1e6) + " ms to segment image with " + str(num_segs_actual) + " segments")
 
 	if options.constrain_slic_within_mask:
 		#Blank outside of mask
@@ -205,8 +219,9 @@ def slic_image_boundary_edges(options, im_float, mask, num_segments:int =2, enfo
 														contour_idx + 1 + contour_offset,
 														contour_idx + 1 + contour_offset))
 	end = time.time_ns()
-	print(str((end - start)/1e6) + " ms to find contours with " + str(len(contours)) + " contours")
+	parent_inkex.msg(str((end - start)/1e6) + " ms to find contours with " + str(len(contours)) + " contours")
 
+	start = time.time_ns()
 	#Wipe outside edge, false contours
 	perimeter_mask = np.zeros_like(edges, dtype=bool)
 	perimeter_mask[0, :] = True  # Top row
@@ -227,14 +242,18 @@ def slic_image_boundary_edges(options, im_float, mask, num_segments:int =2, enfo
 	flipped_contours = []
 	min_y, min_x, max_y, max_x = 99999, 99999, -1, -1
 	for c in contours:
+		# if c[0].size == 1:
+		# 	cur_contour = [c[1], c[0]]
+		# else:
+		# 	cur_contour = [[p[0][1], p[0][0]] for p in c]
 		if c[0].size == 1:
-			cur_contour = [c[1], c[0]]
+			cur_contour = smooth.simplify_line([c[1], c[0]], tolerance=options.simplify_tolerance)
 		else:
-			cur_contour = [[p[0][1], p[0][0]] for p in c]
+			cur_contour = smooth.simplify_line([[p[0][1], p[0][0]] for p in c], tolerance=options.simplify_tolerance)
 
 		ys, xs = zip(*cur_contour)
-		min_y, min_x = min(min_y, min(ys)), min(min_x, min(xs))
-		max_y, max_x = max(max_y, max(ys)), max(max_x, max(xs))
+		min_y, min_x = int(min(min_y, min(ys))), int(min(min_x, min(xs)))
+		max_y, max_x = int(max(max_y, max(ys))), int(max(max_x, max(xs)))
 
 		#Remove portion of contours along perimeter
 		processed_contours = remove_perimeter_ghosting(options, cur_contour, edges.shape[0] - 1, edges.shape[1] - 1)
@@ -243,6 +262,8 @@ def slic_image_boundary_edges(options, im_float, mask, num_segments:int =2, enfo
 
 	flipped_contours = [c for c in flipped_contours if len(c) > options.inner_contour_length_cutoff]
 	flipped_contours.sort(key=lambda p: len(p), reverse=True)
+	end = time.time_ns()
+	parent_inkex.msg(str((end - start)/1e6) + " ms to find flipping with " + str(len(contours)) + " contours")
 
 	return edges, flipped_contours, segments, num_segs_actual, ((min_y, min_x), (max_y, max_x))
 
@@ -374,7 +395,7 @@ def is_contour_near_segment_boundary(contour: np.ndarray, segments: np.ndarray, 
 
 	return float(nodes_prox) / nodes_tot >= min_nodes_prox_pct and nodes_row_hit
 
-def find_contours_near_boundaries(contours: List[np.ndarray], segments: np.ndarray, tolerance: int = 2) -> List[
+def find_contours_near_boundaries(contours: list[np.ndarray], segments: np.ndarray, tolerance: int = 2) -> list[
 	np.ndarray]:
 	"""Finds contours near segment boundaries in a segmented image.
 

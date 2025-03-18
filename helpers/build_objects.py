@@ -13,7 +13,7 @@ def shift_contours(contours: list, shift_y: int, shift_x: int) -> list:
         contours_shifted.append(contour_nd.tolist())
     return contours_shifted
 
-def shift_and_crop(outer_edges, outer_contours_yx, bounds_outer,
+def shift_and_crop(parent_inkex, outer_edges, outer_contours_yx, bounds_outer,
                    inner_edges, inner_contours_yx, bounds_inner,
                    detail_req_masks):
     import time
@@ -22,6 +22,7 @@ def shift_and_crop(outer_edges, outer_contours_yx, bounds_outer,
     start = time.time_ns()
     crop = (tuple([min(o, c) for o, c in zip(bounds_outer[0], bounds_inner[0])]),
             tuple([max(o, c) for o, c in zip(bounds_outer[1], bounds_inner[1])]))
+    parent_inkex.msg(f"crop: {crop}")
 
     shift_y, shift_x = (-1) * crop[0][0], (-1) * crop[0][1]
     outer_edges_cropped = outer_edges[crop[0][0]:crop[1][0] + 1, crop[0][1]:crop[1][1] + 1]
@@ -176,11 +177,15 @@ def build_level_1_scratch(parent_inkex, img_cv, focus_regions, options, objects:
     # near_boudaries_contours, segments = slic.mask_test_boundaries(image_path, split_contours)
 
     outer_edges, outer_contours_yx, mask, bounds_outer = slic.mask_boundary_edges(options, im_unch)
-    inner_edges, inner_contours_yx, segments, num_segs, bounds_inner = slic.slic_image_boundary_edges(options, im_float,
+    start = time.time_ns()
+    inner_edges, inner_contours_yx, segments, num_segs, bounds_inner = slic.slic_image_boundary_edges(parent_inkex,
+                                                                                                      options, im_float,
                                                                                                         mask,
                                                                                         num_segments=options.slic_regions,
                                                                                         enforce_connectivity=False,
                                                                                         contour_offset = len(outer_contours_yx))
+    end = time.time_ns()
+    parent_inkex.msg(f"SLIC took {(end - start) / 1e6} ms")
 
     detail_req_masks = []
     for region in focus_regions:
@@ -198,7 +203,7 @@ def build_level_1_scratch(parent_inkex, img_cv, focus_regions, options, objects:
     (outer_edges_cropped, inner_edges_cropped,
      outer_contours_yx_cropped, inner_contours_yx_cropped,
      detail_req_masks_cropped,
-     shift_y, shift_x) = shift_and_crop(outer_edges, outer_contours_yx, bounds_outer,
+     shift_y, shift_x) = shift_and_crop(parent_inkex, outer_edges, outer_contours_yx, bounds_outer,
                                         inner_edges,inner_contours_yx, bounds_inner,
                                         detail_req_masks)
 

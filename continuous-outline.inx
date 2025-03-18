@@ -15,6 +15,8 @@
                     <param name="maze_sections_across" type="int" min="1" max="9999"
                            gui-text="Gridding density for approx path formation">70
                     </param>
+                    <param name="cuda_slic" type="bool" gui-text="Use CUDA SLIC">True
+                    </param>
                     <param name="slic_regions" type="int" min="1" max="9999" gui-text="Number of SLIC regions">12
                     </param>
                     <param name="constrain_slic_within_mask" type="bool" gui-text="Omit lines outside of mask">false
@@ -47,7 +49,7 @@
                            gui-text="Length cutoff for outer contours">200
                     </param>
                     <param name="inner_contour_length_cutoff" type="int" min="0" max="9999"
-                           gui-text="Length cutoff for inner contours">20
+                           gui-text="Length cutoff for inner contours">10
                     </param>
                     <param name="inner_contour_variable_weights" type="bool"
                            gui-text="Enable variable weights for inner contours">true

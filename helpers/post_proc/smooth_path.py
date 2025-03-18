@@ -20,6 +20,6 @@ def simplify_line(coords, tolerance=1.0):
     simplified_line = line.simplify(tolerance, preserve_topology=False)  # preserve_topology = false is generally preferred.
 
     # Swap back to (y, x) coordinates
-    simplified_coords = [(y, x) for x, y in simplified_line.coords]
+    simplified_coords = [(int(y), int(x)) for x, y in simplified_line.coords]
 
     return simplified_coords

@@ -54,6 +54,8 @@ class continuous_outline(inkex.EffectExtension):
 
     def add_arguments(self, pars):
         pars.add_argument("--tab")
+        pars.add_argument("--cuda_slic", type=inkex.Boolean, default=True,
+                          help="Use CUDA SLIC")
         pars.add_argument("--slic_regions", type=int, default=12, help="Number of SLIC regions")
         pars.add_argument("--transparancy_cutoff", type=float, default=0.1, help="max % transparent considered background")
         pars.add_argument("--maze_sections_across", type=int, default=70, help="Gridding density for approx path formation")
@@ -74,7 +76,7 @@ class continuous_outline(inkex.EffectExtension):
                           help="Maximum Manhattan length for inner path segments")
         pars.add_argument("--outer_contour_length_cutoff", type=int, default=200,
                           help="Length cutoff for outer contours")
-        pars.add_argument("--inner_contour_length_cutoff", type=int, default=20,
+        pars.add_argument("--inner_contour_length_cutoff", type=int, default=10,
                           help="Length cutoff for inner contours")
         pars.add_argument("--inner_contour_variable_weights", type=inkex.Boolean, default=True,
                           help="Enable variable weights for inner contours")
