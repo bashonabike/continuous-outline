@@ -28,6 +28,51 @@ import time
 # # show the plots
 # plt.show()
 
+def try_downsample_and_smooth(parent_inkex, image: np.ndarray, options):
+	#Check if image needs to be downsampled
+	shape, downsample_ratio = image.shape, 1.0
+	if shape[0] > options.slic_max_image_resolution:
+		downsample_ratio = options.slic_max_image_resolution / shape[0]
+	if shape[1] > options.slic_max_image_resolution and shape[1] > shape[0]:
+		downsample_ratio = options.slic_max_image_resolution / shape[1]
+	if downsample_ratio >= 1.0: return image, 1.0
+
+	#Downsample and smooth
+	#NOTE: dsize is width, height so shape[1], shape[0]
+	start=time.time_ns()
+	dsize = (int(round(shape[1] * downsample_ratio, 0)), int(round(shape[0] * downsample_ratio, 0)))
+	interpolation_technique = cv2.INTER_LANCZOS4 if options.slic_lanczos else cv2.INTER_CUBIC
+	downsampled_image = cv2.resize(image, dsize, interpolation=interpolation_technique)
+	end=time.time_ns()
+	print(str((end-start)/1e6) + " ms to downsample")
+
+	start = time.time_ns()
+	# 2. Smoothing (Gaussian blur)
+	smoothed_image = cv2.GaussianBlur(downsampled_image, (5, 5), 0)  # Kernel size: 5x5, sigmaX=0
+
+	# Or, smoothing (simple average blur)
+	# smoothed_image = cv2.blur(downsampled_image, (5, 5))
+
+	# Or, smoothing (median blur)
+	# smoothed_image = cv2.medianBlur(downsampled_image, 5)
+	end = time.time_ns()
+	print(str((end - start) / 1e6) + " ms to smooth downsampled image")
+
+	return smoothed_image, downsample_ratio
+
+def try_upscale_contours(parent_inkex, contours, downsample_ratio):
+	if downsample_ratio >= 1.0: return contours
+	if downsample_ratio <= 0.0: raise Exception("Invalid downsample ratio")
+
+	#Upscale contours
+	upscale_ratio = 1.0/downsample_ratio
+	scaled_contours = []
+	for contour in contours:
+		contour_float = contour.astype(np.float32)
+		contour_float *= upscale_ratio
+		scaled_contours.append(contour_float.astype(np.int32))
+	return scaled_contours
+
 def find_transition_nodes(regioned_img: np.ndarray):
 	from scipy import signal
 	import math
@@ -175,6 +220,8 @@ def mask_boundary_edges(options, img_unchanged):
 	print(str((end - start)/1e6) + " ms to do mask stuff")
 	return edges_final, flipped_contours,  mask, ((min_y, min_x), (max_y, max_x))
 
+#C:\Users\liamc\PycharmProjects\continuous-outline\helpers\edge_detect\SLIC_Alg_Overview
+
 def slic_image_boundary_edges(parent_inkex, options, im_float, mask, num_segments:int =2, enforce_connectivity:bool = True, contour_offset = 0):
 	if options.cuda_slic:
 		from cuda_slic.slic import slic
@@ -184,12 +231,20 @@ def slic_image_boundary_edges(parent_inkex, options, im_float, mask, num_segment
 	segments = None
 	num_segs_actual = -1
 	start = time.time_ns()
+	time_pre_updates = 0
+	im_downscaled, downscale_ratio = try_downsample_and_smooth(parent_inkex, im_float, options)
+	is_multichannel = im_downscaled.ndim > 2 and im_downscaled.shape[2] > 1
 	for num_segs in range(num_segments, num_segments+20):
 		parent_inkex.msg("Trying " + str(num_segs) + " segments")
 		if options.cuda_slic:
-			segments_trial = slic(im_float, n_segments=num_segs, enforce_connectivity=enforce_connectivity)
+			segments_trial, time_pre_updates = slic(im_downscaled, max_iter=20, compactness=5, convert2lab=options.slic_lab,
+													n_segments=num_segs, enforce_connectivity=enforce_connectivity,
+													multichannel=is_multichannel)
 		else:
-			segments_trial = slic(im_float, n_segments=num_segs, sigma=5, enforce_connectivity=enforce_connectivity)
+			segments_trial, time_pre_updates = slic(im_downscaled,max_num_iter=20, compactness=5,
+													convert2lab=options.slic_lab, n_segments=num_segs,
+													sigma=5, enforce_connectivity=enforce_connectivity,
+													channel_axis=-1 if is_multichannel else None)
 		if np.max(segments_trial) > 1:
 			segments = segments_trial
 			num_segs_actual = num_segs
@@ -197,6 +252,9 @@ def slic_image_boundary_edges(parent_inkex, options, im_float, mask, num_segment
 	if segments is None: raise Exception("Segmentation failed, image too disparate for outlining")
 	end = time.time_ns()
 	parent_inkex.msg(str((end - start)/1e6) + " ms to segment image with " + str(num_segs_actual) + " segments")
+
+	parent_inkex.msg(str(time_pre_updates) + " ms to do pre-cython prep of image slic")
+
 
 	if options.constrain_slic_within_mask:
 		#Blank outside of mask
@@ -208,12 +266,13 @@ def slic_image_boundary_edges(parent_inkex, options, im_float, mask, num_segment
 	for segment_val in range(1, np.max(segments)+1):
 		finder = np.where(segments == segment_val, 255, 0).astype(np.uint8)
 		partial_contours, _ = cv2.findContours(finder, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-		contours.extend(partial_contours)
+		partial_contours_scaled = try_upscale_contours(parent_inkex, partial_contours, downscale_ratio)
+		contours.extend(partial_contours_scaled)
 
 	contours = [c for c in contours if len(c) > options.inner_contour_length_cutoff]
 
 	#Plot contours on blank coded for reference
-	edges = np.zeros_like(segments).astype(np.uint16)
+	edges = np.zeros(im_float.shape[:2], dtype=np.uint16)
 	for contour_idx in range(len(contours)):
 		cv2.drawContours(edges, contours, contour_idx, (contour_idx + 1 + contour_offset,
 														contour_idx + 1 + contour_offset,
@@ -263,7 +322,8 @@ def slic_image_boundary_edges(parent_inkex, options, im_float, mask, num_segment
 	flipped_contours = [c for c in flipped_contours if len(c) > options.inner_contour_length_cutoff]
 	flipped_contours.sort(key=lambda p: len(p), reverse=True)
 	end = time.time_ns()
-	parent_inkex.msg(str((end - start)/1e6) + " ms to find flipping with " + str(len(contours)) + " contours")
+	parent_inkex.msg(str((end - start)/1e6) + " ms to find flipping with " + str(len(contours)) +
+					 " contours yielding " + str(len(flipped_contours)) + " flipped contours")
 
 	return edges, flipped_contours, segments, num_segs_actual, ((min_y, min_x), (max_y, max_x))
 

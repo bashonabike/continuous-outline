@@ -32,6 +32,9 @@ def remove_background(image, torchscript_jit="default", mode="fast"):
     # return (img_stack, mask)
 
 def process_image(img_path, torchscript_jit="default", mode="fast"):
+    #TODO: Select outer background (biggest contour), remove it but retain the rest of the main image
+    #Make sure set alpha, build contours just on alpha channel
+    #Maybe set cutoff for bgrem alpha, if alpha below say 0.4 then set it to 0, then do countours
     img = Image.open(img_path)
     bgremoved = remove_background(img, torchscript_jit, mode)
     save_bg_removed_image(img_path, bgremoved)

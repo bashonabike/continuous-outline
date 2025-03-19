@@ -1,7 +1,4 @@
 #region Helpers
-from logging import exception
-
-
 
 def shift_contours(contours: list, shift_y: int, shift_x: int) -> list:
     import numpy as np
@@ -161,18 +158,32 @@ def build_level_1_scratch(parent_inkex, img_cv, focus_regions, options, objects:
     im_unch = img_cv
 
     # im_bgrem = bgrem.remove_background(im_unch, "jit")
-
+    start = time.time_ns()
     if im_unch.shape[2] == 4:  # Check if it has an alpha channel
-      im_float = img_as_float(cv2.cvtColor(im_unch, cv2.COLOR_BGRA2BGR))  # Convert from BGRA to BGR
-      alpha_mask = im_unch[:, :, 3] == 0
-      im_float[alpha_mask] = [0.0, 0.0, 0.0]
+        alpha_mask = im_unch[:, :, 3] == 0
     elif im_unch.shape[2] == 2:
-      im_float = img_as_float(cv2.cvtColor(im_unch, cv2.COLOR_GRAY2BGR)) #Greyscale PNG
-      alpha_mask = im_unch[:, :, 1] == 0
-      im_float[alpha_mask] = [0.0, 0.0, 0.0]
+        alpha_mask = im_unch[:, :, 1] == 0
     else:
-      im_float = img_as_float(im_unch)  # If it does not have an alpha channel, just use the image directly.
+        alpha_mask = None
+        im_float = img_as_float(im_unch)  # If it does not have an alpha channel, just use the image directly.
 
+    if options.slic_greyscale:
+        if im_unch.shape[2] == 4:  # Check if it has an alpha channel
+            im_float = img_as_float(cv2.cvtColor(im_unch, cv2.COLOR_BGRA2GRAY))
+            im_float[alpha_mask] = 0.0
+        elif im_unch.shape[2] == 2:
+            im_float = img_as_float(im_unch[:,:,0]) #Greyscale PNG
+            im_float[alpha_mask] = 0.0
+    else:
+        if im_unch.shape[2] == 4:  # Check if it has an alpha channel
+            im_float = img_as_float(cv2.cvtColor(im_unch, cv2.COLOR_BGRA2BGR))
+            im_float[alpha_mask] = [0.0, 0.0, 0.0]
+        elif im_unch.shape[2] == 2:
+            im_float = img_as_float(cv2.cvtColor(im_unch, cv2.COLOR_GRAY2BGR)) #Greyscale PNG
+            im_float[alpha_mask] = [0.0, 0.0, 0.0]
+
+    end=time.time_ns()
+    parent_inkex.msg(f"Converting to float took {(end - start) / 1e6} ms")
     # near_boudaries_contours, segments = slic.slic_image_test_boundaries(im_float, split_contours)
     # near_boudaries_contours, segments = slic.mask_test_boundaries(image_path, split_contours)
 
@@ -198,7 +209,7 @@ def build_level_1_scratch(parent_inkex, img_cv, focus_regions, options, objects:
             if np.count_nonzero(detail_req_mask) > 0:
                 detail_req_masks.append(detail_req_mask)
         else:
-            raise exception("Invalid focus shape passed in: " + region['form'])
+            raise Exception("Invalid focus shape passed in: " + region['form'])
 
     (outer_edges_cropped, inner_edges_cropped,
      outer_contours_yx_cropped, inner_contours_yx_cropped,

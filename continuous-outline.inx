@@ -19,6 +19,15 @@
                     </param>
                     <param name="slic_regions" type="int" min="1" max="9999" gui-text="Number of SLIC regions">12
                     </param>
+                    <param name="slic_max_image_resolution" type="int" min="500" max="4000"
+                           gui-text="Max resolution in either dimension for SLIC image processing (will downsample if needed)">
+                        1000</param>
+                    <param name="slic_lanczos" type="bool" gui-text="Use Lanczos interpolation for SLIC downscaling (sharper)">
+                        False</param>
+                    <param name="slic_lab" type="bool" gui-text="LAB for SLIC">True
+                    </param>
+                    <param name="slic_greyscale" type="bool" gui-text="Greyscale for SLIC">False
+                    </param>
                     <param name="constrain_slic_within_mask" type="bool" gui-text="Omit lines outside of mask">false
                     </param>
                     <param name="dumb_node_optional_weight" type="int" min="0" max="9999"

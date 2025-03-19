@@ -57,6 +57,14 @@ class continuous_outline(inkex.EffectExtension):
         pars.add_argument("--cuda_slic", type=inkex.Boolean, default=True,
                           help="Use CUDA SLIC")
         pars.add_argument("--slic_regions", type=int, default=12, help="Number of SLIC regions")
+        pars.add_argument("--slic_max_image_resolution", type=int, default=1000,
+                          help="Max resolution in either dimension for SLIC image processing (will downsample if needed)")
+        pars.add_argument("--slic_lanczos", type=inkex.Boolean, default=False,
+                          help="Use Lanczos interpolation for SLIC downscaling (sharper)")
+        pars.add_argument("--slic_lab", type=inkex.Boolean, default=True,
+                          help="LAB for SLIC")
+        pars.add_argument("--slic_greyscale", type=inkex.Boolean, default=False,
+                          help="Greyscale for SLIC")
         pars.add_argument("--transparancy_cutoff", type=float, default=0.1, help="max % transparent considered background")
         pars.add_argument("--maze_sections_across", type=int, default=70, help="Gridding density for approx path formation")
         pars.add_argument("--constrain_slic_within_mask", type=inkex.Boolean, default=False,
