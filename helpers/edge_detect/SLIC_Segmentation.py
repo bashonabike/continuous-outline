@@ -28,6 +28,65 @@ import time
 # # show the plots
 # plt.show()
 
+def try_edge_snap(parent_inkex, image_orig: np.ndarray, contours, downscale_ratio, options):
+	if downscale_ratio >= 1.0: return contours
+	if downscale_ratio <= 0.0: raise Exception("Invalid downsample ratio")
+
+	#Perform Laplacian edge detection & thresholding
+	image_orig_int = (image_orig*255).astype(np.uint8)
+	test = image_orig_int.max()
+	if image_orig.ndim > 2 and image_orig.shape[2] > 1:
+		img_gray = cv2.cvtColor(image_orig_int, cv2.COLOR_BGR2GRAY)
+	else:
+		img_gray = image_orig_int
+
+	img_blurred = cv2.GaussianBlur(img_gray, (5,5), 3)
+	laplaced = cv2.Laplacian(img_blurred, -1, ksize=5)
+	edges = laplaced
+
+	# edges = cv2.Canny(img_gray, 100, 200)
+
+	_, thresholded = cv2.threshold(edges, 127, 255, cv2.THRESH_TOZERO)
+	thresholded = thresholded.astype(np.bool_)
+
+	#Determine distance threshold for snapping based on downscale ratio
+	distance_threshold = 5.0/downscale_ratio
+
+	#Iterate over contours, snapping where viable
+	contours_snapped = []
+	total_snapped = 0
+	for contour in contours:
+		contour_points = contour.reshape(-1, 2)  # Reshape to (n_points, 2)
+		min_x, max_x  = np.min(contour_points[:, 0]), np.max(contour_points[:, 0])
+		min_y, max_y = np.min(contour_points[:, 1]), np.max(contour_points[:, 1])
+		thresholded_area = thresholded[max(int(min_y - distance_threshold), 0):int(max_y + distance_threshold),
+						   max(int(min_x - distance_threshold), 0):int(max_x + distance_threshold)]  # Apply distance threshold:max_y, min_x:max_x]
+		true_coords = np.array(np.where(thresholded_area)).T[:, [1, 0]]  # Transpose for easier iteration, switch to x,y
+		if true_coords.shape[0] == 0:
+			contours_snapped.append(contour)
+			continue
+
+		# Calculate distances (vectorized)
+		distances = np.linalg.norm(true_coords - contour_points[:, np.newaxis], axis=2)
+
+		# Find closest True pixels (vectorized)
+		nearest_indices = np.argmin(distances, axis=1)
+		nearest_distances = distances[np.arange(len(contour_points)), nearest_indices]
+		nearest_true_pixels = true_coords[nearest_indices]
+
+		# Check distance threshold (vectorized)
+		within_threshold = nearest_distances <= distance_threshold
+
+		total_snapped += np.sum(within_threshold)
+
+		# Replace contour points with nearest True pixels
+		contour_points[within_threshold] = nearest_true_pixels[within_threshold]
+
+		contours_snapped.append(contour_points.reshape(contour.shape))  # Reshape back to original contour shape
+
+	return contours_snapped
+
+
 def try_downsample_and_smooth(parent_inkex, image: np.ndarray, options):
 	#Check if image needs to be downsampled
 	shape, downsample_ratio = image.shape, 1.0
@@ -235,7 +294,7 @@ def slic_image_boundary_edges(parent_inkex, options, im_float, mask, num_segment
 	im_downscaled, downscale_ratio = try_downsample_and_smooth(parent_inkex, im_float, options)
 	is_multichannel = im_downscaled.ndim > 2 and im_downscaled.shape[2] > 1
 	for num_segs in range(num_segments, num_segments+20):
-		parent_inkex.msg("Trying " + str(num_segs) + " segments")
+		if parent_inkex is not None: parent_inkex.msg("Trying " + str(num_segs) + " segments")
 		if options.cuda_slic:
 			segments_trial, time_pre_updates = slic(im_downscaled, max_iter=20, compactness=5, convert2lab=options.slic_lab,
 													n_segments=num_segs, enforce_connectivity=enforce_connectivity,
@@ -251,9 +310,9 @@ def slic_image_boundary_edges(parent_inkex, options, im_float, mask, num_segment
 			break
 	if segments is None: raise Exception("Segmentation failed, image too disparate for outlining")
 	end = time.time_ns()
-	parent_inkex.msg(str((end - start)/1e6) + " ms to segment image with " + str(num_segs_actual) + " segments")
+	if parent_inkex is not None: parent_inkex.msg(str((end - start)/1e6) + " ms to segment image with " + str(num_segs_actual) + " segments")
 
-	parent_inkex.msg(str(time_pre_updates) + " ms to do pre-cython prep of image slic")
+	if parent_inkex is not None: parent_inkex.msg(str(time_pre_updates) + " ms to do pre-cython prep of image slic")
 
 
 	if options.constrain_slic_within_mask:
@@ -267,6 +326,8 @@ def slic_image_boundary_edges(parent_inkex, options, im_float, mask, num_segment
 		finder = np.where(segments == segment_val, 255, 0).astype(np.uint8)
 		partial_contours, _ = cv2.findContours(finder, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 		partial_contours_scaled = try_upscale_contours(parent_inkex, partial_contours, downscale_ratio)
+		if options.slic_snap_edges:
+			partial_contours_scaled = try_edge_snap(parent_inkex, im_float, partial_contours, downscale_ratio, options)
 		contours.extend(partial_contours_scaled)
 
 	contours = [c for c in contours if len(c) > options.inner_contour_length_cutoff]
@@ -278,7 +339,7 @@ def slic_image_boundary_edges(parent_inkex, options, im_float, mask, num_segment
 														contour_idx + 1 + contour_offset,
 														contour_idx + 1 + contour_offset))
 	end = time.time_ns()
-	parent_inkex.msg(str((end - start)/1e6) + " ms to find contours with " + str(len(contours)) + " contours")
+	if parent_inkex is not None: parent_inkex.msg(str((end - start)/1e6) + " ms to find contours with " + str(len(contours)) + " contours")
 
 	start = time.time_ns()
 	#Wipe outside edge, false contours
@@ -322,7 +383,7 @@ def slic_image_boundary_edges(parent_inkex, options, im_float, mask, num_segment
 	flipped_contours = [c for c in flipped_contours if len(c) > options.inner_contour_length_cutoff]
 	flipped_contours.sort(key=lambda p: len(p), reverse=True)
 	end = time.time_ns()
-	parent_inkex.msg(str((end - start)/1e6) + " ms to find flipping with " + str(len(contours)) +
+	if parent_inkex is not None: parent_inkex.msg(str((end - start)/1e6) + " ms to find flipping with " + str(len(contours)) +
 					 " contours yielding " + str(len(flipped_contours)) + " flipped contours")
 
 	return edges, flipped_contours, segments, num_segs_actual, ((min_y, min_x), (max_y, max_x))
@@ -387,23 +448,6 @@ def remove_perimeter_ghosting(options, points_list, max_y, max_x):
 
 
 	return segments
-
-
-def slic_image_test_boundaries(im_float, split_contours, num_segments:int =2, enforce_connectivity:bool = True):
-	segments = None
-	for num_segs in range(num_segments, num_segments+20):
-		segments_trial = slic(im_float, n_segments=num_segs, sigma=5, enforce_connectivity=enforce_connectivity)
-		if np.max(segments_trial) > 1:
-			segments = segments_trial
-			break
-	if segments is None: raise Exception("Segmentation failed, image too disparate for outlining")
-
-	return find_contours_near_boundaries(split_contours, segments, tolerance=2), segments
-
-#
-# x_scale = image_size[0] / float(svg_image.get('width'))
-# y_scale = image_size[1] / float(svg_image.get('height'))
-
 
 
 def is_contour_near_segment_boundary(contour: np.ndarray, segments: np.ndarray, tolerance: int = 10,

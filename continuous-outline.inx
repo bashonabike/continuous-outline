@@ -24,6 +24,8 @@
                         1000</param>
                     <param name="slic_lanczos" type="bool" gui-text="Use Lanczos interpolation for SLIC downscaling (sharper)">
                         False</param>
+                    <param name="slic_snap_edges" type="bool" gui-text="Snap SLIC to edges">False
+                    </param>
                     <param name="slic_lab" type="bool" gui-text="LAB for SLIC">True
                     </param>
                     <param name="slic_greyscale" type="bool" gui-text="Greyscale for SLIC">False

@@ -61,6 +61,8 @@ class continuous_outline(inkex.EffectExtension):
                           help="Max resolution in either dimension for SLIC image processing (will downsample if needed)")
         pars.add_argument("--slic_lanczos", type=inkex.Boolean, default=False,
                           help="Use Lanczos interpolation for SLIC downscaling (sharper)")
+        pars.add_argument("--slic_snap_edges", type=inkex.Boolean, default=False,
+                          help="Snap SLIC to edges")
         pars.add_argument("--slic_lab", type=inkex.Boolean, default=True,
                           help="LAB for SLIC")
         pars.add_argument("--slic_greyscale", type=inkex.Boolean, default=False,

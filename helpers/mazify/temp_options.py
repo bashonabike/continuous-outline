@@ -1,5 +1,37 @@
 import math
 
+
+cuda_slic = False
+slic_regions = 6
+slic_max_image_resolution = 500
+slic_lanczos = False
+slic_snap_edges = True
+slic_lab = True
+slic_greyscale = False
+transparancy_cutoff = 0.5
+maze_sections_across = 70
+constrain_slic_within_mask = False
+dumb_node_optional_weight = 1
+dumb_node_optional_max_variable_weight = 8
+dumb_node_min_opt_weight_reduced = 2
+dumb_node_blank_weight = 200
+dumb_node_opt_jump_weight = 4
+dumb_node_req_jump_weight = 1
+dumb_node_required_weight = 1
+max_inner_path_seg_manhatten_length = 50
+outer_contour_length_cutoff = 50
+inner_contour_length_cutoff = 50
+inner_contour_variable_weights = True
+trace_inner_too = True
+scorched_earth = True
+scorched_earth_weight_multiplier = 5
+simplify_tolerance = 1.0
+preview = True
+ids = []
+selected_nodes = []
+scale = 1.0
+
+
 #NOTE: should be in radians, even spacing between quadrants (pi/2, pi/4, pi/8,....,etc)
 # directions_incr = math.pi/16
 # proximity_search_radius = 40
@@ -14,42 +46,42 @@ import math
 # edge_magnetism_look_ahead_sections = maze_sections_across//2
 # edge_magnetism_cutoff = 0.5
 
-slic_regions = 12
-
-# dir_smoothing_size, dir_smoothing_sigma = 21, 2.0
-
-dumb_node_optional_weight = 1
-dumb_node_optional_max_variable_weight = 6 #Turn on with inner_contour_variable_weights
-dumb_node_min_opt_weight_reduced = 1
-dumb_node_blank_weight = 200
-dumb_node_opt_jump_weight = 1 #NOTE: should be 1/2 cost of jump, since always jumps 2x to get to next path in section
-dumb_node_req_jump_weight = 1 #NOTE: should be 1/2 cost of jump, since always jumps 2x to get to next path in section
-dumb_node_required_weight = 1
-
-max_inner_path_seg_manhatten_length = 50
-
-outer_contour_length_cutoff = 200
-inner_contour_length_cutoff = 20
-inner_contour_variable_weights = True #Shorter contours get higher weight, thus less preferable
-
-scorched_earth = True
-scorched_earth_weight_multiplier = 6
-#TODO: Make sure to reset scorched earth weights when generating new maze
-
-snake_trace_max_jump_from_outer = 2
-snake_details_polygon_faces = 7
-
-typewriter_lines = 5 #MUST BE AT LEAST 2!!!
-typewriter_traverse_threshold = 0.5 #Ratio of region height to typewriter line height
-
-zigzag_typewriter_lines = 5 #MUST BE AT LEAST 2!!!
-zigzag_typewriter_traverse_threshold = 0.3 #Ratio of region height to typewriter line height
-
-vertical_zigzag_lines = 5 #MUST BE AT LEAST 2!!!
-vertical_zigzag_traverse_threshold = 0.3 #Ratio of region height to typewriter line height
-
-back_forth_lines = 12 #MUST BE AT LEAST 2!!!
-back_forth_traverse_threshold = 0.3 #Ratio of region height to typewriter line height
+# slic_regions = 12
+#
+# # dir_smoothing_size, dir_smoothing_sigma = 21, 2.0
+#
+# dumb_node_optional_weight = 1
+# dumb_node_optional_max_variable_weight = 6 #Turn on with inner_contour_variable_weights
+# dumb_node_min_opt_weight_reduced = 1
+# dumb_node_blank_weight = 200
+# dumb_node_opt_jump_weight = 1 #NOTE: should be 1/2 cost of jump, since always jumps 2x to get to next path in section
+# dumb_node_req_jump_weight = 1 #NOTE: should be 1/2 cost of jump, since always jumps 2x to get to next path in section
+# dumb_node_required_weight = 1
+#
+# max_inner_path_seg_manhatten_length = 50
+#
+# outer_contour_length_cutoff = 200
+# inner_contour_length_cutoff = 20
+# inner_contour_variable_weights = True #Shorter contours get higher weight, thus less preferable
+#
+# scorched_earth = True
+# scorched_earth_weight_multiplier = 6
+# #TODO: Make sure to reset scorched earth weights when generating new maze
+#
+# snake_trace_max_jump_from_outer = 2
+# snake_details_polygon_faces = 7
+#
+# typewriter_lines = 5 #MUST BE AT LEAST 2!!!
+# typewriter_traverse_threshold = 0.5 #Ratio of region height to typewriter line height
+#
+# zigzag_typewriter_lines = 5 #MUST BE AT LEAST 2!!!
+# zigzag_typewriter_traverse_threshold = 0.3 #Ratio of region height to typewriter line height
+#
+# vertical_zigzag_lines = 5 #MUST BE AT LEAST 2!!!
+# vertical_zigzag_traverse_threshold = 0.3 #Ratio of region height to typewriter line height
+#
+# back_forth_lines = 12 #MUST BE AT LEAST 2!!!
+# back_forth_traverse_threshold = 0.3 #Ratio of region height to typewriter line height
 
 #TODO: Do "include details proximal to outer edge" setting, maybe include edges that are at least a certain % within the allowable margin
 #Set them as required
