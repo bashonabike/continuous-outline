@@ -148,64 +148,81 @@ def objects_to_dict(obj_names):
 
 
 #region Builders
-def build_level_1_scratch(parent_inkex, img_cv, focus_regions, options, objects: dict):
+def build_level_1_scratch(parent_inkex, svg_images_with_paths, overall_images_dims_offsets, focus_regions,
+                          advanced_crop_box, options, objects: dict):
     import cv2
     import numpy as np
     from skimage.util import img_as_float
     import helpers.edge_detect.SLIC_Segmentation as slic
     import time
 
-    im_unch = img_cv
-
-    # im_bgrem = bgrem.remove_background(im_unch, "jit")
+    #TODO: Configure blend mode
+    # if not options.slic_multi_image_conjoin_processing:
+    outer_contours, inner_contours = [], []
     start = time.time_ns()
-    if im_unch.shape[2] == 4:  # Check if it has an alpha channel
-        alpha_mask = im_unch[:, :, 3] == 0
-    elif im_unch.shape[2] == 2:
-        alpha_mask = im_unch[:, :, 1] == 0
-    else:
-        alpha_mask = None
-        im_float = img_as_float(im_unch)  # If it does not have an alpha channel, just use the image directly.
+    for svg_image_with_path in svg_images_with_paths:
+        im_unch = svg_image_with_path['img_cv_cropped']
 
-    if options.slic_greyscale:
+        # im_bgrem = bgrem.remove_background(im_unch, "jit")
         if im_unch.shape[2] == 4:  # Check if it has an alpha channel
-            im_float = img_as_float(cv2.cvtColor(im_unch, cv2.COLOR_BGRA2GRAY))
-            im_float[alpha_mask] = 0.0
+            alpha_mask = im_unch[:, :, 3] == 0
         elif im_unch.shape[2] == 2:
-            im_float = img_as_float(im_unch[:,:,0]) #Greyscale PNG
-            im_float[alpha_mask] = 0.0
-    else:
-        if im_unch.shape[2] == 4:  # Check if it has an alpha channel
-            im_float = img_as_float(cv2.cvtColor(im_unch, cv2.COLOR_BGRA2BGR))
-            im_float[alpha_mask] = [0.0, 0.0, 0.0]
-        elif im_unch.shape[2] == 2:
-            im_float = img_as_float(cv2.cvtColor(im_unch, cv2.COLOR_GRAY2BGR)) #Greyscale PNG
-            im_float[alpha_mask] = [0.0, 0.0, 0.0]
+            alpha_mask = im_unch[:, :, 1] == 0
+        else:
+            alpha_mask = None
+            im_float = img_as_float(im_unch)  # If it does not have an alpha channel, just use the image directly.
 
-    end=time.time_ns()
-    parent_inkex.msg(f"Converting to float took {(end - start) / 1e6} ms")
-    # near_boudaries_contours, segments = slic.slic_image_test_boundaries(im_float, split_contours)
-    # near_boudaries_contours, segments = slic.mask_test_boundaries(image_path, split_contours)
+        if options.slic_greyscale:
+            if im_unch.shape[2] == 4:  # Check if it has an alpha channel
+                im_float = img_as_float(cv2.cvtColor(im_unch, cv2.COLOR_BGRA2GRAY))
+                im_float[alpha_mask] = 0.0
+            elif im_unch.shape[2] == 2:
+                im_float = img_as_float(im_unch[:,:,0]) #Greyscale PNG
+                im_float[alpha_mask] = 0.0
+        else:
+            if im_unch.shape[2] == 4:  # Check if it has an alpha channel
+                im_float = img_as_float(cv2.cvtColor(im_unch, cv2.COLOR_BGRA2BGR))
+                im_float[alpha_mask] = [0.0, 0.0, 0.0]
+            elif im_unch.shape[2] == 2:
+                im_float = img_as_float(cv2.cvtColor(im_unch, cv2.COLOR_GRAY2BGR)) #Greyscale PNG
+                im_float[alpha_mask] = [0.0, 0.0, 0.0]
 
-    outer_edges, outer_contours_yx, mask, bounds_outer = slic.mask_boundary_edges(options, im_unch)
-    start = time.time_ns()
-    inner_edges, inner_contours_yx, segments, num_segs, bounds_inner = slic.slic_image_boundary_edges(parent_inkex,
-                                                                                                      options, im_float,
-                                                                                                        mask,
-                                                                                        num_segments=options.slic_regions,
-                                                                                        enforce_connectivity=False,
-                                                                                        contour_offset = len(outer_contours_yx))
+        end=time.time_ns()
+        parent_inkex.msg(f"Converting to float took {(end - start) / 1e6} ms")
+        # near_boudaries_contours, segments = slic.slic_image_test_boundaries(im_float, split_contours)
+        # near_boudaries_contours, segments = slic.mask_test_boundaries(image_path, split_contours)
+
+        outer_contours_cur, mask = slic.mask_boundary_edges(parent_inkex, options, im_unch, overall_images_dims_offsets,
+                                                            svg_image_with_path)
+        start = time.time_ns()
+        inner_contours_cur, segments, num_segs = slic.slic_image_boundary_edges(parent_inkex, options, im_float, mask,
+                                                                                overall_images_dims_offsets,
+                                                                                svg_image_with_path,
+                                                                            num_segments=options.slic_regions,
+                                                                            enforce_connectivity=False)
+        outer_contours.extend(outer_contours_cur)
+        inner_contours.extend(inner_contours_cur)
+
+    #Flip contours and fill into edge arrays
+    (outer_edges, inner_edges,
+     outer_contours_yx, inner_contours_yx,
+     bounds_outer, bounds_inner) = slic.draw_and_flip_contours(parent_inkex, options, outer_contours,
+                                                               inner_contours, overall_images_dims_offsets,
+                                                               advanced_crop_box)
+
     end = time.time_ns()
     parent_inkex.msg(f"SLIC took {(end - start) / 1e6} ms")
 
     detail_req_masks = []
     for region in focus_regions:
         if region['form'] == "ellipse":
-            detail_req_mask = ellipse_mask(parent_inkex, region['cx'], region['cy'], region['rx'], region['ry'], outer_edges.shape)
+            detail_req_mask = ellipse_mask(parent_inkex, region['cx'], region['cy'], region['rx'], region['ry'],
+                                           outer_edges.shape)
             if np.count_nonzero(detail_req_mask) > 0:
                 detail_req_masks.append(detail_req_mask)
         elif region['form'] == "rectangle":
-            detail_req_mask = rect_mask(parent_inkex, region['x'], region['y'], region['width'], region['height'], outer_edges.shape)
+            detail_req_mask = rect_mask(parent_inkex, region['x'], region['y'], region['width'], region['height'],
+                                        outer_edges.shape)
             if np.count_nonzero(detail_req_mask) > 0:
                 detail_req_masks.append(detail_req_mask)
         else:

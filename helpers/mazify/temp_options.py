@@ -30,6 +30,7 @@ preview = True
 ids = []
 selected_nodes = []
 scale = 1.0
+mask_retain_inner_transparencies = True
 
 
 #NOTE: should be in radians, even spacing between quadrants (pi/2, pi/4, pi/8,....,etc)

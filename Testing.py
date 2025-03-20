@@ -173,8 +173,7 @@ for file in os.listdir("Trial-AI-Base-Images\\bg_removed"):
                                                                                                       options, im_float,
                                                                                                         mask,
                                                                                         num_segments=options.slic_regions,
-                                                                                        enforce_connectivity=False,
-                                                                                        contour_offset = len(outer_contours_yx))
+                                                                                        enforce_connectivity=False)
       start = time.time_ns()
       crop = (tuple([min(o, c) for o, c in zip(bounds_outer[0], bounds_inner[0])]),
               tuple([max(o, c) for o, c in zip(bounds_outer[1], bounds_inner[1])]))

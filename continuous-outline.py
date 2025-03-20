@@ -1,3 +1,4 @@
+import time
 from logging import exception
 
 import inkex
@@ -27,6 +28,9 @@ License: GNU GPL v3
 Used version of imagetracerjs: https://github.com/jankovicsandras/imagetracerjs/commit/4d0f429efbb936db1a43db80815007a2cb113b34
 
 """
+
+#TODO: Support transformed images?? Maybe find some existing code for this
+#TODO: Neural net randomize assortment opt and req sections. Maybe can then do straight line approx randomized slic each edge from one part section to other side, build into random blobs
 
 class continuous_outline(inkex.EffectExtension):
     def checkImagePath(self, element):
@@ -67,6 +71,14 @@ class continuous_outline(inkex.EffectExtension):
                           help="LAB for SLIC")
         pars.add_argument("--slic_greyscale", type=inkex.Boolean, default=False,
                           help="Greyscale for SLIC")
+        pars.add_argument("--slic_multi_image_conjoin_processing", type=inkex.Boolean, default=False,
+                          help="Conjoin processing of images")
+        pars.add_argument("--slic_multi_image_blend_mode", type=str, dest="slic_multi-image-blend-mode",
+                          default="Overlay",
+                          choices=["Overlay"],
+                          help="Blend mode for multi image conjoined processing")
+        pars.add_argument("--mask_retain_inner_transparencies", type=inkex.Boolean, default=False,
+                          help="Retain inner transparency contours")
         pars.add_argument("--transparancy_cutoff", type=float, default=0.1, help="max % transparent considered background")
         pars.add_argument("--maze_sections_across", type=int, default=70, help="Gridding density for approx path formation")
         pars.add_argument("--constrain_slic_within_mask", type=inkex.Boolean, default=False,
@@ -342,9 +354,57 @@ class continuous_outline(inkex.EffectExtension):
         self.msg(f"Image offsets: (x: {x_offset}, y: {y_offset})")
         return (x_offset, y_offset)
 
-    def det_img_and_focus_specs(self, image_path, detail_bounds, approx_trace_path_string):
+    def get_max_dpi(self, svg_images_with_paths):
+        max_dpi = 0 #NOTE: The "i" is a stand-in, this functions for any base svg measurement system
+        for svg_image_with_path in svg_images_with_paths:
+            max_dpi = max(max_dpi, svg_image_with_path['img_dpi'])
+
+        return {"max_dpi": max_dpi}
+
+
+    def get_overall_images_dims_offsets(self, svg_images_with_paths):
+        x_min, x_max, y_min, y_max = 99999.0, -99999.0, 99999.0, -99999.0
+        for svg_image_with_path in svg_images_with_paths:
+            x_cur_min, x_cur_max = (float(svg_image_with_path['x']),
+                                    float(svg_image_with_path['x'] + svg_image_with_path['width']))
+            y_cur_min, y_cur_max = (float(svg_image_with_path['y']),
+                                    float(svg_image_with_path['y'] + svg_image_with_path['height']))
+
+            x_min = min(x_min, x_cur_min)
+            x_max = max(x_max, x_cur_max)
+            y_min = min(y_min, y_cur_min)
+            y_max = max(y_max, y_cur_max)
+
+        x, y = x_min, y_min
+        width, height = x_max - x_min, y_max - y_min
+        return {"x": x, "y": y, "width": width, "height": height}
+
+    # def get_overall_cv_images_dims_offsets(self, svg_images_with_paths):
+    #     x_min, x_max, y_min, y_max = 9999999.0, -9999999.0, 9999999.0, -9999999.0
+    #     max_dpi = 0 #NOTE: The "i" is a stand-in, this functions for any base svg measurement system
+    #     for svg_image_with_path in svg_images_with_paths:
+    #         x_cur_min, x_cur_max = (float(svg_image_with_path['x_cv']),
+    #                                 float(svg_image_with_path['x_cv'] + svg_image_with_path['width_cv']))
+    #         y_cur_min, y_cur_max = (float(svg_image_with_path['y_cv']),
+    #                                 float(svg_image_with_path['y_cv'] + svg_image_with_path['height_cv']))
+    #
+    #         x_min = min(x_min, x_cur_min)
+    #         x_max = max(x_max, x_cur_max)
+    #         y_min = min(y_min, y_cur_min)
+    #         y_max = max(y_max, y_cur_max)
+    #
+    #         img_dpi = svg_image_with_path['width_cv']/svg_image_with_path['width']
+    #         max_dpi = max(max_dpi, img_dpi)
+    #
+    #     x, y = x_min, y_min
+    #     width, height = x_max - x_min, y_max - y_min
+    #     #NOTE: x_cv and y_cv should both be 0!
+    #     return {"x_cv": x, "y_cv": y, "width_cv": width, "height_cv": height, "max_dpi":max_dpi}
+
+    def det_img_and_focus_specs(self, svg_images_with_paths, detail_bounds, approx_trace_path_string, crop_box):
         img_focus_specs = []
-        img_focus_specs.append(str(image_path))
+        for svg_image_with_path in svg_images_with_paths:
+            img_focus_specs.append(str(svg_image_with_path['image_path']))
         for bounds in detail_bounds:
             # Check if ellipse or rect
             if bounds.tag == inkex.addNS('rect', 'svg'):
@@ -362,6 +422,15 @@ class continuous_outline(inkex.EffectExtension):
                 img_focus_specs.append(str(float(bounds.attrib.get('ry', 0))))
             else:
                 raise inkex.AbortExtension("Only ellipses and rectangles are supported as bounds.")
+        # Check if ellipse or rect
+        if crop_box.tag == inkex.addNS('rect', 'svg'):
+            # Get rectangle properties
+            img_focus_specs.append(str(float(crop_box.attrib.get('x', 0))))
+            img_focus_specs.append(str(float(crop_box.attrib.get('y', 0))))
+            img_focus_specs.append(str(float(crop_box.attrib.get('width', 0))))
+            img_focus_specs.append(str(float(crop_box.attrib.get('height', 0))))
+        else:
+            raise inkex.AbortExtension("Only rectangles are supported as crop box.")
 
         #TODO: If only this changes level=3 once config setting up modify with ext input screen open
         img_focus_specs.append(str(approx_trace_path_string))
@@ -376,24 +445,24 @@ class continuous_outline(inkex.EffectExtension):
 
         return selection_info_df
 
-    def form_approx_control_points_normalized(self, approx_ctrl_points:list, image_in_svg):
+    def form_approx_control_points_normalized(self, approx_ctrl_points:list, overall_images_dims_offsets):
         #Convert ctrl points to img yx format
         approx_ctrl_points_nd = np.array([(p[1], p[0]) for p in approx_ctrl_points])
 
         #Determine image offsets
-        offsets_xy = self.get_image_offsets(image_in_svg)
-        offsets_nd = np.array((offsets_xy[1], offsets_xy[0]))
-        norms = np.array((float(image_in_svg.get('height')), float(image_in_svg.get('width'))))
+        offsets_nd = np.array((overall_images_dims_offsets['y'], overall_images_dims_offsets['x']))
+        norms = np.array((float(overall_images_dims_offsets['height']),
+                          float(overall_images_dims_offsets['width'])))
 
         #Determined shifted and normalized points
         formed_points_nd = (approx_ctrl_points_nd - offsets_nd)/norms
         return formed_points_nd
 
 
-    def form_focus_region_specs_normalized(self, detail_bounds, image_in_svg):
+    def form_focus_region_specs_normalized(self, detail_bounds, overall_images_dims_offsets):
         #Determine image offsets
-        (x_offset, y_offset) = self.get_image_offsets(image_in_svg)
-        (x_norm, y_norm) = float(image_in_svg.get('width')),  float(image_in_svg.get('height'))
+        (x_offset, y_offset) = (overall_images_dims_offsets['x'], overall_images_dims_offsets['y'])
+        (x_norm, y_norm) = (overall_images_dims_offsets['width'], overall_images_dims_offsets['height'])
         bounds_out = []
 
         #Determined shifted and normalized bounds
@@ -418,6 +487,79 @@ class continuous_outline(inkex.EffectExtension):
 
         return bounds_out
 
+    def form_crop_box_advanced(self, crop_box, overall_images_dims_offsets):
+        if crop_box is None:
+            #Set points to overall images dims
+            x_raw, y_raw, width_raw, height_raw = (overall_images_dims_offsets['x'], overall_images_dims_offsets['y'],
+                                                   overall_images_dims_offsets['width'],
+                                                   overall_images_dims_offsets['height'])
+        else:
+            x_raw, y_raw, width_raw, height_raw = (crop_box.get('x'), crop_box.get('y'),
+                                                   float(crop_box.get('width')), float(crop_box.get('height')))
+
+            x_raw, y_raw = 0.0 if x_raw is None else float(x_raw), 0.0 if y_raw is None else float(y_raw)
+
+        #Set in svg crop-box dims
+        adv_bound_points = {'x': x_raw, 'y': y_raw, 'width': width_raw, 'height': height_raw}
+        adv_bound_points.update({'x_min': x_raw, 'y_min': y_raw,
+                                 'x_max': x_raw + width_raw, 'y_max': y_raw + height_raw})
+
+        # #Get normalized bound points
+        # #NOTE: these are all relative to overall images offsets!!
+        # (x_offset, y_offset) = (overall_images_dims_offsets['x'], overall_images_dims_offsets['y'])
+        # (x_norm, y_norm) = (overall_images_dims_offsets['width'], overall_images_dims_offsets['height'])
+        # x_min, y_min = (x_raw - x_offset) / x_norm, (y_raw - y_offset) / y_norm
+        # x_max, y_max = x_min + width_raw / x_norm, y_min + height_raw / y_norm
+        # x_min, y_min = max(x_min, 0.0), max(y_min, 0.0)
+        # x_max, y_max = min(x_max, 1.0), min(y_max, 1.0)
+
+        # #Get cv bound points
+        # adv_bound_points['x_min_cv'] = int(round(x_min * overall_images_dims_offsets['width_cv'],0))
+        # adv_bound_points['y_min_cv'] = int(round(y_min * overall_images_dims_offsets['height_cv'],0))
+        # adv_bound_points['x_max_cv'] = int(round(x_max * overall_images_dims_offsets['width_cv'],0))
+        # adv_bound_points['y_max_cv'] = int(round(y_max * overall_images_dims_offsets['height_cv'],0))
+        #
+        # adv_bound_points['width_cv'] = adv_bound_points['x_max_cv'] - adv_bound_points['x_min_cv']
+        # adv_bound_points['height_cv'] = adv_bound_points['y_max_cv'] - adv_bound_points['y_min_cv']
+
+        return adv_bound_points
+
+    def crop_svg_images(self, svg_images_with_paths, advanced_crop_box):
+        for svg_image_with_path in svg_images_with_paths:
+            #Determine svg crop points if appl
+            svg_image_with_path['x_crop_min'] = max(advanced_crop_box['x_min'] - svg_image_with_path['x'], 0)
+            svg_image_with_path['x_crop_max'] = min(advanced_crop_box['x_max'] - svg_image_with_path['x'],
+                                                       svg_image_with_path['width'])
+            svg_image_with_path['y_crop_min'] = max(advanced_crop_box['y_min'] - svg_image_with_path['y'], 0)
+            svg_image_with_path['y_crop_max'] = min(advanced_crop_box['y_max'] - svg_image_with_path['y'],
+                                                       svg_image_with_path['height'])
+            if (svg_image_with_path['y_crop_max'] - svg_image_with_path['y_crop_min'] <= 0
+                or svg_image_with_path['x_crop_max'] - svg_image_with_path['x_crop_min'] <= 0):
+                svg_image_with_path['include'] = False
+            else:
+                svg_image_with_path['include'] = True
+
+                x_min_cv, x_max_cv = (int(round(svg_image_with_path['img_dpi']*svg_image_with_path['x_crop_min'],0)),
+                                      int(round(svg_image_with_path['img_dpi']*svg_image_with_path['x_crop_max'],0)))
+                y_min_cv, y_max_cv = (int(round(svg_image_with_path['img_dpi']*svg_image_with_path['y_crop_min'],0)),
+                                      int(round(svg_image_with_path['img_dpi']*svg_image_with_path['y_crop_max'],0)))
+                self.msg(f"width_cv {svg_image_with_path['width_cv']}, height_cv {svg_image_with_path['height_cv']}")
+                self.msg(f"xmincv {x_min_cv}, xmaxcv {x_max_cv}"
+                         f"ymincv {y_min_cv}, ymaxcv {y_max_cv}")
+                svg_image_with_path['img_cv_cropped'] = svg_image_with_path['img_cv'][y_min_cv:y_max_cv,
+                                                        x_min_cv:x_max_cv]
+                self.msg("Crop dims: " + str(svg_image_with_path['img_cv_cropped'].shape))
+                self.msg("DPI: " + str(svg_image_with_path['img_dpi']))
+
+                #Amount to offset cropped image to edge of crop box (if at all)
+                svg_image_with_path['x_crop_box_offset'] = (max(advanced_crop_box['x_min'], svg_image_with_path['x'])
+                                                           - advanced_crop_box['x_min'])
+                svg_image_with_path['y_crop_box_offset'] = (max(advanced_crop_box['y_min'], svg_image_with_path['y'])
+                                                           - advanced_crop_box['y_min'])
+
+        svg_images_with_paths = [s for s in svg_images_with_paths if s['include']]
+        return svg_images_with_paths
+
     def get_straight_line_points(self, path_string):
         """Extracts points from a straight line path string without using re."""
         path_coords = self._parse_path(path_string)
@@ -425,6 +567,8 @@ class continuous_outline(inkex.EffectExtension):
         #     self.msg(f"Coord {i}: {coord}")
 
         return path_coords
+
+need to bound approx trace into crop box
 
     def effect(self):
         # internal overwrite for scale:
@@ -441,8 +585,19 @@ class continuous_outline(inkex.EffectExtension):
 
         if len(self.svg.selected) == 0:
             self.svg.selection = self.svg.descendants().filter(*self.select_all)
-        images = self.svg.selection.filter(inkex.Image).values()
-        detail_bounds= self.svg.selection.filter(inkex.Rectangle, inkex.Ellipse).values()
+        svg_images = self.svg.selection.filter(inkex.Image).values()
+        detail_bounds= self.svg.selection.filter(inkex.Ellipse).values()
+        crop_boxes = self.svg.selection.filter(inkex.Rectangle).values()
+
+        if len(crop_boxes) > 1:
+            self.msg("Only 1 rectangle, used for cropping bound box")
+            data_ret.close_connection()
+            return
+
+        crop_box = None
+        for box in crop_boxes:
+            crop_box = box
+            break
 
         approx_traces = []
         for id, node in self.svg.selected.items():
@@ -464,22 +619,26 @@ class continuous_outline(inkex.EffectExtension):
                 data_ret.close_connection()
                 return
 
-        match len(images):
+        match len(svg_images):
             case 0:
                 if len(self.svg.selected) > 0:
                     self.msg("No images found in selection! Check if you selected a group instead.")
                 else:
                     self.msg("No images found in document!")
-            case 1:
-                svg_image = None
-                for img in images:
-                    svg_image = img
-                    break
-                image_path = self.checkImagePath(svg_image)
-                img_is_embedded = False
-                if image_path is None:  # check if image is embedded or linked
-                    image_path = svg_image.get('{http://www.w3.org/1999/xlink}href')
-                    img_is_embedded = True
+            case _:
+                svg_images_with_paths = []
+                for svg_image in svg_images:
+                    image_path = self.checkImagePath(svg_image)
+                    img_is_embedded = False
+                    if image_path is None:  # check if image is embedded or linked
+                        image_path = svg_image.get('{http://www.w3.org/1999/xlink}href')
+                        img_is_embedded = True
+                    offsets_xy = self.get_image_offsets(svg_image)
+                    svg_images_with_paths.append({"svg_image": svg_image, "img_is_embedded": img_is_embedded,
+                                                  "image_path": image_path,
+                                                  "height": float(svg_image.get('height')),
+                                                  "width": float(svg_image.get('width')),
+                                                  "x": offsets_xy[0], "y": offsets_xy[1]})
 
                 #Check to verify selection/doc/params haven't changed since last run
                 approx_trace = None
@@ -487,8 +646,9 @@ class continuous_outline(inkex.EffectExtension):
                     approx_trace = path
                     break
                 approx_trace_path_string = approx_trace.get('d')
-                img_and_focus_specs_df = self.det_img_and_focus_specs(image_path, detail_bounds,
-                                                                      approx_trace_path_string).dropna()
+                img_and_focus_specs_df = self.det_img_and_focus_specs(svg_images_with_paths, detail_bounds,
+                                                                      approx_trace_path_string,
+                                                                      crop_box).dropna()
                 update_level = data_ret.get_selection_match_level(self, img_and_focus_specs_df)
 
                 self.msg("post-get selection match update level: " + str(update_level))
@@ -501,12 +661,62 @@ class continuous_outline(inkex.EffectExtension):
                 #TODO: Get object creation working maybe, might not be worth it???
                 if update_level == 3: update_level = 2
 
+                #Determine overall offsets and dims:
+                overall_images_dims_offsets = self.get_overall_images_dims_offsets(svg_images_with_paths)
+
                 #Get approx control points for final path
                 approx_ctrl_points = self.get_straight_line_points(approx_trace_path_string)
                 formed_normalized_ctrl_points_nd = self.form_approx_control_points_normalized(approx_ctrl_points,
-                                                                                             svg_image)
+                                                                                             overall_images_dims_offsets)
 
                 self.msg("Constrain: " + str(self.options.constrain_slic_within_mask))
+
+                #Build up image data
+                #TODO: Push this back into level 1, cache?
+                start = time.time_ns()
+                import cv2
+                for svg_image_with_paths in svg_images_with_paths:
+                    if svg_image_with_paths['img_is_embedded']:
+                        import base64
+                        # find comma position
+                        i = 0
+                        while i < 40:
+                            if svg_image_with_paths['image_path'][i] == ',':
+                                break
+                            i = i + 1
+                        img_data = base64.b64decode(
+                            svg_image_with_paths['image_path'][i + 1:len(svg_image_with_paths['image_path'])])
+                        img_array = np.frombuffer(img_data, dtype=np.uint8)
+                        img_cv = {'img_cv': cv2.imdecode(img_array, cv2.IMREAD_UNCHANGED)}
+                    else:
+                        img_cv = {'img_cv': cv2.imread(svg_image_with_paths['image_path'], cv2.IMREAD_UNCHANGED)}
+
+                    img_cv['height_cv'], img_cv['width_cv'] = img_cv['img_cv'].shape[0], img_cv['img_cv'].shape[1]
+                    img_cv['img_dpi'] = img_cv['width_cv']/svg_image_with_paths['width']
+                    # img_cv['y_cv']= int(round(((svg_image_with_paths['y'] - overall_images_dims_offsets['y'])
+                    #                  *(float(img_cv['height_cv'])/svg_image_with_paths['height'])), 0))
+                    # img_cv['x_cv'] = int(round(((svg_image_with_paths['x'] - overall_images_dims_offsets['x'])
+                    #                   *(float(img_cv['width_cv'])/svg_image_with_paths['width'])), 0))
+                    svg_image_with_paths.update(img_cv)
+
+                end = time.time_ns()
+                self.msg("SVG images processing time: " + str((end - start) / 1000000) + " ms")
+
+                start = time.time_ns()
+
+                #Find dpi of working matte
+                overall_images_dims_offsets.update(self.get_max_dpi(svg_images_with_paths))
+
+                #Form up normalized focus regions
+                normalized_focus_region_specs =\
+                    self.form_focus_region_specs_normalized(detail_bounds, overall_images_dims_offsets)
+
+                #Build crop bounding box and crop images
+                advanced_crop_box = self.form_crop_box_advanced(crop_box, overall_images_dims_offsets)
+                svg_images_with_paths = self.crop_svg_images(svg_images_with_paths, advanced_crop_box)
+
+                end = time.time_ns()
+                self.msg("SVG shapes processing time: " + str((end - start) / 1000000) + " ms")
 
                 #Retrieve or calculate data as needed
                 objects = {}
@@ -514,37 +724,17 @@ class continuous_outline(inkex.EffectExtension):
                     case 0 | 1:
                         import helpers.build_objects as buildscr
                         import helpers.caching.set_data_by_level as setdb
-                        import cv2
-
-                        #Build up image data
-                        if img_is_embedded:
-                            import base64
-                            # find comma position
-                            i = 0
-                            while i < 40:
-                                if image_path[i] == ',':
-                                    break
-                                i = i + 1
-                            img_data = base64.b64decode(image_path[i + 1:len(image_path)])
-                            img_array = np.frombuffer(img_data, dtype=np.uint8)
-                            img_cv = cv2.imdecode(img_array, cv2.IMREAD_UNCHANGED)
-                        else:
-                            img_cv = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
 
                         #Retrieve Level 1 objects from db
                         _, dataframes = data_ret.retrieve_and_wipe_data(0)
 
-                        #Form up normalized focus regions
-                        normalized_focus_region_specs = self.form_focus_region_specs_normalized(detail_bounds, svg_image)
-
                         #Levels 1-4 objects from scratch
-                        for region in normalized_focus_region_specs:
-                            self.msg(region)
-                        buildscr.build_level_1_scratch(self, img_cv, normalized_focus_region_specs, self.options, objects)
+                        buildscr.build_level_1_scratch(self, svg_images_with_paths, overall_images_dims_offsets,
+                                                       normalized_focus_region_specs, advanced_crop_box,
+                                                       self.options, objects)
                         buildscr.build_level_2_scratch(self.options, objects)
                         buildscr.build_level_3_scratch(self, self.options, objects, formed_normalized_ctrl_points_nd)
                         buildscr.build_level_4_scratch(self.options, objects)
-                        # for key in objects.keys(): self.msg(key)
 
                         #Build Level 1-4 data into dataframes
                         setdb.set_level_1_data(dataframes, objects)
@@ -650,17 +840,16 @@ class continuous_outline(inkex.EffectExtension):
                     formed_path_nd = np.array(objects['formed_path'])
                     formed_path_xy = formed_path_nd[:, [1, 0]]
 
-                    #Determine scaling
-                    image_size = (objects["img_width"], objects["img_height"])
-                    x_scale = image_size[0] / float(svg_image.get('width'))
-                    y_scale = image_size[1] / float(svg_image.get('height'))
+                    #Determine scaling & shifting
+                    size_cv = (int(round(overall_images_dims_offsets['max_dpi'] * advanced_crop_box['width'], 0)),
+                     int(round(overall_images_dims_offsets['max_dpi'] * advanced_crop_box['height'], 0)))
+                    x_scale = size_cv[0] / float(advanced_crop_box['width'])
+                    y_scale = size_cv[1] / float(advanced_crop_box['height'])
                     scale_nd = np.array([x_scale, y_scale])
+                    shift_nd = np.array([advanced_crop_box['x'], advanced_crop_box['y']])
 
-                    # Determine image offsets
-                    main_image_offsets = np.array(self.get_image_offsets(svg_image))
-
-                    #Offset main contour to line up with master photo on svg
-                    formed_path_shifted = (formed_path_xy/scale_nd + main_image_offsets).tolist()
+                    #Offset main contour to line up with crop box on svg
+                    formed_path_shifted = (formed_path_xy/scale_nd + shift_nd).tolist()
 
                     #Build the path commands
                     commands = []
@@ -708,12 +897,6 @@ class continuous_outline(inkex.EffectExtension):
 
                         #Clear the database
                         data_ret.wipe_data()
-
-            case _:
-                if len(self.svg.selected) > 0:
-                    self.msg("Multiple images found in selection! Please select only 1, plus any focal regions desired.")
-                else:
-                    self.msg("Multiple images found in document, please select only 1, plus any focal regions desired.")
 
         data_ret.close_connection()
 

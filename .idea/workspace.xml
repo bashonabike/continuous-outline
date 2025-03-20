@@ -4,15 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Downsampling going! Also greyscale">
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Edge snapping, not really lining up tho">
       <change afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/British_Columbia_Parliament_Buildings_-_Pano_-_HDR.jpg" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/bg_removed/bgrem_MA44745566-penny-farthing-bike-1200w.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testing.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/continuous-outline.inx" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.inx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/build_objects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/build_objects.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/temp_options.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/temp_options.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -174,14 +176,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1736210770875</updated>
-    </task>
-    <task id="LOCAL-00012" summary="WOrking on it, probably need to switch to diff method grr">
-      <option name="closed" value="true" />
-      <created>1739404438228</created>
-      <option name="number" value="00012" />
-      <option name="presentableId" value="LOCAL-00012" />
-      <option name="project" value="LOCAL" />
-      <updated>1739404438228</updated>
     </task>
     <task id="LOCAL-00013" summary="start">
       <option name="closed" value="true" />
@@ -567,7 +561,15 @@
       <option name="project" value="LOCAL" />
       <updated>1742404303637</updated>
     </task>
-    <option name="localTasksCounter" value="61" />
+    <task id="LOCAL-00061" summary="Edge snapping, not really lining up tho">
+      <option name="closed" value="true" />
+      <created>1742409333673</created>
+      <option name="number" value="00061" />
+      <option name="presentableId" value="LOCAL-00061" />
+      <option name="project" value="LOCAL" />
+      <updated>1742409333673</updated>
+    </task>
+    <option name="localTasksCounter" value="62" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -582,7 +584,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Improved snake, better poly fill, perf trimming down to &lt;2 seconds woo!" />
     <MESSAGE value="Typewriter working!!  Configured discard phantom edges, non-closed contours working" />
     <MESSAGE value="Set up variable inner weights" />
     <MESSAGE value="Zigzag typewriter n scorched earth func going woooo gettin stooookd" />
@@ -607,7 +608,8 @@
     <MESSAGE value="Better rough path trace, inner detail trace mode" />
     <MESSAGE value="CUDA SLIC going super slow tho" />
     <MESSAGE value="Downsampling going! Also greyscale" />
-    <option name="LAST_COMMIT_MESSAGE" value="Downsampling going! Also greyscale" />
+    <MESSAGE value="Edge snapping, not really lining up tho" />
+    <option name="LAST_COMMIT_MESSAGE" value="Edge snapping, not really lining up tho" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -619,7 +621,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Testing.py</url>
-          <line>405</line>
+          <line>404</line>
           <option name="timeStamp" value="268" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">

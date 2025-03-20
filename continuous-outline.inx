@@ -30,6 +30,18 @@
                     </param>
                     <param name="slic_greyscale" type="bool" gui-text="Greyscale for SLIC">False
                     </param>
+                    <param name="slic_multi_image_conjoin_processing" type="bool"
+                           gui-text="Conjoin processing of images">False
+                    </param>
+
+                      <param name="slic_multi_image_blend_mode" type="enum" appearance="combo"
+                             _gui-text="Blend mode for multi image conjoined processing">
+                        <item value="Overlay">Overlay</item>
+                      </param>
+                    <param name="mask_retain_inner_transparencies" type="bool"
+                           gui-text="Retain inner transparency contours">False
+                    </param>
+
                     <param name="constrain_slic_within_mask" type="bool" gui-text="Omit lines outside of mask">false
                     </param>
                     <param name="dumb_node_optional_weight" type="int" min="0" max="9999"

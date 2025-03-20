@@ -68,16 +68,18 @@ class MazeAgent:
     def run_round_trace_approx_path(self,  parent_inkex, approx_ctrl_points_nd:np.array):
         #Find inflection points
         inflection_points = []
-        outer_path = self.all_contours_objects[0].section_tracker
         if self.options.trace_inner_too:
             search_sects = [s.coords_sec for s in self.maze_sections.sections.flatten().tolist()
                             if s.dumb_req or s.dumb_opt]
         else:
-            search_sects = list(set([t.section.coords_sec for t in outer_path]))
+            outer_trackers = [t for trackers in [c.section_tracker for c in self.outer_contours_objects]
+                              for t in trackers]
+            search_sects = list(set([t.section.coords_sec for t in outer_trackers]))
         sectionized_ctrl_points = approx_ctrl_points_nd//np.array((self.maze_sections.y_grade,
                                                                    self.maze_sections.x_grade))
         for ctrl in sectionized_ctrl_points.tolist():
             inflection_points.append(self.find_closest_sect(ctrl, search_sects))
+            parent_inkex.msg(f"{ctrl} -> {inflection_points[-1]}")
 
         # Determine best path for rough trace
         section_path = []
