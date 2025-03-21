@@ -1,30 +1,88 @@
-def remove_inout(path, manhatten_dist_thresh=0, max_blip_coords=50):
-    #Find inouts
-    removal_stretches = []
-    removal_on = False
-    removal_end_point = -1
-    for c in range(len(path)):
-        if not removal_on and c >= 2 and path[c - 2] == path[c]:
-            removal_on = True
-            removal_end_point = c - 1
-        elif removal_on:
-            if c - removal_end_point > max_blip_coords:
-                removal_on = False
-            #Check if inout is over
-            elif removal_end_point - c < 0 or (abs(path[c][0] - path[removal_end_point - c][0]) +
-                abs(path[c][1] - path[removal_end_point - c][1]) > manhatten_dist_thresh):
-                removal_stretches.append((2*removal_end_point - (c - 1), c - 1))
-                removal_on = False
-    if len(removal_stretches) == 0:
+def remove_inout(path, manhatten_max_thickness=0, acuteness_threshold=0.15):
+    import numpy as np
+    def manhatten_dist(p1, p2):
+        return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
+
+    def vectorized_triangle_areas(coordinates_nd):
+        """Calculates the area of triangles formed by consecutive triplets of coordinates."""
+        n = len(coordinates_nd)
+        if n < 3:
+            return np.array([])  # Not enough points for triangles
+
+        x = coordinates_nd[:, 0]
+        y = coordinates_nd[:, 1]
+
+        # Roll the arrays to create the coordinate triplets
+        x1 = x
+        y1 = y
+        x2 = np.roll(x, 1)
+        y2 = np.roll(y, 1)
+        x3 = np.roll(x, 2)
+        y3 = np.roll(y, 2)
+
+        # Apply the Shoelace Formula (vectorized)
+        areas = 0.5 * np.abs(x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2))
+
+        #Determine perimeters
+        p1, p2, p3 = np.stack((x1, y1), axis=1),np.stack((x2, y2), axis=1),np.stack((x3, y3), axis=1)
+        side1 = np.linalg.norm(p2 - p1, axis=1)
+        side2 = np.linalg.norm(p3 - p2, axis=1)
+        side3 = np.linalg.norm(p1 - p3, axis=1)
+        perimeters = side1 + side2 + side3
+
+        #Find closeness of in and out vectors using projection
+        v1 = p1 - p2  # v1 = p2 -> p1
+        v2 = p3 - p2  # v2 = p2 -> p3
+
+        # Calculate vector lengths
+        v1_lengths = np.linalg.norm(v1, axis=1)
+        v2_lengths = np.linalg.norm(v2, axis=1)
+
+        # Find min and max length vectors pointwise
+        min_length_vectors = np.where(v1_lengths[:, np.newaxis] < v2_lengths[:, np.newaxis], v1, v2)
+        max_length_vectors = np.where(v1_lengths[:, np.newaxis] > v2_lengths[:, np.newaxis], v1, v2)
+
+        # Find dot product pointwise
+        dot_products = np.sum(min_length_vectors * max_length_vectors, axis=1)
+
+        # Scale the max length vector to the dot product's projection
+        projection_scalars = dot_products / np.linalg.norm(max_length_vectors, axis=1) ** 2
+        projection_vectors = max_length_vectors * projection_scalars[:, np.newaxis]
+
+        # Calculate distance between dot product endpoint and min vector endpoint
+        projected_vectors_distances = np.linalg.norm(min_length_vectors - projection_vectors, axis=1)
+
+        return areas, perimeters, projected_vectors_distances
+
+    #Find turnarounds.  Build triangle with each set of 3 points, if area/perimeter < 0.1
+    # and distance smallest in-path to dot product with larges is small, then acute
+    coordinates_nd = np.array(path)
+    triangle_areas, triangle_perimeters, projected_vectors_distances = vectorized_triangle_areas(coordinates_nd)
+    accuteness_ratio = triangle_areas / triangle_perimeters
+    accuteness_mask = accuteness_ratio < acuteness_threshold
+    distance_mask = projected_vectors_distances < 0.5 * manhatten_max_thickness
+    combined_mask = np.logical_and(accuteness_mask, distance_mask)
+    blip_apex_indices = (np.where(combined_mask)[0] + 1).tolist()
+    if len(blip_apex_indices) == 0:
         return path
 
+    #Process inouts
+    processed_inouts = []
+    for blip_apex in blip_apex_indices:
+        if blip_apex > len(path) - 2: continue
+        apex_offset, apex_hardstop = 1, min(blip_apex, len(path) - 1 - blip_apex)
+        while apex_offset < apex_hardstop:
+            if manhatten_dist(path[blip_apex - apex_offset], path[blip_apex + apex_offset]) > manhatten_max_thickness:
+                break
+            apex_offset += 1
+        processed_inouts.append({"start_idx": blip_apex - apex_offset, "end_idx": blip_apex + apex_offset})
+
     #Re-build path without inouts
-    processed_path = path[0:removal_stretches[0][0]]
-    for i in range(len(removal_stretches)):
-        if removal_stretches[i][1] > len(path) - 1: break
+    processed_path = path[0:processed_inouts[0]["start_idx"]]
+    for i in range(len(processed_inouts)):
         #NOTE: including 1 of the removed boundary so doesn't chop up path too much
-        startpoint, endpoint = (removal_stretches[i][1],
-                                removal_stretches[i + 1][0] if i < len(removal_stretches) - 1 else len(path))
+        startpoint, endpoint = (processed_inouts[i]["end_idx"],
+                                processed_inouts[i + 1]["start_idx"] if i < len(processed_inouts) - 1 else len(path))
         processed_path.extend(path[startpoint:endpoint])
 
     return processed_path

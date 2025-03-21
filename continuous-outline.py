@@ -107,9 +107,16 @@ class continuous_outline(inkex.EffectExtension):
         pars.add_argument("--scorched_earth", type=inkex.Boolean, default=True, help="Enable scorched earth mode")
         pars.add_argument("--scorched_earth_weight_multiplier", type=int, default=6,
                           help="Weight multiplier for scorched earth mode")
-        pars.add_argument("--simplify_tolerance", type=float, default=0.7, help="Simplify tolerance (lower is sharper)")
+        pars.add_argument("--simplify_tolerance", type=float, default=0.7,
+                          help="Simplify tolerance (lower is sharper)")
         pars.add_argument("--simplify_preserve_topology", type=inkex.Boolean, default=True,
                           help="Preserve topology on simplify")
+        pars.add_argument("--blip_max_thickness", type=int, default=0,
+                          help="Max thickness of blip for removal")
+        pars.add_argument("--blip_acuteness_threshold", type=float, default=0.15,
+                          help="Acuteness threshold for blip removal (lower is sharper)")
+
+
         pars.add_argument("--preview", type=inkex.Boolean, default=True, help="Preview before committing")
 
 
@@ -740,10 +747,11 @@ class continuous_outline(inkex.EffectExtension):
                                                        self.options, objects)
                         buildscr.build_level_2_scratch(self.options, objects)
                         start=time.time_ns()
-                        buildscr.build_level_3_scratch(self, self.options, objects, formed_normalized_ctrl_points_nd)
+                        buildscr.build_level_3_scratch(self, self.options, objects, formed_normalized_ctrl_points_nd,
+                          overall_images_dims_offsets, advanced_crop_box)
                         end = time.time_ns()
                         self.msg("TIMER: Level 3 processing time: " + str((end - start) / 1000000) + " ms")
-                        buildscr.build_level_4_scratch(self.options, objects)
+                        buildscr.build_level_4_scratch(self.options, objects, overall_images_dims_offsets)
                         if self.options.preview:
                             #Build Level 1-4 data into dataframes
                             setdb.set_level_1_data(dataframes, objects)
@@ -766,8 +774,9 @@ class continuous_outline(inkex.EffectExtension):
 
                         #Levels 2-4 objects from scratch
                         buildscr.build_level_2_scratch(self.options, objects)
-                        buildscr.build_level_3_scratch(self, self.options, objects, formed_normalized_ctrl_points_nd)
-                        buildscr.build_level_4_scratch(self.options, objects)
+                        buildscr.build_level_3_scratch(self, self.options, objects, formed_normalized_ctrl_points_nd,
+                          overall_images_dims_offsets, advanced_crop_box)
+                        buildscr.build_level_4_scratch(self.options, objects, overall_images_dims_offsets)
 
                         if self.options.preview:
                             #Build Level 2-4 data into dataframes
@@ -788,8 +797,9 @@ class continuous_outline(inkex.EffectExtension):
                         builddb.build_level_2_data(self.options, retrieved, objects)
 
                         #Levels 3-4 objects from scratch
-                        buildscr.build_level_3_scratch(self, self.options, objects, formed_normalized_ctrl_points_nd)
-                        buildscr.build_level_4_scratch(self.options, objects)
+                        buildscr.build_level_3_scratch(self, self.options, objects, formed_normalized_ctrl_points_nd,
+                          overall_images_dims_offsets, advanced_crop_box)
+                        buildscr.build_level_4_scratch(self.options, objects ,overall_images_dims_offsets)
 
                         if self.options.preview:
                             #Build Level 3-4 data into dataframes
@@ -815,7 +825,7 @@ class continuous_outline(inkex.EffectExtension):
                         builddb.build_level_3_data(self.options, retrieved, objects)
 
                         #Levels 4 objects from scratch
-                        buildscr.build_level_4_scratch(self.options, objects)
+                        buildscr.build_level_4_scratch(self.options, objects, overall_images_dims_offsets)
 
                         if self.options.preview:
                             #Build Level 4 data into dataframes

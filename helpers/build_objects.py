@@ -304,9 +304,11 @@ def build_level_2_scratch(options, objects: dict):
     inst_out_objects = objects_to_dict(["maze_sections", "maze_agent"])
     objects.update(inst_out_objects)
 
-def build_level_3_scratch(parent_inkex, options, objects: dict, approx_normalized_ctrl_points):
+def build_level_3_scratch(parent_inkex, options, objects: dict, approx_normalized_ctrl_points,
+                          overall_images_dims_offsets, advanced_crop_box):
     #Get img heignt and width
-    img_height, img_width = objects['maze_agent'].maze_sections.img_height, objects['maze_agent'].maze_sections.img_width
+    img_height, img_width = (overall_images_dims_offsets['max_dpi']*advanced_crop_box['height'],
+                             overall_images_dims_offsets['max_dpi']*advanced_crop_box['width'])
 
     #Scale & shift control points
     import numpy as np
@@ -317,7 +319,7 @@ def build_level_3_scratch(parent_inkex, options, objects: dict, approx_normalize
     # for ctrl in approx_ctrl_points_nd.tolist():
     #     parent_inkex.msg(ctrl)
     #Trace n center
-    raw_path_coords_cropped = objects['maze_agent'].run_round_trace_approx_path(parent_inkex, approx_ctrl_points_nd)
+    raw_path_coords_cropped, section_path, raw_points = objects['maze_agent'].run_round_trace_approx_path(parent_inkex, approx_ctrl_points_nd)
     if len(raw_path_coords_cropped) > 0:
         raw_path = shift_contours([raw_path_coords_cropped], (-1)*objects['shift_y'], (-1)*objects['shift_x'])[0]
     else:
@@ -327,7 +329,55 @@ def build_level_3_scratch(parent_inkex, options, objects: dict, approx_normalize
     inst_out_objects = objects_to_dict(["raw_path", "img_height", "img_width"])
     objects.update(inst_out_objects)
 
-def build_level_4_scratch(options, objects: dict):
+
+
+    ###TEMP####
+    import inkex
+    sections_points = [(s[1], s[0]) for s in section_path]
+    commands = []
+    for i, point in enumerate(sections_points):
+        if i == 0:
+            commands.append(['M', point])  # Move to the first point
+        else:
+            commands.append(['L', point])  # Line to the next point
+        # self.msg(str(point))
+    # commands.append(['Z'])  # Close path
+    command_strings = [
+        f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
+    ]
+    commands_str = " ".join(command_strings)
+
+    # Add a new path element to the SVG
+    path_element = inkex.PathElement()
+    path_element.set('d', commands_str)  # Set the path data
+    path_element.style = {'stroke': 'green', 'fill': 'none'}
+    parent_inkex.svg.get_current_layer().add(path_element)
+
+
+
+    import inkex
+    sections_points = [(s[1], s[0]) for s in raw_points]
+    commands = []
+    for i, point in enumerate(sections_points):
+        if i == 0:
+            commands.append(['M', point])  # Move to the first point
+        else:
+            commands.append(['L', point])  # Line to the next point
+        # self.msg(str(point))
+    # commands.append(['Z'])  # Close path
+    command_strings = [
+        f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
+    ]
+    commands_str = " ".join(command_strings)
+
+    # Add a new path element to the SVG
+    path_element = inkex.PathElement()
+    path_element.set('d', commands_str)  # Set the path data
+    path_element.style = {'stroke': 'orange', 'fill': 'none'}
+    parent_inkex.svg.get_current_layer().add(path_element)
+    #######################################
+
+def build_level_4_scratch(options, objects: dict, overall_images_dims_offsets):
     if len(objects['raw_path']) == 0:
         formed_path = objects['raw_path']
     else:
@@ -336,7 +386,9 @@ def build_level_4_scratch(options, objects: dict):
         import helpers.post_proc.post_effects as fx
 
         #Process raw path
-        remove_blips = clean.remove_inout(objects['raw_path'], 50, 100)
+        remove_blips = clean.remove_inout(objects['raw_path'],
+                                          options.blip_max_thickness*overall_images_dims_offsets['max_dpi'],
+                                          options.blip_acuteness_threshold)
         dithered = fx.lfo_dither(remove_blips, 20, 1000, 3.0)
 
         simplified = smooth.simplify_line(dithered, tolerance=options.simplify_tolerance,

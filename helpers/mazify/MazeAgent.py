@@ -118,7 +118,7 @@ class MazeAgent:
         # Trace path from tracker path
         nodes_path = self.set_node_path_from_sec_path(section_path)
         raw_path_coords = [n.point for n in nodes_path]
-        return raw_path_coords
+        return raw_path_coords, section_path, approx_ctrl_points_nd.tolist()
 
     def set_node_path_from_sec_path(self, sections_nodes_path):
         nodes_path = []
