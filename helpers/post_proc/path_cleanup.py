@@ -75,14 +75,31 @@ def remove_inout(path, manhatten_max_thickness=0, acuteness_threshold=0.15):
             if manhatten_dist(path[blip_apex - apex_offset], path[blip_apex + apex_offset]) > manhatten_max_thickness:
                 break
             apex_offset += 1
-        processed_inouts.append({"start_idx": blip_apex - apex_offset, "end_idx": blip_apex + apex_offset})
+        # processed_inouts.append({"start_idx": blip_apex - apex_offset, "end_idx": blip_apex + apex_offset})
+        processed_inouts.append([blip_apex - apex_offset, blip_apex + apex_offset])
+
+    #Conjoin as needed
+    # Sort the index pairs by start index
+    processed_inouts.sort(key=lambda x: x[0])
+
+    conjoined_inouts = []
+    current_pair = processed_inouts[0]
+
+    for pair in processed_inouts[1:]:
+        if pair[0] <= current_pair[1]:  # Overlapping
+            current_pair[1] = max(current_pair[1], pair[1])  # Extend end index
+        else:  # No overlap
+            conjoined_inouts.append(current_pair)
+            current_pair = pair
+
+    conjoined_inouts.append(current_pair)  # Add the last pair
 
     #Re-build path without inouts
-    processed_path = path[0:processed_inouts[0]["start_idx"]]
-    for i in range(len(processed_inouts)):
+    processed_path = path[0:conjoined_inouts[0][0]]
+    for i in range(len(conjoined_inouts)):
         #NOTE: including 1 of the removed boundary so doesn't chop up path too much
-        startpoint, endpoint = (processed_inouts[i]["end_idx"],
-                                processed_inouts[i + 1]["start_idx"] if i < len(processed_inouts) - 1 else len(path))
+        startpoint, endpoint = (conjoined_inouts[i][1],
+                                conjoined_inouts[i + 1][0] if i < len(conjoined_inouts) - 1 else len(path))
         processed_path.extend(path[startpoint:endpoint])
 
     return processed_path

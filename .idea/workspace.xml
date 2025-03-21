@@ -4,15 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Working on better path alg, making sure hit prescribed points">
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Built better blip removal using linear alg">
       <change afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/British_Columbia_Parliament_Buildings_-_Pano_-_HDR.jpg" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/bg_removed/bgrem_MA44745566-penny-farthing-bike-1200w.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/continuous-outline.inx" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.inx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/build_objects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/build_objects.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -174,14 +169,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1736210770875</updated>
-    </task>
-    <task id="LOCAL-00015" summary="consolidate compass funcitons, did legality">
-      <option name="closed" value="true" />
-      <created>1740770042005</created>
-      <option name="number" value="00015" />
-      <option name="presentableId" value="LOCAL-00015" />
-      <option name="project" value="LOCAL" />
-      <updated>1740770042005</updated>
     </task>
     <task id="LOCAL-00016" summary="deflectin &amp; starting point">
       <option name="closed" value="true" />
@@ -567,7 +554,15 @@
       <option name="project" value="LOCAL" />
       <updated>1742585785810</updated>
     </task>
-    <option name="localTasksCounter" value="64" />
+    <task id="LOCAL-00064" summary="Built better blip removal using linear alg">
+      <option name="closed" value="true" />
+      <created>1742592364968</created>
+      <option name="number" value="00064" />
+      <option name="presentableId" value="LOCAL-00064" />
+      <option name="project" value="LOCAL" />
+      <updated>1742592364968</updated>
+    </task>
+    <option name="localTasksCounter" value="65" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -582,7 +577,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Zigzag typewriter n scorched earth func going woooo gettin stooookd" />
     <MESSAGE value="Back forth going, bg rem working as sep test func" />
     <MESSAGE value="Trimming blips funct going" />
     <MESSAGE value="Images for website article" />
@@ -607,7 +601,8 @@
     <MESSAGE value="Edge snapping, not really lining up tho" />
     <MESSAGE value="Multi image working almost just need to crop line approx" />
     <MESSAGE value="Working on better path alg, making sure hit prescribed points" />
-    <option name="LAST_COMMIT_MESSAGE" value="Working on better path alg, making sure hit prescribed points" />
+    <MESSAGE value="Built better blip removal using linear alg" />
+    <option name="LAST_COMMIT_MESSAGE" value="Built better blip removal using linear alg" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
