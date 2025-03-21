@@ -210,7 +210,7 @@ def draw_and_flip_contours(inkex_parent, options, outer_contours, inner_contours
 	import helpers.post_proc.smooth_path as smooth
 
 	outer_contours.sort(key=len, reverse=True)
-	inner_contours.sort(key=len, reverse=True)
+	if len(inner_contours) > 0: inner_contours.sort(key=len, reverse=True)
 	outer_edges = np.zeros((int(round(overall_images_dims_offsets['max_dpi']*advanced_crop_box['height'], 0)),
 							int(round(overall_images_dims_offsets['max_dpi']*advanced_crop_box['width'], 0))),
 						   dtype=np.uint16)
@@ -228,14 +228,14 @@ def draw_and_flip_contours(inkex_parent, options, outer_contours, inner_contours
 	for contour_idx in range(len(outer_contours)):
 		cv2.drawContours(outer_edges, outer_contours, contour_idx, (contour_idx + 1, contour_idx + 1,
 																	contour_idx + 1))
-
-	for contour_idx in range(len(outer_contours), len(outer_contours) + len(inner_contours)):
-		cv2.drawContours(inner_edges, inner_contours, contour_idx - len(outer_contours),
-						 (contour_idx + 1, contour_idx + 1, contour_idx + 1))
+	if len(inner_contours) > 0:
+		for contour_idx in range(len(outer_contours), len(outer_contours) + len(inner_contours)):
+			cv2.drawContours(inner_edges, inner_contours, contour_idx - len(outer_contours),
+							 (contour_idx + 1, contour_idx + 1, contour_idx + 1))
 
 	# Wipe outside edge, false contours
 	outer_edges[perimeter_mask] = 0
-	inner_edges[perimeter_mask] = 0
+	if len(inner_contours) > 0: inner_edges[perimeter_mask] = 0
 
 	def flip_and_process_contours(contours):
 		min_y, min_x, max_y, max_x = 99999, 99999, -1, -1
@@ -243,9 +243,12 @@ def draw_and_flip_contours(inkex_parent, options, outer_contours, inner_contours
 
 		for c in contours:
 			if c[0].size == 1:
-				cur_contour = smooth.simplify_line([c[1], c[0]], tolerance=options.simplify_tolerance)
+				cur_contour = smooth.simplify_line([c[1], c[0]], tolerance=options.simplify_tolerance,
+												   preserve_topology=options.simplify_preserve_topology)
 			else:
-				cur_contour = smooth.simplify_line([[p[0][1], p[0][0]] for p in c], tolerance=options.simplify_tolerance)
+				cur_contour = smooth.simplify_line([[p[0][1], p[0][0]] for p in c],
+												   tolerance=options.simplify_tolerance,
+												   preserve_topology=options.simplify_preserve_topology)
 
 			ys, xs = zip(*cur_contour)
 			min_y, min_x = int(min(min_y, min(ys))), int(min(min_x, min(xs)))
@@ -263,7 +266,10 @@ def draw_and_flip_contours(inkex_parent, options, outer_contours, inner_contours
 
 	# Flip contours to yx to conform to cv standard
 	flipped_outer_contours, bounds_outer = flip_and_process_contours(outer_contours)
-	flipped_inner_contours, bounds_inner = flip_and_process_contours(inner_contours)
+	if len(inner_contours) > 0:
+		flipped_inner_contours, bounds_inner = flip_and_process_contours(inner_contours)
+	else:
+		flipped_inner_contours, bounds_inner = [], None
 
 	end = time.time_ns()
 	print(str((end - start) / 1e6) + " ms to draw n flip contours")
@@ -291,19 +297,21 @@ def mask_boundary_edges(parent_inkex, options, img_unchanged, overall_images_dim
 		_, inverted = cv2.threshold(grey, (1.0-options.transparancy_cutoff)*np.max(grey), 1, cv2.THRESH_BINARY)
 		mask = np.where(inverted == 0, 255, 0).astype(np.uint8)  # Create binary mask
 
-	#Blur n rebinarize n find edges
-	mask_blurred = cv2.GaussianBlur(mask, (9,9), 8)
 
 
 
-	_, edges_binary = cv2.threshold(mask_blurred, 10, 1, cv2.THRESH_BINARY)
-	erode_kernel = np.ones((5, 5), np.uint8)
-	eroded_edges = cv2.erode(edges_binary, erode_kernel, iterations=1)*255
-	fill_contours, _ = cv2.findContours(eroded_edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
 	if options.mask_retain_inner_transparencies:
-		final_contours = fill_contours
+		all_contours, _ = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+		parent_inkex.msg("num mask contours: " + str(len(all_contours)))
 	else:
+		#Blur n rebinarize n find edges
+		mask_blurred = cv2.GaussianBlur(mask, (9,9), 8)
+		_, edges_binary = cv2.threshold(mask_blurred, 10, 1, cv2.THRESH_BINARY)
+		erode_kernel = np.ones((5, 5), np.uint8)
+		eroded_edges = cv2.erode(edges_binary, erode_kernel, iterations=1)*255
+		fill_contours, _ = cv2.findContours(eroded_edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
 		filled_mask = eroded_edges.copy()
 		# Fill contours (holes)
 		# for cnt in fill_contours:
@@ -318,16 +326,29 @@ def mask_boundary_edges(parent_inkex, options, img_unchanged, overall_images_dim
 		# edges_bool = edges_binary.astype(bool)
 
 		#Set final contours contours on blank coded for reference
-		final_contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+		all_contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-	final_contours = [c for c in final_contours if len(c) > options.outer_contour_length_cutoff]
-	final_contours.sort(key=len, reverse=True)
+	start = time.time_ns()
+	#Check length for removal
+	final_contours_with_len = []
+	for contour in all_contours:
+		points = contour.reshape(-1, 2)
+		diffs = np.diff(points, axis=0)
+		distances = np.linalg.norm(diffs, axis=1)
+		total_length = np.sum(distances)
+		if total_length >= options.outer_contour_length_cutoff*svg_image_with_path['img_dpi']:
+			final_contours_with_len.append({"contour":contour, "length":total_length})
+
+	final_contours = [c['contour'] for c in sorted(final_contours_with_len,
+												   key = lambda contour: contour['length'], reverse=True)]
+	end = time.time_ns()
+	parent_inkex.msg("TIMING: " + str((end - start) / 1e6) + " ms to remove too short outer contours")
 
 	#Scale up to matte and offset final contours by prescribed offset amount
 	max_dpi = overall_images_dims_offsets['max_dpi']
+	scale = max_dpi/svg_image_with_path['img_dpi']
 	x_cv_crop_box_offset, y_cv_crop_box_offset = (int(round(max_dpi*svg_image_with_path['x_crop_box_offset'],0)),
 												  int(round(max_dpi*svg_image_with_path['y_crop_box_offset'],0)))
-	scale = max_dpi/svg_image_with_path['img_dpi']
 	for contour in final_contours:
 		contour[:, :, 0] = np.round(scale*contour[:, :, 0]).astype(np.int32) + x_cv_crop_box_offset
 		contour[:, :, 1] = np.round(scale*contour[:, :, 1]).astype(np.int32) + y_cv_crop_box_offset
@@ -390,17 +411,29 @@ def slic_image_boundary_edges(parent_inkex, options, im_float, mask, overall_ima
 			partial_contours_scaled = try_edge_snap(parent_inkex, im_float, partial_contours, downscale_ratio, options)
 		contours.extend(partial_contours_scaled)
 
-	contours = [c for c in contours if len(c) > options.inner_contour_length_cutoff]
+	#Check length for removal
+	final_contours_with_len = []
+	for contour in contours:
+		points = contour.reshape(-1, 2)
+		diffs = np.diff(points, axis=0)
+		distances = np.linalg.norm(diffs, axis=1)
+		total_length = np.sum(distances)
+		#NOTE: Scale by max_dpi since contours already scaled up to max
+		if total_length >= options.inner_contour_length_cutoff*overall_images_dims_offsets['max_dpi']:
+			final_contours_with_len.append({"contour":contour, "length":total_length})
+
+	final_contours = [c['contour'] for c in sorted(final_contours_with_len,
+												   key = lambda contour: contour['length'], reverse=True)]
 
 	#Offset final contours by prescribed offset amount
 	max_dpi = overall_images_dims_offsets['max_dpi']
 	x_cv_crop_box_offset, y_cv_crop_box_offset = (int(round(max_dpi*svg_image_with_path['x_crop_box_offset'],0)),
 												  int(round(max_dpi*svg_image_with_path['y_crop_box_offset'],0)))
-	for contour in contours:
+	for contour in final_contours:
 		contour[:, :, 0] += x_cv_crop_box_offset
 		contour[:, :, 1] += y_cv_crop_box_offset
 
-	return contours, segments, num_segs_actual
+	return final_contours, segments, num_segs_actual
 
 def remove_perimeter_ghosting(options, points_list):
 	"""

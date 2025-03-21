@@ -29,7 +29,10 @@ class MazeAgent:
 
         if not from_db:
             self.all_contours_objects, self.outer_contours_objects, self.inner_contours_objects  = [], [], []
-            max_inner_contour_len = max([len(contour) for contour in self.inner_contours])
+            if len(self.inner_contours) > 0:
+                max_inner_contour_len = max([len(contour) for contour in self.inner_contours])
+            else:
+                max_inner_contour_len = 0
             self.max_tracker_size = 0
             for i in range(len(self.all_contours)):
                 new_path = EdgePath(options, i + 1, self.all_contours[i], maze_sections, i < len(self.outer_contours),
@@ -77,17 +80,40 @@ class MazeAgent:
             search_sects = list(set([t.section.coords_sec for t in outer_trackers]))
         sectionized_ctrl_points = approx_ctrl_points_nd//np.array((self.maze_sections.y_grade,
                                                                    self.maze_sections.x_grade))
-        for ctrl in sectionized_ctrl_points.tolist():
-            inflection_points.append(self.find_closest_sect(ctrl, search_sects))
-            parent_inkex.msg(f"{ctrl} -> {inflection_points[-1]}")
+        for ctrl_sec, orig_pt in zip(sectionized_ctrl_points.tolist(), approx_ctrl_points_nd.tolist()):
+            closest_sec_coords = self.find_closest_sect(ctrl_sec, search_sects)
+            closest_sec = self.maze_sections.sections[closest_sec_coords[0], closest_sec_coords[1]]
+            #Find closest point in section
+            _, closest_node = self.find_inflection_points([orig_pt], closest_sec.nodes,
+                                                          path_1_expl_point=True)
+            node_path_idx = closest_node.num
+            closest_node_idx_in_tracker = node_path_idx - closest_node.section_tracker.in_node.num
+            closest_graph_node = (closest_sec_coords[0], closest_sec_coords[1],
+                                  closest_node.path_num, closest_node.section_tracker_num)
+
+            inflection_points.append({"orig_pt": orig_pt,
+                                      "closest_sec": closest_sec,
+                                      "closest_sec_coords": closest_sec_coords,
+                                      "closest_node": closest_node,
+                                      "closest_node_idx_in_tracker": closest_node_idx_in_tracker,
+                                      "closest_pt": closest_node.point,
+                                      "closest_graph_node": closest_graph_node})
+            parent_inkex.msg(f"{ctrl_sec} -> {inflection_points[-1]['closest_sec_coords']}")
+            parent_inkex.msg(f"{orig_pt} -> {inflection_points[-1]['closest_pt']}")
+
+        #TODO: Ensure that closest point is always traversed?  May not be neccesary
 
         # Determine best path for rough trace
         section_path = []
         for t in range(len(inflection_points) - 1):
+            section_path.append(inflection_points[t]['closest_graph_node'] +
+                                (inflection_points[t]['closest_node_idx_in_tracker'],))
             section_path.extend(nxex.shortest_path(self.maze_sections.path_graph,
-                                                   inflection_points[t], inflection_points[t + 1],
-                                                   weight='weight')[:-1])
-        section_path.append(inflection_points[-1])
+                                                   inflection_points[t]['closest_graph_node'],
+                                                   inflection_points[t + 1]['closest_graph_node'],
+                                                   weight='weight'))
+        section_path.append(inflection_points[-1]['closest_graph_node'] +
+                            (inflection_points[-1]['closest_node_idx_in_tracker'],))
 
         # Trace path from tracker path
         nodes_path = self.set_node_path_from_sec_path(section_path)
@@ -98,6 +124,8 @@ class MazeAgent:
         nodes_path = []
         jump_path = False
         prev_sect, cur_sect, next_sect = None, None, None
+        omit_repeat_sect = None
+        must_hit_node_idx_pre, must_hit_node_idx_post = None, None
         cur_tracker = None
         cur_tracker_idx = -1
         prev_len = 0
@@ -110,9 +138,21 @@ class MazeAgent:
             else:
                 next_sect = None
 
-            if len(cur_sect) == 4:
+            if len(cur_sect) == 5 and i == 0:
+                must_hit_node_idx_pre = cur_sect[4] #Start point
+            elif len(cur_sect) == 4:
+                if omit_repeat_sect is not None and omit_repeat_sect == cur_sect:
+                    continue
+                omit_repeat_sect = None #NOTE: keep this here in case multiple repeats of same section
+
+                #Peek ahead for must-hit point
+                if next_sect is not None and len(next_sect) == 5:
+                    must_hit_node_idx_post = next_sect[4]
+
                 if inflection_out is not None:
                     cur_tracker_idx = inflection_out['tracker_path_idx']
+                elif must_hit_node_idx_pre is not None:
+                    cur_tracker_idx = must_hit_node_idx_pre
                 else:
                     cur_tracker_idx = -1
                 inflection_out = None
@@ -137,11 +177,29 @@ class MazeAgent:
                             nodes_path.extend(cur_tracker.nodes)
                         else:
                             nodes_path.extend(cur_tracker.nodes[cur_tracker_idx:])
+                elif next_sect is not None and len(next_sect) == 5:
+                    #Must hit point identified, we know the cur sect is a tracker
+                    if cur_tracker_idx != -1:
+                        #Check direction, make sure moving from cur_tracker_idx to must_hit_node_idx_post
+                        path_rev = must_hit_node_idx_post < cur_tracker_idx
+                    if path_rev:
+                        if cur_tracker_idx == -1:
+                            nodes_path.extend(list(reversed(cur_tracker.nodes[must_hit_node_idx_post:])))
+                        else:
+                            nodes_path.extend(list(reversed(cur_tracker.nodes[must_hit_node_idx_post:cur_tracker_idx + 1])))
+                    else:
+                        if cur_tracker_idx == -1:
+                            nodes_path.extend(cur_tracker.nodes[:must_hit_node_idx_post + 1])
+                        else:
+                            nodes_path.extend(cur_tracker.nodes[cur_tracker_idx:must_hit_node_idx_post + 1])
                 elif next_sect is not None:
-                    #Entering into the abyss, look for next insersection
-                    next_trackerized_sect, sections_path_idx = None, -1
+                    #Entering into the abyss, look for next intersection
+                    next_trackerized_sect, sections_path_idx_new = None, -1
                     for j in range(i + 2, len(sections_nodes_path)):
                         if len(sections_nodes_path[j]) == 4:
+                            # if sections_nodes_path[j] == sections_nodes_path[i]:
+                            #     omit_repeat_sect = sections_nodes_path[j]
+                            # else:
                             next_trackerized_sect = sections_nodes_path[j]
                             sections_path_idx = j
                             break
@@ -149,6 +207,8 @@ class MazeAgent:
                     if next_trackerized_sect is not None:
                         if next_trackerized_sect != cur_sect:
                             #Find best intersection point
+                            #TODO: If the next on is part of same path just keep going
+                            #TODO: Better handling of not doing weird loopdy loops
                             next_tracker = self.all_contours_objects[next_trackerized_sect[2] - 1]. \
                                 section_tracker[next_trackerized_sect[3]]
                             inflec_nodes = list(self.find_inflection_points(cur_tracker.nodes,
@@ -198,10 +258,16 @@ class MazeAgent:
                             nodes_path.extend(cur_tracker.nodes[cur_tracker_idx:])
 
                 #MAKE SURE set dir when non tracker (shouldn't be issue but maybe check)
+
+                must_hit_node_idx_pre, must_hit_node_idx_post = must_hit_node_idx_post, None
         return nodes_path
 
-    def find_inflection_points(self, path_1_seg, path_2_seg, retrieve_idxs=False):
-        points_1, points_2 = np.array([n.point for n in path_1_seg]), np.array([n.point for n in path_2_seg])
+    def find_inflection_points(self, path_1_seg, path_2_seg, retrieve_idxs=False, path_1_expl_point=False):
+        if path_1_expl_point:
+            points_1 = np.array(path_1_seg)
+        else:
+            points_1 = np.array([n.point for n in path_1_seg])
+        points_2 = np.array([n.point for n in path_2_seg])
 
         if not points_1.size or not points_2.size:
             return None, None # Handle empty paths

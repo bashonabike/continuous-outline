@@ -13,7 +13,6 @@ maze_sections_across = 70
 constrain_slic_within_mask = False
 dumb_node_optional_weight = 1
 dumb_node_optional_max_variable_weight = 8
-dumb_node_min_opt_weight_reduced = 2
 dumb_node_blank_weight = 200
 dumb_node_opt_jump_weight = 4
 dumb_node_req_jump_weight = 1

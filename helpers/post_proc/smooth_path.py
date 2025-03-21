@@ -2,7 +2,7 @@ from scipy.interpolate import make_interp_spline
 from shapely.geometry import LineString
 import numpy as np
 
-def simplify_line(coords, tolerance=1.0):
+def simplify_line(coords, tolerance=1.0, preserve_topology=False):
     """
     Simplifies a line defined by a list of (y, x) tuples using Shapely.
 
@@ -17,7 +17,8 @@ def simplify_line(coords, tolerance=1.0):
     swapped_coords = [(x, y) for y, x in coords]
 
     line = LineString(swapped_coords)
-    simplified_line = line.simplify(tolerance, preserve_topology=False)  # preserve_topology = false is generally preferred.
+    # preserve_topology = false is generally preferred.
+    simplified_line = line.simplify(tolerance, preserve_topology=preserve_topology)
 
     # Swap back to (y, x) coordinates
     simplified_coords = [(int(y), int(x)) for x, y in simplified_line.coords]

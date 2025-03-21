@@ -15,7 +15,30 @@
                     <param name="maze_sections_across" type="int" min="1" max="9999"
                            gui-text="Gridding density for approx path formation">70
                     </param>
+                    <param name="mask_only" type="bool" gui-text="No inner tracing">False
+                            <script><![CDATA[
+      function changed(event) {
+        var cuda_slic = document.getElementById('cuda_slic');
+        if (event.target.value == 'false') {
+          advanced_param.style.display = 'block';
+        } else {
+          advanced_param.style.display = 'none';
+        }
+      }
+    ]]></script>
+                    </param>
                     <param name="cuda_slic" type="bool" gui-text="Use CUDA SLIC">True
+                            <script><![CDATA[
+      function load(event) {
+        var mask_only = document.getElementById('mask_only');
+        if (mask_only.value == 'false') {
+          event.target.style.display = 'block';
+        } else {
+          event.target.style.display = 'none';
+        }
+      }
+    ]]></script>
+  </param>
                     </param>
                     <param name="slic_regions" type="int" min="1" max="9999" gui-text="Number of SLIC regions">12
                     </param>
@@ -50,9 +73,6 @@
                     <param name="dumb_node_optional_max_variable_weight" type="int" min="0" max="9999"
                            gui-text="Max variable weight for optional dumb nodes">6
                     </param>
-                    <param name="dumb_node_min_opt_weight_reduced" type="int" min="0" max="9999"
-                           gui-text="Minimum reduced weight for optional dumb nodes">1
-                    </param>
                     <param name="dumb_node_blank_weight" type="int" min="0" max="9999"
                            gui-text="Weight for blank dumb nodes">200
                     </param>
@@ -84,9 +104,10 @@
                     <param name="scorched_earth_weight_multiplier" type="int" min="0" max="9999"
                            gui-text="Weight multiplier for scorched earth mode">6
                     </param>
-                    <param name="simplify_tolerance" type="float" min="0.0" max="1.0" gui-text="Simplify tolerance">
+                    <param name="simplify_tolerance" type="float" min="0.0" max="1.0" gui-text="Simplify tolerance (lower is sharper)">
                         0.7
                     </param>
+                    <param name="simplify_preserve_topology" type="bool" gui-text="Preserve topology on simplify">true</param>
                     <param name="preview" type="bool" indent="4"
                            gui-text="Preview mode">true
                     </param>

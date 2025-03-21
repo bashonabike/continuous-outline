@@ -58,6 +58,8 @@ class continuous_outline(inkex.EffectExtension):
 
     def add_arguments(self, pars):
         pars.add_argument("--tab")
+        pars.add_argument("--mask_only", type=inkex.Boolean, default=False,
+                          help="No inner tracing")
         pars.add_argument("--cuda_slic", type=inkex.Boolean, default=True,
                           help="Use CUDA SLIC")
         pars.add_argument("--slic_regions", type=int, default=12, help="Number of SLIC regions")
@@ -86,8 +88,6 @@ class continuous_outline(inkex.EffectExtension):
         pars.add_argument("--dumb_node_optional_weight", type=int, default=1, help="Weight for optional dumb nodes")
         pars.add_argument("--dumb_node_optional_max_variable_weight", type=int, default=6,
                           help="Max variable weight for optional dumb nodes")
-        pars.add_argument("--dumb_node_min_opt_weight_reduced", type=int, default=1,
-                          help="Minimum reduced weight for optional dumb nodes")
         pars.add_argument("--dumb_node_blank_weight", type=int, default=200, help="Weight for blank dumb nodes")
         pars.add_argument("--dumb_node_opt_jump_weight", type=int, default=1,
                           help="Weight for optional dumb node jumps")
@@ -107,7 +107,9 @@ class continuous_outline(inkex.EffectExtension):
         pars.add_argument("--scorched_earth", type=inkex.Boolean, default=True, help="Enable scorched earth mode")
         pars.add_argument("--scorched_earth_weight_multiplier", type=int, default=6,
                           help="Weight multiplier for scorched earth mode")
-        pars.add_argument("--simplify_tolerance", type=float, default=0.7, help="Simplify tolerance")
+        pars.add_argument("--simplify_tolerance", type=float, default=0.7, help="Simplify tolerance (lower is sharper)")
+        pars.add_argument("--simplify_preserve_topology", type=inkex.Boolean, default=True,
+                          help="Preserve topology on simplify")
         pars.add_argument("--preview", type=inkex.Boolean, default=True, help="Preview before committing")
 
 
@@ -445,14 +447,19 @@ class continuous_outline(inkex.EffectExtension):
 
         return selection_info_df
 
-    def form_approx_control_points_normalized(self, approx_ctrl_points:list, overall_images_dims_offsets):
+    def form_approx_control_points_normalized(self, approx_ctrl_points:list, overall_images_dims_offsets, crop_box):
         #Convert ctrl points to img yx format
         approx_ctrl_points_nd = np.array([(p[1], p[0]) for p in approx_ctrl_points])
 
         #Determine image offsets
-        offsets_nd = np.array((overall_images_dims_offsets['y'], overall_images_dims_offsets['x']))
-        norms = np.array((float(overall_images_dims_offsets['height']),
-                          float(overall_images_dims_offsets['width'])))
+        if crop_box is None:
+            offsets_nd = np.array((overall_images_dims_offsets['y'], overall_images_dims_offsets['x']))
+            norms = np.array((float(overall_images_dims_offsets['height']),
+                              float(overall_images_dims_offsets['width'])))
+        else:
+            offsets_nd = np.array((float(crop_box.get('y')), float(crop_box.get('x'))))
+            norms = np.array((float(crop_box.get('height')),
+                              float(crop_box.get('width'))))
 
         #Determined shifted and normalized points
         formed_points_nd = (approx_ctrl_points_nd - offsets_nd)/norms
@@ -568,8 +575,6 @@ class continuous_outline(inkex.EffectExtension):
 
         return path_coords
 
-need to bound approx trace into crop box
-
     def effect(self):
         # internal overwrite for scale:
         self.options.scale = 1.0
@@ -649,7 +654,7 @@ need to bound approx trace into crop box
                 img_and_focus_specs_df = self.det_img_and_focus_specs(svg_images_with_paths, detail_bounds,
                                                                       approx_trace_path_string,
                                                                       crop_box).dropna()
-                update_level = data_ret.get_selection_match_level(self, img_and_focus_specs_df)
+                update_level = data_ret.get_selection_match_level(self, img_and_focus_specs_df, self.options)
 
                 self.msg("post-get selection match update level: " + str(update_level))
 
@@ -667,7 +672,8 @@ need to bound approx trace into crop box
                 #Get approx control points for final path
                 approx_ctrl_points = self.get_straight_line_points(approx_trace_path_string)
                 formed_normalized_ctrl_points_nd = self.form_approx_control_points_normalized(approx_ctrl_points,
-                                                                                             overall_images_dims_offsets)
+                                                                                             overall_images_dims_offsets,
+                                                                                              crop_box)
 
                 self.msg("Constrain: " + str(self.options.constrain_slic_within_mask))
 
@@ -733,18 +739,21 @@ need to bound approx trace into crop box
                                                        normalized_focus_region_specs, advanced_crop_box,
                                                        self.options, objects)
                         buildscr.build_level_2_scratch(self.options, objects)
+                        start=time.time_ns()
                         buildscr.build_level_3_scratch(self, self.options, objects, formed_normalized_ctrl_points_nd)
+                        end = time.time_ns()
+                        self.msg("TIMER: Level 3 processing time: " + str((end - start) / 1000000) + " ms")
                         buildscr.build_level_4_scratch(self.options, objects)
+                        if self.options.preview:
+                            #Build Level 1-4 data into dataframes
+                            setdb.set_level_1_data(dataframes, objects)
+                            setdb.set_level_2_data(dataframes, objects)
+                            setdb.set_level_3_data(dataframes, objects)
+                            setdb.set_level_4_data(dataframes, objects)
 
-                        #Build Level 1-4 data into dataframes
-                        setdb.set_level_1_data(dataframes, objects)
-                        setdb.set_level_2_data(dataframes, objects)
-                        setdb.set_level_3_data(dataframes, objects)
-                        setdb.set_level_4_data(dataframes, objects)
-
-                        #Set data into db
-                        data_ret.set_data(dataframes, min_level=0)
-                        # self.msg(str(update_level))
+                            #Set data into db
+                            data_ret.set_data(dataframes, min_level=0)
+                            # self.msg(str(update_level))
 
                     case 2:
                         import helpers.caching.build_objects_from_db as builddb
@@ -760,13 +769,14 @@ need to bound approx trace into crop box
                         buildscr.build_level_3_scratch(self, self.options, objects, formed_normalized_ctrl_points_nd)
                         buildscr.build_level_4_scratch(self.options, objects)
 
-                        #Build Level 2-4 data into dataframes
-                        setdb.set_level_2_data(dataframes, objects)
-                        setdb.set_level_3_data(dataframes, objects)
-                        setdb.set_level_4_data(dataframes, objects)
+                        if self.options.preview:
+                            #Build Level 2-4 data into dataframes
+                            setdb.set_level_2_data(dataframes, objects)
+                            setdb.set_level_3_data(dataframes, objects)
+                            setdb.set_level_4_data(dataframes, objects)
 
-                        #Set data into db
-                        data_ret.set_data(dataframes, min_level=2)
+                            #Set data into db
+                            data_ret.set_data(dataframes, min_level=2)
                     case 3:
                         import helpers.caching.build_objects_from_db as builddb
                         import helpers.build_objects as buildscr
@@ -781,12 +791,13 @@ need to bound approx trace into crop box
                         buildscr.build_level_3_scratch(self, self.options, objects, formed_normalized_ctrl_points_nd)
                         buildscr.build_level_4_scratch(self.options, objects)
 
-                        #Build Level 3-4 data into dataframes
-                        setdb.set_level_3_data(dataframes, objects)
-                        setdb.set_level_4_data(dataframes, objects)
+                        if self.options.preview:
+                            #Build Level 3-4 data into dataframes
+                            setdb.set_level_3_data(dataframes, objects)
+                            setdb.set_level_4_data(dataframes, objects)
 
-                        #Set data into db
-                        data_ret.set_data(dataframes, min_level=3)
+                            #Set data into db
+                            data_ret.set_data(dataframes, min_level=3)
                     case 4:
                         import helpers.caching.build_objects_from_db as builddb
                         import helpers.build_objects as buildscr
@@ -806,11 +817,12 @@ need to bound approx trace into crop box
                         #Levels 4 objects from scratch
                         buildscr.build_level_4_scratch(self.options, objects)
 
-                        #Build Level 4 data into dataframes
-                        setdb.set_level_4_data(dataframes, objects)
+                        if self.options.preview:
+                            #Build Level 4 data into dataframes
+                            setdb.set_level_4_data(dataframes, objects)
 
-                        #Set data into db
-                        data_ret.set_data(dataframes, min_level=4)
+                            #Set data into db
+                            data_ret.set_data(dataframes, min_level=4)
                     case _:
                         import helpers.caching.build_objects_from_db as builddb
 

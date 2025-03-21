@@ -51,6 +51,7 @@ class DataRetrieval:
 
         #Also clear the params table
         cursor.execute("DELETE FROM ParamsVals")
+        cursor.execute("DELETE FROM SelectionInfo")
         self.conn.commit()
         cursor.close()
 
@@ -111,7 +112,7 @@ class DataRetrieval:
         if pd.isna(level): return 0
         return int(level)
 
-    def get_selection_match_level(self, parent_inkex, select_info_df):
+    def get_selection_match_level(self, parent_inkex, select_info_df, options):
         """
         Checks if the selection matches the old selection in the database.
 
@@ -124,7 +125,8 @@ class DataRetrieval:
 
         old_select_df = self.read_sql_table('SelectionInfo', self.conn).dropna()
         if old_select_df.empty:
-            self.clear_and_set_single_table('SelectionInfo', select_info_df)
+            if options.preview:
+                self.clear_and_set_single_table('SelectionInfo', select_info_df)
             return 0
 
         # old_select_df.set_index('line', inplace=True)
@@ -142,7 +144,8 @@ class DataRetrieval:
 
         #Update selection info
         # parent_inkex.msg(select_info_df.iloc[0, 0])
-        self.clear_and_set_single_table('SelectionInfo', select_info_df)
+        if options.preview:
+            self.clear_and_set_single_table('SelectionInfo', select_info_df)
 
         if mismatched_params.empty: return 9999
         elif mismatched_params.iloc[0, 0] != select_info_df.iloc[0, 0]:

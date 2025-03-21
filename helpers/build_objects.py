@@ -17,15 +17,21 @@ def shift_and_crop(parent_inkex, outer_edges, outer_contours_yx, bounds_outer,
     import numpy as np
 
     start = time.time_ns()
-    crop = (tuple([min(o, c) for o, c in zip(bounds_outer[0], bounds_inner[0])]),
-            tuple([max(o, c) for o, c in zip(bounds_outer[1], bounds_inner[1])]))
+    if bounds_inner is not None:
+        crop = (tuple([min(o, c) for o, c in zip(bounds_outer[0], bounds_inner[0])]),
+                tuple([max(o, c) for o, c in zip(bounds_outer[1], bounds_inner[1])]))
+    else:
+        crop = bounds_outer
     parent_inkex.msg(f"crop: {crop}")
 
     shift_y, shift_x = (-1) * crop[0][0], (-1) * crop[0][1]
     outer_edges_cropped = outer_edges[crop[0][0]:crop[1][0] + 1, crop[0][1]:crop[1][1] + 1]
     inner_edges_cropped = inner_edges[crop[0][0]:crop[1][0] + 1, crop[0][1]:crop[1][1] + 1]
     outer_contours_yx_cropped = shift_contours(outer_contours_yx, shift_y, shift_x)
-    inner_contours_yx_cropped = shift_contours(inner_contours_yx, shift_y, shift_x)
+    if len(inner_contours_yx) > 0:
+        inner_contours_yx_cropped = shift_contours(inner_contours_yx, shift_y, shift_x)
+    else:
+        inner_contours_yx_cropped = []
 
     edges = outer_edges + inner_edges
 
@@ -194,14 +200,15 @@ def build_level_1_scratch(parent_inkex, svg_images_with_paths, overall_images_di
 
         outer_contours_cur, mask = slic.mask_boundary_edges(parent_inkex, options, im_unch, overall_images_dims_offsets,
                                                             svg_image_with_path)
-        start = time.time_ns()
-        inner_contours_cur, segments, num_segs = slic.slic_image_boundary_edges(parent_inkex, options, im_float, mask,
-                                                                                overall_images_dims_offsets,
-                                                                                svg_image_with_path,
-                                                                            num_segments=options.slic_regions,
-                                                                            enforce_connectivity=False)
         outer_contours.extend(outer_contours_cur)
-        inner_contours.extend(inner_contours_cur)
+        start = time.time_ns()
+        if not options.mask_only:
+            inner_contours_cur, segments, num_segs = slic.slic_image_boundary_edges(parent_inkex, options, im_float, mask,
+                                                                                    overall_images_dims_offsets,
+                                                                                    svg_image_with_path,
+                                                                                num_segments=options.slic_regions,
+                                                                                enforce_connectivity=False)
+            inner_contours.extend(inner_contours_cur)
 
     #Flip contours and fill into edge arrays
     (outer_edges, inner_edges,
@@ -212,6 +219,31 @@ def build_level_1_scratch(parent_inkex, svg_images_with_paths, overall_images_di
 
     end = time.time_ns()
     parent_inkex.msg(f"SLIC took {(end - start) / 1e6} ms")
+
+    ###TEMP####
+    import inkex
+    for outer_cont in outer_contours:
+        commands = []
+        for i, point in enumerate(outer_cont):
+            if i == 0:
+                commands.append(['M', point[0]])  # Move to the first point
+            else:
+                commands.append(['L', point[0]])  # Line to the next point
+            # self.msg(str(point))
+        # commands.append(['Z'])  # Close path
+        command_strings = [
+            f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
+        ]
+        commands_str = " ".join(command_strings)
+
+        # Add a new path element to the SVG
+        path_element = inkex.PathElement()
+        path_element.set('d', commands_str)  # Set the path data
+        path_element.style = {'stroke': 'blue', 'fill': 'none'}
+        parent_inkex.svg.get_current_layer().add(path_element)
+    #######################################
+
+
 
     detail_req_masks = []
     for region in focus_regions:
@@ -307,7 +339,8 @@ def build_level_4_scratch(options, objects: dict):
         remove_blips = clean.remove_inout(objects['raw_path'], 50, 100)
         dithered = fx.lfo_dither(remove_blips, 20, 1000, 3.0)
 
-        simplified = smooth.simplify_line(dithered, tolerance=options.simplify_tolerance)
+        simplified = smooth.simplify_line(dithered, tolerance=options.simplify_tolerance,
+                                          preserve_topology=options.simplify_preserve_topology)
 
         formed_path = simplified
 
