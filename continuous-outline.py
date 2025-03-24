@@ -59,7 +59,9 @@ class continuous_outline(inkex.EffectExtension):
     def add_arguments(self, pars):
         pars.add_argument("--tab")
         pars.add_argument("--mask_only", type=inkex.Boolean, default=False,
-                          help="No inner tracing")
+                          help="No inner SLIC")
+        pars.add_argument("--mask_only_when_complicated_background", type=inkex.Boolean, default=False,
+                          help="No inner SLIC if background of mask is complicated (i.e. lots of holes)")
         pars.add_argument("--cuda_slic", type=inkex.Boolean, default=True,
                           help="Use CUDA SLIC")
         pars.add_argument("--slic_regions", type=int, default=12, help="Number of SLIC regions")
@@ -82,6 +84,8 @@ class continuous_outline(inkex.EffectExtension):
         pars.add_argument("--mask_retain_inner_transparencies", type=inkex.Boolean, default=False,
                           help="Retain inner transparency contours")
         pars.add_argument("--transparancy_cutoff", type=float, default=0.1, help="max % transparent considered background")
+        pars.add_argument("--mask_retain_inner_erosion", type=int, default=0,
+                          help="Retaining inner transparency erosion (in pixels)")
         pars.add_argument("--maze_sections_across", type=int, default=70, help="Gridding density for approx path formation")
         pars.add_argument("--constrain_slic_within_mask", type=inkex.Boolean, default=False,
                           help="Omit lines outside of mask")
@@ -107,6 +111,8 @@ class continuous_outline(inkex.EffectExtension):
         pars.add_argument("--scorched_earth", type=inkex.Boolean, default=True, help="Enable scorched earth mode")
         pars.add_argument("--scorched_earth_weight_multiplier", type=int, default=6,
                           help="Weight multiplier for scorched earth mode")
+        pars.add_argument("--simplify_intelligent_straighting_cutoff", type=int, default=20,
+                          help="Preserve desired details but simplify long sections greater than length")
         pars.add_argument("--simplify_tolerance", type=float, default=0.7,
                           help="Simplify tolerance (lower is sharper)")
         pars.add_argument("--simplify_preserve_topology", type=inkex.Boolean, default=True,
@@ -115,6 +121,11 @@ class continuous_outline(inkex.EffectExtension):
                           help="Max thickness of blip for removal")
         pars.add_argument("--blip_acuteness_threshold", type=float, default=0.15,
                           help="Acuteness threshold for blip removal (lower is sharper)")
+
+        #TODO: Constrict mask setting
+        #TODO: No inners if mask for image too complicated (i.e. penny farthing) but do inners for leg
+        #TODO: More sophisticated jumping, so don't need to simplify in inkscape which washes out desired features (goal!)
+        #Maybe section into "intricate feature" vs straight lines by simplifying, then keeping any simplified bits with length between points greater than thresh, else use orig dete
 
 
         pars.add_argument("--preview", type=inkex.Boolean, default=True, help="Preview before committing")
@@ -751,7 +762,7 @@ class continuous_outline(inkex.EffectExtension):
                           overall_images_dims_offsets, advanced_crop_box)
                         end = time.time_ns()
                         self.msg("TIMER: Level 3 processing time: " + str((end - start) / 1000000) + " ms")
-                        buildscr.build_level_4_scratch(self.options, objects, overall_images_dims_offsets)
+                        buildscr.build_level_4_scratch(self, self.options, objects, overall_images_dims_offsets)
                         if self.options.preview:
                             #Build Level 1-4 data into dataframes
                             setdb.set_level_1_data(dataframes, objects)
@@ -776,7 +787,7 @@ class continuous_outline(inkex.EffectExtension):
                         buildscr.build_level_2_scratch(self.options, objects)
                         buildscr.build_level_3_scratch(self, self.options, objects, formed_normalized_ctrl_points_nd,
                           overall_images_dims_offsets, advanced_crop_box)
-                        buildscr.build_level_4_scratch(self.options, objects, overall_images_dims_offsets)
+                        buildscr.build_level_4_scratch(self, self.options, objects, overall_images_dims_offsets)
 
                         if self.options.preview:
                             #Build Level 2-4 data into dataframes
@@ -799,7 +810,7 @@ class continuous_outline(inkex.EffectExtension):
                         #Levels 3-4 objects from scratch
                         buildscr.build_level_3_scratch(self, self.options, objects, formed_normalized_ctrl_points_nd,
                           overall_images_dims_offsets, advanced_crop_box)
-                        buildscr.build_level_4_scratch(self.options, objects ,overall_images_dims_offsets)
+                        buildscr.build_level_4_scratch(self, self.options, objects ,overall_images_dims_offsets)
 
                         if self.options.preview:
                             #Build Level 3-4 data into dataframes
@@ -825,7 +836,7 @@ class continuous_outline(inkex.EffectExtension):
                         builddb.build_level_3_data(self.options, retrieved, objects)
 
                         #Levels 4 objects from scratch
-                        buildscr.build_level_4_scratch(self.options, objects, overall_images_dims_offsets)
+                        buildscr.build_level_4_scratch(self, self.options, objects, overall_images_dims_offsets)
 
                         if self.options.preview:
                             #Build Level 4 data into dataframes

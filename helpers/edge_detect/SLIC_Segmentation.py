@@ -297,12 +297,15 @@ def mask_boundary_edges(parent_inkex, options, img_unchanged, overall_images_dim
 		_, inverted = cv2.threshold(grey, (1.0-options.transparancy_cutoff)*np.max(grey), 1, cv2.THRESH_BINARY)
 		mask = np.where(inverted == 0, 255, 0).astype(np.uint8)  # Create binary mask
 
-
-
-
-
 	if options.mask_retain_inner_transparencies:
-		all_contours, _ = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+		if options.mask_retain_inner_erosion > 0:
+			erosion_ksize = 2*((options.mask_retain_inner_erosion - 1)//2) + 1
+			erode_kernel = np.ones((erosion_ksize, erosion_ksize), np.uint8)
+			eroded_edges = cv2.erode(mask, erode_kernel, iterations=1)*255
+			all_contours, _ = cv2.findContours(eroded_edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+		else:
+			all_contours, _ = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+
 		parent_inkex.msg("num mask contours: " + str(len(all_contours)))
 	else:
 		#Blur n rebinarize n find edges
@@ -354,7 +357,10 @@ def mask_boundary_edges(parent_inkex, options, img_unchanged, overall_images_dim
 		contour[:, :, 1] = np.round(scale*contour[:, :, 1]).astype(np.int32) + y_cv_crop_box_offset
 		parent_inkex.msg(f"Max contour  x: {np.max(contour[:, :, 0])} y: {np.max(contour[:, :, 1])} for dpi {svg_image_with_path['img_dpi']}")
 
-	return final_contours,  mask
+	complicated_background = len(final_contours) > 7
+	parent_inkex.msg(f"{len(final_contours)} final contours")
+
+	return final_contours,  mask, complicated_background
 
 #C:\Users\liamc\PycharmProjects\continuous-outline\helpers\edge_detect\SLIC_Alg_Overview
 
@@ -396,6 +402,7 @@ def slic_image_boundary_edges(parent_inkex, options, im_float, mask, overall_ima
 	if options.constrain_slic_within_mask:
 		#Blank outside of mask
 		downsampled_mask, _ = try_downsample_mask(parent_inkex, mask, options)
+		parent_inkex.msg(f"downsampled mask max: {downsampled_mask.max()} min: {downsampled_mask.min()}")
 		segments[~downsampled_mask] = 0
 
 	#Determine contours

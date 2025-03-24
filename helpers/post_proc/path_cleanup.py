@@ -1,5 +1,34 @@
+
+
+def remove_repeated_coords(coords):
+    import numpy as np
+    """
+    Removes repeated coordinates from a list of (y, x) tuples.
+
+    Args:
+        coords: A list of (y, x) tuples representing the line.
+
+    Returns:
+        A list of (y, x) tuples representing the line without repeated coordinates.
+    """
+    if len(coords) <= 1:
+        return coords
+    coords_nd = np.array(coords)
+
+
+    diffs = np.diff(coords_nd, axis=0)  # Calculate differences between consecutive points
+    mask = np.any(diffs != 0, axis=1)  # find rows where any element is not zero.
+    mask = np.concatenate(([True], mask))  # add true to beginning of mask
+
+    unique_nd = coords_nd[mask]
+    return unique_nd.tolist()
+
 def remove_inout(path, manhatten_max_thickness=0, acuteness_threshold=0.15):
     import numpy as np
+
+    #TODO: Maybe check if slope suddenly chanegs then suddenly changes back for consistent amount of time
+    #TODO: Another funciton maybe, for these both, also check for intersections, evaluate each intersect blip, if looks shitty remove
+
     def manhatten_dist(p1, p2):
         return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
 
@@ -95,11 +124,11 @@ def remove_inout(path, manhatten_max_thickness=0, acuteness_threshold=0.15):
     conjoined_inouts.append(current_pair)  # Add the last pair
 
     #Re-build path without inouts
-    processed_path = path[0:conjoined_inouts[0][0]]
+    processed_path = path[0:conjoined_inouts[0][0] + 1]
     for i in range(len(conjoined_inouts)):
-        #NOTE: including 1 of the removed boundary so doesn't chop up path too much
+        #NOTE: including the removed boundary so doesn't chop up path too much
         startpoint, endpoint = (conjoined_inouts[i][1],
-                                conjoined_inouts[i + 1][0] if i < len(conjoined_inouts) - 1 else len(path))
+                                conjoined_inouts[i + 1][0] + 1 if i < len(conjoined_inouts) - 1 else len(path))
         processed_path.extend(path[startpoint:endpoint])
 
     return processed_path

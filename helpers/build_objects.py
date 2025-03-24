@@ -198,11 +198,17 @@ def build_level_1_scratch(parent_inkex, svg_images_with_paths, overall_images_di
         # near_boudaries_contours, segments = slic.slic_image_test_boundaries(im_float, split_contours)
         # near_boudaries_contours, segments = slic.mask_test_boundaries(image_path, split_contours)
 
-        outer_contours_cur, mask = slic.mask_boundary_edges(parent_inkex, options, im_unch, overall_images_dims_offsets,
-                                                            svg_image_with_path)
+        outer_contours_cur, mask, complicated_background = slic.mask_boundary_edges(parent_inkex, options, im_unch,
+                                                                                    overall_images_dims_offsets,
+                                                                                    svg_image_with_path)
         outer_contours.extend(outer_contours_cur)
         start = time.time_ns()
+        do_slic = False
         if not options.mask_only:
+            do_slic = True
+        if options.mask_only_when_complicated_background and complicated_background:
+            do_slic = False
+        if do_slic:
             inner_contours_cur, segments, num_segs = slic.slic_image_boundary_edges(parent_inkex, options, im_float, mask,
                                                                                     overall_images_dims_offsets,
                                                                                     svg_image_with_path,
@@ -222,7 +228,7 @@ def build_level_1_scratch(parent_inkex, svg_images_with_paths, overall_images_di
 
     ###TEMP####
     import inkex
-    for outer_cont in outer_contours:
+    for outer_cont in outer_contours + inner_contours:
         commands = []
         for i, point in enumerate(outer_cont):
             if i == 0:
@@ -377,7 +383,7 @@ def build_level_3_scratch(parent_inkex, options, objects: dict, approx_normalize
     parent_inkex.svg.get_current_layer().add(path_element)
     #######################################
 
-def build_level_4_scratch(options, objects: dict, overall_images_dims_offsets):
+def build_level_4_scratch(parent_inkex, options, objects: dict, overall_images_dims_offsets):
     if len(objects['raw_path']) == 0:
         formed_path = objects['raw_path']
     else:
@@ -386,12 +392,21 @@ def build_level_4_scratch(options, objects: dict, overall_images_dims_offsets):
         import helpers.post_proc.post_effects as fx
 
         #Process raw path
-        remove_blips = clean.remove_inout(objects['raw_path'],
-                                          options.blip_max_thickness*overall_images_dims_offsets['max_dpi'],
-                                          options.blip_acuteness_threshold)
+        remove_repeated = clean.remove_repeated_coords(objects['raw_path'])
+        if options.blip_max_thickness > 0 and options.blip_acuteness_threshold > 0:
+            remove_blips = clean.remove_inout(remove_repeated,
+                                              options.blip_max_thickness*overall_images_dims_offsets['max_dpi'],
+                                              options.blip_acuteness_threshold)
+        else:
+            remove_blips = remove_repeated
         dithered = fx.lfo_dither(remove_blips, 20, 1000, 3.0)
+        if options.simplify_intelligent_straighting_cutoff > 0:
+            smart_simp = smooth.intelligent_simplify_line(parent_inkex, dithered, options.simplify_intelligent_straighting_cutoff,
+                                                          options.simplify_intelligent_straighting_cutoff/10)
+        else:
+            smart_simp = dithered
 
-        simplified = smooth.simplify_line(dithered, tolerance=options.simplify_tolerance,
+        simplified = smooth.simplify_line(smart_simp, tolerance=options.simplify_tolerance,
                                           preserve_topology=options.simplify_preserve_topology)
 
         formed_path = simplified
