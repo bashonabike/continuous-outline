@@ -4,15 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Built better blip removal using linear alg">
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Intellisimplify working, a few more options">
       <change afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/British_Columbia_Parliament_Buildings_-_Pano_-_HDR.jpg" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/bg_removed/bgrem_MA44745566-penny-farthing-bike-1200w.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/continuous-outline.inx" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.inx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/build_objects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/build_objects.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/post_proc/smooth_path.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/post_proc/smooth_path.py" afterDir="false" />
     </list>
@@ -175,14 +173,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1736210770875</updated>
-    </task>
-    <task id="LOCAL-00017" summary="configured network inputs">
-      <option name="closed" value="true" />
-      <created>1740779399250</created>
-      <option name="number" value="00017" />
-      <option name="presentableId" value="LOCAL-00017" />
-      <option name="project" value="LOCAL" />
-      <updated>1740779399250</updated>
     </task>
     <task id="LOCAL-00018" summary="Dumb round working!  incl dumb af term cond, dsumb weights, dumb starbucks, etc">
       <option name="closed" value="true" />
@@ -568,7 +558,15 @@
       <option name="project" value="LOCAL" />
       <updated>1742593923326</updated>
     </task>
-    <option name="localTasksCounter" value="66" />
+    <task id="LOCAL-00066" summary="Intellisimplify working, a few more options">
+      <option name="closed" value="true" />
+      <created>1742843162409</created>
+      <option name="number" value="00066" />
+      <option name="presentableId" value="LOCAL-00066" />
+      <option name="project" value="LOCAL" />
+      <updated>1742843162409</updated>
+    </task>
+    <option name="localTasksCounter" value="67" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -583,7 +581,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Back forth going, bg rem working as sep test func" />
     <MESSAGE value="Trimming blips funct going" />
     <MESSAGE value="Images for website article" />
     <MESSAGE value="Configured lfo dither" />
@@ -608,7 +605,8 @@
     <MESSAGE value="Multi image working almost just need to crop line approx" />
     <MESSAGE value="Working on better path alg, making sure hit prescribed points" />
     <MESSAGE value="Built better blip removal using linear alg" />
-    <option name="LAST_COMMIT_MESSAGE" value="Built better blip removal using linear alg" />
+    <MESSAGE value="Intellisimplify working, a few more options" />
+    <option name="LAST_COMMIT_MESSAGE" value="Intellisimplify working, a few more options" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

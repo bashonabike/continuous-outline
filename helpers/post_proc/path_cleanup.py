@@ -23,11 +23,10 @@ def remove_repeated_coords(coords):
     unique_nd = coords_nd[mask]
     return unique_nd.tolist()
 
-def remove_inout(path, manhatten_max_thickness=0, acuteness_threshold=0.15):
-    import numpy as np
+# def remove_intersecting_gross_squiggle(path, )
 
-    #TODO: Maybe check if slope suddenly chanegs then suddenly changes back for consistent amount of time
-    #TODO: Another funciton maybe, for these both, also check for intersections, evaluate each intersect blip, if looks shitty remove
+def remove_inout(parent_inkex, path, manhatten_max_thickness=0, acuteness_threshold=0.15):
+    import numpy as np
 
     def manhatten_dist(p1, p2):
         return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
@@ -38,8 +37,8 @@ def remove_inout(path, manhatten_max_thickness=0, acuteness_threshold=0.15):
         if n < 3:
             return np.array([])  # Not enough points for triangles
 
-        x = coordinates_nd[:, 0]
-        y = coordinates_nd[:, 1]
+        x = coordinates_nd[:, 1]
+        y = coordinates_nd[:, 0]
 
         # Roll the arrays to create the coordinate triplets
         x1 = x
@@ -53,7 +52,7 @@ def remove_inout(path, manhatten_max_thickness=0, acuteness_threshold=0.15):
         areas = 0.5 * np.abs(x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2))
 
         #Determine perimeters
-        p1, p2, p3 = np.stack((x1, y1), axis=1),np.stack((x2, y2), axis=1),np.stack((x3, y3), axis=1)
+        p1, p2, p3 = np.stack((y1, x1), axis=1),np.stack((y2, x2), axis=1),np.stack((y3, x3), axis=1)
         side1 = np.linalg.norm(p2 - p1, axis=1)
         side2 = np.linalg.norm(p3 - p2, axis=1)
         side3 = np.linalg.norm(p1 - p3, axis=1)
@@ -91,21 +90,115 @@ def remove_inout(path, manhatten_max_thickness=0, acuteness_threshold=0.15):
     accuteness_mask = accuteness_ratio < acuteness_threshold
     distance_mask = projected_vectors_distances < 0.5 * manhatten_max_thickness
     combined_mask = np.logical_and(accuteness_mask, distance_mask)
-    blip_apex_indices = (np.where(combined_mask)[0] + 1).tolist()
+    blip_apex_indices = (np.where(combined_mask)[0] - 1).tolist()
     if len(blip_apex_indices) == 0:
         return path
 
-    #Process inouts
+    def calculate_directions(path):
+        """
+        Calculates slopes between consecutive points and between points and their previous points.
+
+        Args:
+            path: NumPy array of shape (n, 2) where each row is [x, y].
+
+        Returns:
+            Tuple of two NumPy arrays:
+                - forward_slopes: Slopes between each point and the next.
+                - backward_slopes: Slopes between each point and the previous.
+        """
+
+        if path.shape[0] < 2:
+            return np.array([]), np.array([])  # Return empty arrays for paths with less than 2 points
+
+        x_diffs = np.diff(path[:, 1])
+        y_diffs = np.diff(path[:, 0])
+
+        # Calculate forward directions (point to next)
+        forward_directions = (2*np.pi + np.arctan2(y_diffs, x_diffs)) % (2*np.pi)
+
+        # Calculate backward directions (point to previous)
+        backward_directions = (2*np.pi + np.arctan2(-y_diffs, -x_diffs)) % (2*np.pi)
+
+        # Pad the arrays to match the original path length
+        forward_directions = np.hstack((forward_directions, np.array(0)))
+        backward_directions = np.hstack((np.array(0), backward_directions))
+
+        return forward_directions, backward_directions
+
+    #Also add in sharp points to consider
+    sharpness_cutoff = 6*acuteness_threshold
+    forward_directions, backward_directions = calculate_directions(coordinates_nd)
+    sharp_points = np.abs(((forward_directions - backward_directions) + np.pi) % (2 * np.pi) - np.pi) <= sharpness_cutoff
+    sharp_points_idxs = np.where(sharp_points)[0]
+    blip_apex_indices = list(set(blip_apex_indices + sharp_points_idxs.tolist()))
+
+    #Process inouts, check direction once deviating consider endpoints of blip
     processed_inouts = []
+    dir_thresh = sharpness_cutoff/2
+    def angle_abs_disp(angle1, angle2):
+        from math import pi
+        displacement = angle2 - angle1
+        displacement = (displacement + pi) % (2 * pi) - pi
+        return abs(displacement)
+
     for blip_apex in blip_apex_indices:
-        if blip_apex > len(path) - 2: continue
-        apex_offset, apex_hardstop = 1, min(blip_apex, len(path) - 1 - blip_apex)
-        while apex_offset < apex_hardstop:
-            if manhatten_dist(path[blip_apex - apex_offset], path[blip_apex + apex_offset]) > manhatten_max_thickness:
-                break
-            apex_offset += 1
-        # processed_inouts.append({"start_idx": blip_apex - apex_offset, "end_idx": blip_apex + apex_offset})
-        processed_inouts.append([blip_apex - apex_offset, blip_apex + apex_offset])
+        if blip_apex > len(path) - 2 or blip_apex < 1: continue
+        lower, upper = blip_apex - 1, blip_apex + 1
+
+        #Go until not same direction
+        iters_since_manhatten = 0
+        while lower > 0 and upper < len(path) - 1 and iters_since_manhatten < 5:
+            #NOTE: Assuming first rev always true
+            if angle_abs_disp(forward_directions[upper], backward_directions[lower]) <= dir_thresh:
+                lower -= 1
+                upper += 1
+            elif angle_abs_disp(forward_directions[upper], backward_directions[lower + 1]) <= dir_thresh:
+                #Allow upper to catch up
+                upper += 1
+            elif angle_abs_disp(forward_directions[upper - 1], backward_directions[lower]) <= dir_thresh:
+                #Allow lower to catch up
+                lower -= 1
+            else: break
+
+            #Make sure not running away!
+            manhatten_dist_cur = manhatten_dist(path[lower], path[upper])
+            if manhatten_dist_cur > manhatten_max_thickness:
+                if manhatten_dist_cur > manhatten_max_thickness * 2: break
+                iters_since_manhatten += 1
+            else:
+                iters_since_manhatten = 0
+
+        #Spread until manhatten distance exceeded
+        while lower > 0 and upper < len(path) - 1:
+            if manhatten_dist(path[lower], path[upper]) <= manhatten_max_thickness:
+                lower -= 1
+                upper += 1
+            elif manhatten_dist(path[lower + 1], path[upper]) <= manhatten_max_thickness:
+                #Allow upper to catch up
+                upper += 1
+            elif manhatten_dist(path[lower], path[upper - 1]) <= manhatten_max_thickness:
+                #Allow lower to catch up
+                lower -= 1
+            else: break
+        processed_inouts.append([lower, upper])
+
+    #Look for blippey deviations that missed the accuteness and sharpness checks
+    abrupt_turns = np.abs(((forward_directions - (np.pi + backward_directions) % (2 * np.pi)) + np.pi)
+                           % (2 * np.pi) - np.pi) > np.pi/4
+    abrupt_turns_idxs = np.where(abrupt_turns)[0]
+
+    for abrupt_turn in abrupt_turns_idxs:
+        if abrupt_turn > len(path) - 2 or abrupt_turn < 1: continue
+        in_dir = (np.pi + backward_directions[abrupt_turn]) % (2 * np.pi)
+        out_dir_checks = forward_directions[abrupt_turn + 1:abrupt_turn + 100]
+        out_dir_matches = np.abs(((out_dir_checks - in_dir) + np.pi) % (2 * np.pi) - np.pi) <= 0.3
+        out_dir_match_indices = np.where(out_dir_matches)[0]
+        if out_dir_match_indices.size > 0:
+            sorted_indices = np.sort(out_dir_match_indices)
+            for idx in sorted_indices:
+                if manhatten_dist(path[abrupt_turn], path[abrupt_turn + 1 + idx]) <= manhatten_max_thickness:
+                    processed_inouts.append([abrupt_turn, abrupt_turn + 1 + idx])
+                    break
 
     #Conjoin as needed
     # Sort the index pairs by start index
@@ -127,6 +220,7 @@ def remove_inout(path, manhatten_max_thickness=0, acuteness_threshold=0.15):
     processed_path = path[0:conjoined_inouts[0][0] + 1]
     for i in range(len(conjoined_inouts)):
         #NOTE: including the removed boundary so doesn't chop up path too much
+        # processed_path.append([0,0])
         startpoint, endpoint = (conjoined_inouts[i][1],
                                 conjoined_inouts[i + 1][0] + 1 if i < len(conjoined_inouts) - 1 else len(path))
         processed_path.extend(path[startpoint:endpoint])

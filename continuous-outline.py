@@ -870,33 +870,38 @@ class continuous_outline(inkex.EffectExtension):
                         #Clear the database
                         data_ret.wipe_data()
                 else:
-                    formed_path_nd = np.array(objects['formed_path'])
-                    formed_path_xy = formed_path_nd[:, [1, 0]]
+                    command_strs = []
+                    for path_obj in [objects['raw_path'], objects['formed_path']]:
 
-                    #Determine scaling & shifting
-                    size_cv = (int(round(overall_images_dims_offsets['max_dpi'] * advanced_crop_box['width'], 0)),
-                     int(round(overall_images_dims_offsets['max_dpi'] * advanced_crop_box['height'], 0)))
-                    x_scale = size_cv[0] / float(advanced_crop_box['width'])
-                    y_scale = size_cv[1] / float(advanced_crop_box['height'])
-                    scale_nd = np.array([x_scale, y_scale])
-                    shift_nd = np.array([advanced_crop_box['x'], advanced_crop_box['y']])
+                        formed_path_nd = np.array(path_obj)
+                        # formed_path_nd = np.array(objects['formed_path'])
+                        formed_path_xy = formed_path_nd[:, [1, 0]]
 
-                    #Offset main contour to line up with crop box on svg
-                    formed_path_shifted = (formed_path_xy/scale_nd + shift_nd).tolist()
+                        #Determine scaling & shifting
+                        size_cv = (int(round(overall_images_dims_offsets['max_dpi'] * advanced_crop_box['width'], 0)),
+                         int(round(overall_images_dims_offsets['max_dpi'] * advanced_crop_box['height'], 0)))
+                        x_scale = size_cv[0] / float(advanced_crop_box['width'])
+                        y_scale = size_cv[1] / float(advanced_crop_box['height'])
+                        scale_nd = np.array([x_scale, y_scale])
+                        shift_nd = np.array([advanced_crop_box['x'], advanced_crop_box['y']])
 
-                    #Build the path commands
-                    commands = []
-                    for i, point in enumerate(formed_path_shifted):
-                        if i == 0:
-                            commands.append(['M', point])  # Move to the first point
-                        else:
-                            commands.append(['L', point])  # Line to the next point
-                        # self.msg(str(point))
-                    # commands.append(['Z'])  # Close path
-                    command_strings = [
-                        f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
-                    ]
-                    commands_str = " ".join(command_strings)
+                        #Offset main contour to line up with crop box on svg
+                        formed_path_shifted = (formed_path_xy/scale_nd + shift_nd).tolist()
+
+                        #Build the path commands
+                        commands = []
+                        for i, point in enumerate(formed_path_shifted):
+                            if i == 0:
+                                commands.append(['M', point])  # Move to the first point
+                            else:
+                                commands.append(['L', point])  # Line to the next point
+                            # self.msg(str(point))
+                        # commands.append(['Z'])  # Close path
+                        command_strings = [
+                            f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
+                        ]
+                        commands_str = " ".join(command_strings)
+                        command_strs.append(commands_str)
 
                     if self.options.preview:
                         # Create a temporary layer & group for the preview
@@ -922,11 +927,12 @@ class continuous_outline(inkex.EffectExtension):
                         # Set updated params into db
                         self.set_params_into_db(data_ret)
                     else:
-                        # Add a new path element to the SVG
-                        path_element = inkex.PathElement()
-                        path_element.set('d', commands_str)  # Set the path data
-                        path_element.style = {'stroke': 'black', 'fill': 'none'}
-                        self.svg.get_current_layer().add(path_element)
+                        for command_str in command_strs:
+                            # Add a new path element to the SVG
+                            path_element = inkex.PathElement()
+                            path_element.set('d', command_str)  # Set the path data
+                            path_element.style = {'stroke': 'black', 'fill': 'none'}
+                            self.svg.get_current_layer().add(path_element)
 
                         #Clear the database
                         data_ret.wipe_data()

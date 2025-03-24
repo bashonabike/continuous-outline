@@ -60,7 +60,7 @@ def intelligent_simplify_line(parent_inkex, coords, straitening_cutoff_length, t
         long_stretch_lowers.append(long_stretch_indices[lower])
         long_stretch_uppers.append(long_stretch_indices[upper] + 1)
 
-    def get_lowest_relative_index_within_tolerance_norm(nd_point, list_of_points, tolerance):
+    def get_lowest_index_within_tolerance_norm(parent_inkex, nd_point, list_of_points, start_idx, tolerance):
         """
         Gets the indices of all points in list_of_points that are within a tolerance of nd_point using np.linalg.norm.
 
@@ -73,31 +73,32 @@ def intelligent_simplify_line(parent_inkex, coords, straitening_cutoff_length, t
             NumPy array of indices.
         """
 
-        diffs = list_of_points - nd_point  # Calculate differences using broadcasting
-        distances = np.linalg.norm(diffs, axis=1)  # Calculate Euclidean distances
+        for incr_start_idx in range(start_idx, len(list_of_points), 50):
+            incr_end_idx = min(incr_start_idx + 50, len(list_of_points))
+            diffs = list_of_points[incr_start_idx:incr_end_idx] - nd_point  # Calculate differences using broadcasting
+            distances = np.linalg.norm(diffs, axis=1)  # Calculate Euclidean distances
 
-        indices = np.where(distances <= tolerance)[0]
+            indices = np.where(distances <= tolerance)[0]
 
-        if indices.size > 0:
-            min_index = np.min(indices)
-            return min_index
-        else:
-            return None  # Or any other value to indicate no indices found
+            if indices.size > 0:
+                min_index = np.min(indices)
+                return incr_start_idx + min_index
+        return None  # Or any other value to indicate no indices found
 
     #Determine link-up likely points
     final_path, orig_path_ctr = [], 0
     orig_nd = np.array(coords)
     for i in range(len(long_stretch_ranges)):
         lower_nd, upper_nd = simplified_np[long_stretch_lowers[i]], simplified_np[long_stretch_uppers[i]]
-        orig_exit_pt = orig_path_ctr + get_lowest_relative_index_within_tolerance_norm(lower_nd, orig_nd[orig_path_ctr:],
-                                                                                       test_tolerance)
-        final_path.extend(coords[orig_path_ctr:orig_exit_pt])
+        orig_exit_pt = get_lowest_index_within_tolerance_norm(parent_inkex, lower_nd, orig_nd, orig_path_ctr,
+                                                              test_tolerance)
+        final_path.extend(coords[orig_path_ctr:orig_exit_pt + 1])
         orig_path_ctr = orig_exit_pt + 1
-        final_path.extend(test_simplified_coords[long_stretch_lowers[i]:long_stretch_uppers[i]])
-        orig_entry_pt = orig_path_ctr + get_lowest_relative_index_within_tolerance_norm(upper_nd, orig_nd[orig_path_ctr:],
-                                                                                        test_tolerance)
+        final_path.extend(test_simplified_coords[long_stretch_lowers[i] + 1:long_stretch_uppers[i]])
+        orig_entry_pt = get_lowest_index_within_tolerance_norm(parent_inkex, upper_nd, orig_nd ,orig_path_ctr,
+                                                               test_tolerance)
         orig_path_ctr = orig_entry_pt
-        parent_inkex.msg(f"intellibound {orig_exit_pt} in {orig_entry_pt} out")
+        # parent_inkex.msg(f"intellibound {orig_exit_pt} in {orig_entry_pt} out")
 
     if orig_path_ctr is not None and orig_path_ctr < len(coords): final_path.extend(coords[orig_path_ctr:])
 

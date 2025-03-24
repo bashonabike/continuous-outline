@@ -394,7 +394,7 @@ def build_level_4_scratch(parent_inkex, options, objects: dict, overall_images_d
         #Process raw path
         remove_repeated = clean.remove_repeated_coords(objects['raw_path'])
         if options.blip_max_thickness > 0 and options.blip_acuteness_threshold > 0:
-            remove_blips = clean.remove_inout(remove_repeated,
+            remove_blips = clean.remove_inout(parent_inkex, remove_repeated,
                                               options.blip_max_thickness*overall_images_dims_offsets['max_dpi'],
                                               options.blip_acuteness_threshold)
         else:
