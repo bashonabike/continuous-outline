@@ -94,7 +94,7 @@ def remove_inout(parent_inkex, path, manhatten_max_thickness=0, acuteness_thresh
     if len(blip_apex_indices) == 0:
         return path
 
-    def calculate_directions(path):
+    def calculate_directions(path, sigma=1.0):
         """
         Calculates slopes between consecutive points and between points and their previous points.
 
@@ -107,27 +107,41 @@ def remove_inout(parent_inkex, path, manhatten_max_thickness=0, acuteness_thresh
                 - backward_slopes: Slopes between each point and the previous.
         """
 
+        from scipy.ndimage import gaussian_filter1d
         if path.shape[0] < 2:
             return np.array([]), np.array([])  # Return empty arrays for paths with less than 2 points
 
         x_diffs = np.diff(path[:, 1])
         y_diffs = np.diff(path[:, 0])
+        x_diffs_smoothed = gaussian_filter1d(x_diffs, sigma=sigma)
+        y_diffs_smoothed = gaussian_filter1d(y_diffs, sigma=sigma)
 
         # Calculate forward directions (point to next)
         forward_directions = (2*np.pi + np.arctan2(y_diffs, x_diffs)) % (2*np.pi)
 
         # Calculate backward directions (point to previous)
-        backward_directions = (2*np.pi + np.arctan2(-y_diffs, -x_diffs)) % (2*np.pi)
+        backward_directions = (np.pi + forward_directions) % (2*np.pi)
 
         # Pad the arrays to match the original path length
         forward_directions = np.hstack((forward_directions, np.array(0)))
         backward_directions = np.hstack((np.array(0), backward_directions))
 
-        return forward_directions, backward_directions
+        smoothed_fwd_dir = (2*np.pi + np.arctan2(y_diffs_smoothed, x_diffs_smoothed)) % (2*np.pi)
+
+        # Calculate backward directions (point to previous)
+        smoothed_rev_dir = (np.pi + smoothed_fwd_dir) % (2*np.pi)
+
+        # Pad the arrays to match the original path length
+        smoothed_fwd_dir = np.hstack((smoothed_fwd_dir, np.array(0)))
+        smoothed_rev_dir = np.hstack((np.array(0), smoothed_rev_dir))
+
+        return forward_directions, backward_directions, smoothed_fwd_dir, smoothed_rev_dir
 
     #Also add in sharp points to consider
+    from scipy.ndimage import gaussian_filter1d
     sharpness_cutoff = 6*acuteness_threshold
-    forward_directions, backward_directions = calculate_directions(coordinates_nd)
+    forward_directions, backward_directions,\
+        smoothed_fwd_dir, smoothed_rev_dir = calculate_directions(coordinates_nd, sigma=2*sharpness_cutoff)
     sharp_points = np.abs(((forward_directions - backward_directions) + np.pi) % (2 * np.pi) - np.pi) <= sharpness_cutoff
     sharp_points_idxs = np.where(sharp_points)[0]
     blip_apex_indices = list(set(blip_apex_indices + sharp_points_idxs.tolist()))
@@ -185,16 +199,24 @@ def remove_inout(parent_inkex, path, manhatten_max_thickness=0, acuteness_thresh
     #TODO: SMooth dir look for blips in that??
 
     #Look for blippey deviations that missed the accuteness and sharpness checks
-    abrupt_turns = np.abs(((forward_directions - (np.pi + backward_directions) % (2 * np.pi)) + np.pi)
+    abrupt_turns = np.abs(((smoothed_fwd_dir - (np.pi + smoothed_rev_dir) % (2 * np.pi)) + np.pi)
                            % (2 * np.pi) - np.pi) > np.pi/3
+    # abrupt_turns = np.abs(((forward_directions - (np.pi + backward_directions) % (2 * np.pi)) + np.pi)
+    #                        % (2 * np.pi) - np.pi) > np.pi/3
     abrupt_turns_idxs = np.where(abrupt_turns)[0]
+
+    #Set up intersection vectors
+    vector_in, vector_out = np.array(path[:-1]), np.array(path[1:])
+    vector_lengths = np.linalg.norm(vector_out - vector_in, axis=1).reshape(-1, 1)
+    vector_centroids = (vector_in + vector_out) / 2
+    from itertools import combinations
 
     for abrupt_turn in abrupt_turns_idxs:
         if abrupt_turn > len(path) - 2 or abrupt_turn < 1: continue
 
-        in_dir = (np.pi + backward_directions[abrupt_turn]) % (2 * np.pi)
-        out_dir_checks = forward_directions[abrupt_turn + 1:abrupt_turn + 100]
-        out_dir_matches = np.abs(((out_dir_checks - in_dir) + np.pi) % (2 * np.pi) - np.pi) <= 0.9
+        in_dir = (np.pi + smoothed_rev_dir[abrupt_turn]) % (2 * np.pi)
+        out_dir_checks = smoothed_fwd_dir[abrupt_turn + 1:abrupt_turn + 100]
+        out_dir_matches = np.abs(((out_dir_checks - in_dir) + np.pi) % (2 * np.pi) - np.pi) <= 1.3
         out_dir_match_indices = np.where(out_dir_matches)[0]
         if out_dir_match_indices.size > 0:
             sorted_indices = np.sort(out_dir_match_indices)
@@ -202,6 +224,51 @@ def remove_inout(parent_inkex, path, manhatten_max_thickness=0, acuteness_thresh
                 if manhatten_dist(path[abrupt_turn], path[abrupt_turn + 1 + idx]) <= manhatten_max_thickness:
                     processed_inouts.append([abrupt_turn, abrupt_turn + 1 + idx])
                     break
+
+        #Check for intersections in abrupt turn region
+        #NOTE: vectors etc are indexed by start point
+        intersections_src_start_idx, intersections_src_end_idx = (max(0, abrupt_turn - 50),
+                                                                  min(abrupt_turn + 50, len(path) - 1))
+        vector_lengths_src = vector_lengths[intersections_src_start_idx:intersections_src_end_idx + 1]
+        vector_centroids_src = vector_centroids[intersections_src_start_idx:intersections_src_end_idx + 1]
+        vector_in_src = vector_in[intersections_src_start_idx:intersections_src_end_idx + 1]
+        vector_out_src = vector_out[intersections_src_start_idx:intersections_src_end_idx + 1]
+
+        indices = np.arange(len(vector_lengths_src))
+        pairs = list(combinations(indices, 2))
+
+        pairs_array = np.array(pairs)
+        #Remove adjacent vectors, falsely trigger intersections
+        pairs_array = pairs_array[np.where(np.abs(pairs_array[:, 0] - pairs_array[:, 1]) > 1)[0]]
+        i_indices = pairs_array[:, 0]
+        j_indices = pairs_array[:, 1]
+
+        max_lengths = np.maximum(vector_lengths_src[i_indices], vector_lengths_src[j_indices])
+        centroid_dists = np.linalg.norm(vector_centroids_src[i_indices] - vector_centroids_src[j_indices], axis=1).reshape(-1, 1)
+        valid_pairs = pairs_array[np.where(centroid_dists < 2 * max_lengths)[0]]
+        if valid_pairs.size == 0: continue
+
+        v1_start, v1_end, v2_start, v2_end = (vector_in_src[valid_pairs[:, 0]], vector_out_src[valid_pairs[:, 0]],
+                                              vector_in_src[valid_pairs[:, 1]], vector_out_src[valid_pairs[:, 1]])
+
+        # Return true if line segments AB and CD intersect
+        def ccw(A, B, C):
+            return (C[:,1] - A[:,1]) * (B[:,0] - A[:,0]) > (B[:,1] - A[:,1]) * (C[:,0] - A[:,0])
+        def intersect(v1_start, v1_end, v2_start, v2_end):
+            return np.logical_and(ccw(v1_start, v2_start, v2_end) != ccw(v1_end, v2_start, v2_end),
+                    ccw(v1_start, v1_end, v2_start) != ccw(v1_start, v1_end, v2_end))
+
+        intersections = np.where(intersect(v1_start, v1_end, v2_start, v2_end))[0]
+
+        if intersections.size > 0:
+            for i in intersections:
+                intersection_pair = valid_pairs[i]
+                if intersection_pair[0] < intersection_pair[1]:
+                    processed_inouts.append([intersections_src_start_idx + intersection_pair[0],
+                                         intersections_src_start_idx + intersection_pair[1] + 1])
+                else:
+                    processed_inouts.append([intersections_src_start_idx + intersection_pair[1],
+                                         intersections_src_start_idx + intersection_pair[0] + 1])
 
     #Conjoin as needed
     # Sort the index pairs by start index

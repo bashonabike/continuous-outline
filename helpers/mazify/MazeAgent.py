@@ -1,6 +1,7 @@
 from logging import exception
 # import itertools
 import numpy as np
+import random as rd
 # from scipy.spatial import ConvexHull
 # import matplotlib.pyplot as plt
 # from scipy.signal import convolve2d
@@ -15,7 +16,7 @@ import helpers.mazify.NetworkxExtension as nxex
 #TODO: Also check if focal regions or expl control points changed since last rev, if so regen sections agent (split focus masks level between)
 
 class MazeAgent:
-    def __init__(self, options, outer_edges, outer_contours, inner_edges, inner_contours,
+    def __init__(self, parent_inkex, options, outer_edges, outer_contours, inner_edges, inner_contours,
                  maze_sections: sections.MazeSections, from_db=False, all_contours_objects:list=None,
                 max_tracker_size=-1, start_node=None, end_node=None):
         self.options = options
@@ -44,7 +45,7 @@ class MazeAgent:
                     self.max_tracker_size = len(new_path.section_tracker)
 
             self.maze_sections.set_section_node_cats()
-            self.maze_sections.set_direct_jump_close_nodes()
+            self.maze_sections.set_direct_jump_close_nodes(parent_inkex)
             self.start_node, self.end_node = None, None
         else:
             self.all_contours_objects, self.outer_contours_objects, self.inner_contours_objects = (all_contours_objects,
@@ -69,7 +70,7 @@ class MazeAgent:
                  maze_sections, from_db=True, all_contours_objects=all_contours_objects,
                    max_tracker_size=max_tracker_size, start_node=start_node, end_node=end_node)
 
-    def run_round_trace_approx_path(self,  parent_inkex, approx_ctrl_points_nd:np.array):
+    def run_round_trace_approx_path(self,  parent_inkex, approx_ctrl_points_nd:np.array, max_magnet_lock_dist):
         #Find inflection points
         inflection_points = []
         if self.options.trace_inner_too:
@@ -79,16 +80,33 @@ class MazeAgent:
             outer_trackers = [t for trackers in [c.section_tracker for c in self.outer_contours_objects]
                               for t in trackers]
             search_sects = list(set([t.section.coords_sec for t in outer_trackers]))
-        sectionized_ctrl_points = approx_ctrl_points_nd//np.array((self.maze_sections.y_grade,
-                                                                   self.maze_sections.x_grade))
+        sectionized_ctrl_points = (approx_ctrl_points_nd//np.array((self.maze_sections.y_grade,
+                                                                   self.maze_sections.x_grade))).astype(int)
+        sectionized_ctrl_points = np.maximum(0, sectionized_ctrl_points)
+        sectionized_ctrl_points = np.minimum(int(self.options.maze_sections_across - 1), sectionized_ctrl_points)
+        search_grid_width = int(1 + 2*((2*max_magnet_lock_dist)//(self.maze_sections.y_grade +
+                                                                   self.maze_sections.x_grade)))
+        prev_lock_node = None
+        node_trace_coord_path = []
         for ctrl_sec, orig_pt in zip(sectionized_ctrl_points.tolist(), approx_ctrl_points_nd.tolist()):
-            closest_sec_coords = self.find_closest_sect(ctrl_sec, search_sects)
-            closest_sec = self.maze_sections.sections[closest_sec_coords[0], closest_sec_coords[1]]
-            #Find closest point in section
-            _, closest_node = self.find_inflection_points([orig_pt], closest_sec.nodes,
-                                                          path_1_expl_point=True)
+            #Find closest point in section with locking if appl
+            closest_sec, closest_node = self.find_suitable_inflec_node(ctrl_sec, orig_pt, search_sects, prev_lock_node,
+                                                                       search_grid_width,
+                                                                       self.options.prefer_outer_contours_locking)
+
+            node_trace_coord_path.append(closest_node.point)
+
+            ####TEMP###
+            import inkex
+            rect_style = 'fill:#000000;stroke:none;stroke-width:0.264583'
+            el2 = inkex.Rectangle.new(closest_sec.xmin, closest_sec.ymin, self.maze_sections.x_grade, self.maze_sections.y_grade)
+            el2.style = rect_style
+            parent_inkex.svg.get_current_layer().add(el2)
+            ###############
+
             node_path_idx = closest_node.num
             closest_node_idx_in_tracker = node_path_idx - closest_node.section_tracker.in_node.num
+            closest_sec_coords = closest_sec.coords_sec
             closest_graph_node = (closest_sec_coords[0], closest_sec_coords[1],
                                   closest_node.path_num, closest_node.section_tracker_num)
 
@@ -102,70 +120,98 @@ class MazeAgent:
             parent_inkex.msg(f"{ctrl_sec} -> {inflection_points[-1]['closest_sec_coords']}")
             parent_inkex.msg(f"{orig_pt} -> {inflection_points[-1]['closest_pt']}")
 
-        #TODO: Ensure that closest point is always traversed?  May not be neccesary
+            prev_lock_node = closest_node
+
+        #TEMP#####
+        import inkex
+        commands = []
+        lock_points = [(p[1], p[0]) for p in node_trace_coord_path]
+        for i, point in enumerate(lock_points):
+            if i == 0:
+                commands.append(['M', point])  # Move to the first point
+            else:
+                commands.append(['L', point])  # Line to the next point
+            # self.msg(str(point))
+        # commands.append(['Z'])  # Close path
+        command_strings = [
+            f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
+        ]
+        commands_str = " ".join(command_strings)
+
+        # Add a new path element to the SVG
+        path_element = inkex.PathElement()
+        path_element.set('d', commands_str)  # Set the path data
+        path_element.style = {'stroke': 'grey', 'fill': 'none'}
+        parent_inkex.svg.get_current_layer().add(path_element)
+        # #######################################
+
+
+
+        ###########
 
         # Determine best path for rough trace
         section_path = []
         for t in range(len(inflection_points) - 1):
-            section_path.append(inflection_points[t]['closest_graph_node'] +
-                                (inflection_points[t]['closest_node_idx_in_tracker'],))
+        #     section_path.append(inflection_points[t]['closest_graph_node'] +
+        #                         (inflection_points[t]['closest_node_idx_in_tracker'],))
+        #     section_path.extend(nxex.shortest_path(self.maze_sections.path_graph,
+        #                                            inflection_points[t]['closest_graph_node'],
+        #                                            inflection_points[t + 1]['closest_graph_node'],
+        #                                            weight='weight'))
+        # section_path.append(inflection_points[-1]['closest_graph_node'] +
+        #                     (inflection_points[-1]['closest_node_idx_in_tracker'],))
+
             section_path.extend(nxex.shortest_path(self.maze_sections.path_graph,
                                                    inflection_points[t]['closest_graph_node'],
                                                    inflection_points[t + 1]['closest_graph_node'],
-                                                   weight='weight'))
-        section_path.append(inflection_points[-1]['closest_graph_node'] +
-                            (inflection_points[-1]['closest_node_idx_in_tracker'],))
+                                                   weight='weight')[:-1])
+        section_path.append(inflection_points[-1]['closest_graph_node'])
 
-            # section_path.extend(nxex.shortest_path(self.maze_sections.path_graph,
-            #                                        inflection_points[t]['closest_graph_node'],
-            #                                        inflection_points[t + 1]['closest_graph_node'],
-            #                                        weight='weight')[:-1])
+        # prev_sec, cur_sec = None, None
+        # shortcuts = []
+        # for i in range(len(section_path)):
+        #     cur_sec = (section_path[i][0], section_path[i][1])
+        #     if prev_sec is not None and cur_sec != prev_sec:
+        #         l_bound, u_bound, cur_src_sec, prev_src_sec = i, i, cur_sec, cur_sec
+        #         sections_traversed_shared = set()
+        #         while l_bound >0 and u_bound < len(section_path) - 1 and abs(u_bound - l_bound) < 30:
+        #             u_sec = (section_path[u_bound][0], section_path[u_bound][1])
+        #             l_sec = (section_path[l_bound][0], section_path[l_bound][1])
+        #             if u_sec == l_sec:
+        #                 l_bound -= 1
+        #                 u_bound += 1
+        #                 prev_src_sec = cur_src_sec
+        #                 sections_traversed_shared.add(cur_src_sec)
+        #             elif u_sec == prev_src_sec:
+        #                 #Allow upper to catch up
+        #                 u_bound += 1
+        #                 cur_src_sec = l_sec
+        #
+        #             elif l_sec == prev_src_sec:
+        #                 #Allow lower to catch up
+        #                 l_bound -= 1
+        #                 cur_src_sec = u_sec
+        #             else: break
+        #
+        #         if u_bound - l_bound > 2 and len(sections_traversed_shared) > 1:
+        #             shortcuts.append((l_bound + 1, u_bound - 1))
+        #             parent_inkex.msg(f"Short cut {l_bound + 1} -> {u_bound - 1}")
+        #
+        #     prev_sec = cur_sec
+        #
+        # # Re-build without shortcuts
+        # processed_path = section_path[0:shortcuts[0][0] + 1]
+        # for i in range(len(shortcuts)):
+        #     # NOTE: including the removed boundary so doesn't chop up path too much
+        #     startpoint, endpoint = (shortcuts[i][1],
+        #                             shortcuts[i + 1][0] + 1 if i < len(shortcuts) - 1 else len(section_path))
+        #     processed_path.append((section_path[startpoint][0], section_path[startpoint][1]))
+        #
+        #     processed_path.extend(section_path[startpoint:endpoint])
+        # processed_path.extend(section_path[shortcuts[-1][1]:])
 
-        #TODO: Make this better why djikstra doing weird blips
-        prev_sec, cur_sec = None, None
-        shortcuts = []
-        for i in range(len(section_path)):
-            cur_sec = (section_path[i][0], section_path[i][1])
-            if prev_sec is not None and cur_sec != prev_sec:
-                l_bound, u_bound, cur_src_sec, prev_src_sec = i, i, cur_sec, cur_sec
-                sections_traversed_shared = set()
-                while l_bound >0 and u_bound < len(section_path) - 1 and abs(u_bound - l_bound) < 30:
-                    u_sec = (section_path[u_bound][0], section_path[u_bound][1])
-                    l_sec = (section_path[l_bound][0], section_path[l_bound][1])
-                    if u_sec == l_sec:
-                        l_bound -= 1
-                        u_bound += 1
-                        prev_src_sec = cur_src_sec
-                        sections_traversed_shared.add(cur_src_sec)
-                    elif u_sec == prev_src_sec:
-                        #Allow upper to catch up
-                        u_bound += 1
-                        cur_src_sec = l_sec
-
-                    elif l_sec == prev_src_sec:
-                        #Allow lower to catch up
-                        l_bound -= 1
-                        cur_src_sec = u_sec
-                    else: break
-
-                if u_bound - l_bound > 2 and len(sections_traversed_shared) > 1:
-                    shortcuts.append((l_bound + 1, u_bound - 1))
-                    parent_inkex.msg(f"Short cut {l_bound + 1} -> {u_bound - 1}")
-
-            prev_sec = cur_sec
-
-        # Re-build without shortcuts
-        processed_path = section_path[0:shortcuts[0][0] + 1]
-        for i in range(len(shortcuts)):
-            # NOTE: including the removed boundary so doesn't chop up path too much
-            startpoint, endpoint = (shortcuts[i][1],
-                                    shortcuts[i + 1][0] + 1 if i < len(shortcuts) - 1 else len(section_path))
-            processed_path.append((section_path[startpoint][0], section_path[startpoint][1]))
-
-            processed_path.extend(section_path[startpoint:endpoint])
-        processed_path.extend(section_path[shortcuts[-1][1]:])
-
-        section_path = processed_path
+        # section_path = processed_path
+        #TODO: Reenable shortcuts??
 
 
         #Insert jump node where direct jump
@@ -427,6 +473,66 @@ class MazeAgent:
 
                 must_hit_node_idx_pre, must_hit_node_idx_post = must_hit_node_idx_post, None
         return nodes_path
+
+    def find_suitable_inflec_node(self, ctrl_sec, orig_pt, search_sects, prev_lock_node, search_grid_width, prefer_outer):
+        lock_cands = []
+        if prev_lock_node is not None or prefer_outer:
+            if prev_lock_node is not None:
+                prev_path = prev_lock_node.path
+            else:
+                prev_path = None
+            #Build nxn grid around ctrl sec as possibility for lock node, starting on cur sec
+
+            i_src = range(max(0, ctrl_sec[0] - search_grid_width//2),
+                          min(self.options.maze_sections_across - 1, ctrl_sec[0] + search_grid_width//2))
+            i_src = [ctrl_sec[0]] + [i for i in i_src if i != ctrl_sec[0]]
+            j_src = range(max(0, ctrl_sec[1] - search_grid_width//2),
+                          min(self.options.maze_sections_across - 1, ctrl_sec[1] + search_grid_width//2))
+            j_src = [ctrl_sec[1]] + [j for j in j_src if j != ctrl_sec[1]]
+
+            best_pathified_dist, best_outer_dist = None, None
+            for i in i_src:
+                for j in j_src:
+                    test_sec = self.maze_sections.sections[i, j]
+                    test_trackers = test_sec.section_trackers
+                    test_paths = [tracker.path for tracker in test_trackers]
+                    sec_dist_manhat = abs(i - ctrl_sec[0]) + abs(j - ctrl_sec[1])
+                    if (prev_lock_node is not None and prev_lock_node.path in test_paths and
+                            (best_pathified_dist is None or sec_dist_manhat < best_pathified_dist)):
+                        pathified_trackers = [tracker for tracker in test_trackers
+                                                       if tracker.path == prev_lock_node.path]
+                        pathified_trackers_nd = np.array([tracker.tracker_num for tracker in pathified_trackers])
+                        trackers_dist = np.abs(pathified_trackers_nd - prev_lock_node.section_tracker_num)
+                        if prev_lock_node.path.closed:
+                            trackers_in_path = len(prev_lock_node.path.section_tracker)
+                            trackers_dist = np.minimum(trackers_dist, trackers_in_path - trackers_dist)
+                        closest_tracker = pathified_trackers[np.argmin(trackers_dist)]
+                        #Take midpoint node
+                        closest_node = closest_tracker.nodes[len(closest_tracker.nodes)//2]
+                        lock_cands.append({"type": 1, "node": closest_node,
+                                           "sec_dist_manhat": sec_dist_manhat})
+                        best_pathified_dist = sec_dist_manhat
+                    elif (prefer_outer and test_sec.dumb_req and
+                            (best_outer_dist is None or sec_dist_manhat < best_outer_dist)):
+                        pathified_trackers = [tracker for tracker in test_trackers if tracker.path.outer]
+                        lock_tracker = pathified_trackers[rd.randint(0, len(pathified_trackers) - 1)]
+                        # Take midpoint node
+                        lock_node = lock_tracker.nodes[len(lock_tracker.nodes) // 2]
+                        lock_cands.append({"type": 2, "node": lock_node,
+                                           "sec_dist_manhat": sec_dist_manhat})
+                        best_outer_dist = sec_dist_manhat
+
+            if len(lock_cands) > 0:
+                lock_cands_sorted = sorted(lock_cands, key=lambda x: (x["type"], x["sec_dist_manhat"]))
+                lock_node = lock_cands_sorted[0]["node"]
+                return lock_node.section, lock_node
+
+        #Default to closest sec and node otherwise
+        closest_sec_coords = self.find_closest_sect(ctrl_sec, search_sects)
+        closest_sec = self.maze_sections.sections[closest_sec_coords[0], closest_sec_coords[1]]
+        _, closest_node = self.find_inflection_points([orig_pt], closest_sec.nodes,
+                                                      path_1_expl_point=True)
+        return closest_node.section, closest_node
 
     def find_inflection_points(self, path_1_seg, path_2_seg, retrieve_idxs=False, path_1_expl_point=False):
         if path_1_expl_point:

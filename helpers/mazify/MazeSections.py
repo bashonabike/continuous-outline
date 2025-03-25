@@ -88,7 +88,23 @@ class MazeSections:
                             self.path_graph.add_edge(current_node, neighbor_node,
                                                      weight=self.options.dumb_node_blank_weight)
 
-    def set_direct_jump_close_nodes(self):
+    def set_direct_jump_close_nodes(self, parent_inkex):
+        def manhatten_dist_nodes(node1, node2):
+            return abs(node1.point[0] - node2.point[0]) + abs(node1.point[1] - node2.point[1])
+
+        def check_if_tracks_parallel(track_from, track_to):
+            edge_node_from_in, edge_node_to_in = track_from.in_node, track_to.in_node
+            edge_node_from_out, edge_node_to_out = track_from.out_node, track_to.out_node
+            if (manhatten_dist_nodes(edge_node_from_in, edge_node_to_in) +
+                manhatten_dist_nodes(edge_node_from_out, edge_node_to_out)) <= \
+                    (self.y_grade + self.x_grade)//5:
+                return True
+            elif (manhatten_dist_nodes(edge_node_from_in, edge_node_to_out) +
+                manhatten_dist_nodes(edge_node_from_out, edge_node_to_in)) <= \
+                    (self.y_grade + self.x_grade)//5:
+                return True
+            return False
+
         for i in range(self.m):
             for j in range(self.n):
                 cur_section = self.sections[i, j]
@@ -97,9 +113,11 @@ class MazeSections:
                         track_from_node = (i, j, track_from.path_num, track_from.tracker_num)
                         track_to_node = (i, j, track_to.path_num, track_to.tracker_num)
                         if track_from != track_to and not self.path_graph.has_edge(track_from_node, track_to_node) and \
-                            abs(track_from_node[2] - track_to_node[2]) <= 5:
+                            check_if_tracks_parallel(track_from, track_to):
                             self.path_graph.add_edge(track_from_node, track_to_node,
-                                                     weight=self.options.dumb_node_optional_weight)
+                                                     weight=0)
+                            parent_inkex.msg(f"Jump node {track_from_node} to {track_to_node}")
+
 
     def set_section_node_cats(self):
         for i in range(self.m):

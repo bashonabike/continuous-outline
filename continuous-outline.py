@@ -89,6 +89,13 @@ class continuous_outline(inkex.EffectExtension):
         pars.add_argument("--maze_sections_across", type=int, default=70, help="Gridding density for approx path formation")
         pars.add_argument("--constrain_slic_within_mask", type=inkex.Boolean, default=False,
                           help="Omit lines outside of mask")
+
+        pars.add_argument("--max_magnet_lock_dist", type=int, default=100,
+                          help="Max distance for magnet locking onto edges")
+        pars.add_argument("--prefer_outer_contours_locking", type=inkex.Boolean, default=True,
+                          help="Prefer outer contours for locking onto edges")
+
+
         pars.add_argument("--dumb_node_optional_weight", type=int, default=1, help="Weight for optional dumb nodes")
         pars.add_argument("--dumb_node_optional_max_variable_weight", type=int, default=6,
                           help="Max variable weight for optional dumb nodes")

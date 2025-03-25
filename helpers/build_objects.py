@@ -302,7 +302,7 @@ def build_level_2_scratch(parent_inkex, options, objects: dict):
     maze_sections = MazeSections(options, objects['outer_edges'], options.maze_sections_across,
                                  options.maze_sections_across, objects['detail_req_masks'])
 
-    maze_agent = MazeAgent(options, objects['outer_edges'], objects['outer_contours'],
+    maze_agent = MazeAgent(parent_inkex, options, objects['outer_edges'], objects['outer_contours'],
                            objects['inner_edges'], objects['inner_contours'],
                            maze_sections)
 
@@ -350,7 +350,9 @@ def build_level_3_scratch(parent_inkex, options, objects: dict, approx_normalize
     # for ctrl in approx_ctrl_points_nd.tolist():
     #     parent_inkex.msg(ctrl)
     #Trace n center
-    raw_path_coords_cropped, section_path, raw_points = objects['maze_agent'].run_round_trace_approx_path(parent_inkex, approx_ctrl_points_nd)
+    raw_path_coords_cropped, section_path, raw_points = (
+        objects['maze_agent'].run_round_trace_approx_path(parent_inkex, approx_ctrl_points_nd,
+                                                          overall_images_dims_offsets['max_dpi']*options.max_magnet_lock_dist))
     if len(raw_path_coords_cropped) > 0:
         raw_path = shift_contours([raw_path_coords_cropped], (-1)*objects['shift_y'], (-1)*objects['shift_x'])[0]
     else:
@@ -360,52 +362,53 @@ def build_level_3_scratch(parent_inkex, options, objects: dict, approx_normalize
     inst_out_objects = objects_to_dict(["raw_path", "img_height", "img_width"])
     objects.update(inst_out_objects)
 
+    # parent_inkex.msg(raw_path)
+
 
 
     # ###TEMP####
-    # import inkex
-    # sections_points = [(s[1], s[0]) for s in section_path]
-    # commands = []
-    # for i, point in enumerate(sections_points):
-    #     if i == 0:
-    #         commands.append(['M', point])  # Move to the first point
-    #     else:
-    #         commands.append(['L', point])  # Line to the next point
-    #     # self.msg(str(point))
-    # # commands.append(['Z'])  # Close path
-    # command_strings = [
-    #     f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
-    # ]
-    # commands_str = " ".join(command_strings)
-    #
-    # # Add a new path element to the SVG
-    # path_element = inkex.PathElement()
-    # path_element.set('d', commands_str)  # Set the path data
-    # path_element.style = {'stroke': 'green', 'fill': 'none'}
-    # parent_inkex.svg.get_current_layer().add(path_element)
-    #
-    #
-    #
-    # import inkex
-    # sections_points = [(s[1], s[0]) for s in raw_points]
-    # commands = []
-    # for i, point in enumerate(sections_points):
-    #     if i == 0:
-    #         commands.append(['M', point])  # Move to the first point
-    #     else:
-    #         commands.append(['L', point])  # Line to the next point
-    #     # self.msg(str(point))
-    # # commands.append(['Z'])  # Close path
-    # command_strings = [
-    #     f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
-    # ]
-    # commands_str = " ".join(command_strings)
-    #
-    # # Add a new path element to the SVG
-    # path_element = inkex.PathElement()
-    # path_element.set('d', commands_str)  # Set the path data
-    # path_element.style = {'stroke': 'orange', 'fill': 'none'}
-    # parent_inkex.svg.get_current_layer().add(path_element)
+    import inkex
+    rough_points = [(s[1], s[0]) for s in approx_ctrl_points_nd.tolist()]
+    preview_layer = inkex.etree.Element(inkex.addNS('g', 'svg'),
+                                        None, nsmap=inkex.NSS)
+    preview_layer.set(inkex.addNS('groupmode', 'inkscape'), 'layer')
+    preview_layer.set(inkex.addNS('label', 'inkscape'), 'Preview')
+    preview_layer.set(inkex.addNS('lock', 'inkscape'), 'true')
+    preview_layer.set(inkex.addNS('insensitive', 'inkscape'), 'true')
+
+    preview_group = inkex.etree.SubElement(preview_layer, inkex.addNS('g', 'svg'))
+    preview_group.set('id', 'preview_group')  # give the group an id so it can be found later.
+    preview_group.set(inkex.addNS('lock', 'inkscape'), 'true')  # give the group an id so it can be found later.
+
+    commands = []
+    for i, point in enumerate(rough_points):
+        x, y = point[0], point[1]
+        circle_style = 'fill:#000000;stroke:none;stroke-width:0.264583'
+        el = inkex.Circle.new(center=(x, y), radius=2)
+        el.style = circle_style
+        parent_inkex.svg.get_current_layer().add(el)
+
+
+
+    import inkex
+    commands = []
+    for i, point in enumerate(rough_points):
+        if i == 0:
+            commands.append(['M', point])  # Move to the first point
+        else:
+            commands.append(['L', point])  # Line to the next point
+        # self.msg(str(point))
+    # commands.append(['Z'])  # Close path
+    command_strings = [
+        f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
+    ]
+    commands_str = " ".join(command_strings)
+
+    # Add a new path element to the SVG
+    path_element = inkex.PathElement()
+    path_element.set('d', commands_str)  # Set the path data
+    path_element.style = {'stroke': 'red', 'fill': 'none'}
+    parent_inkex.svg.get_current_layer().add(path_element)
     # #######################################
 
 def build_level_4_scratch(parent_inkex, options, objects: dict, overall_images_dims_offsets):

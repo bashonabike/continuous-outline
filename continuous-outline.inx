@@ -69,9 +69,19 @@
                     <param name="mask_retain_inner_erosion" type="int" min="0" max="50"
                            gui-text="Retaining inner transparency erosion (in pixels)">0
                     </param>
-
                     <param name="constrain_slic_within_mask" type="bool" gui-text="Omit lines outside of mask">false
                     </param>
+
+                    <param name="prefer_outer_contours_locking" type="bool"
+                           gui-text="Prefer outer contours for locking onto edges">True
+                    </param>
+                    <param name="max_magnet_lock_dist" type="int" min="0" max="2000"
+                           gui-text="Max distance for magnet locking onto edges">100
+                    </param>
+
+
+
+
                     <param name="dumb_node_optional_weight" type="int" min="0" max="9999"
                            gui-text="Weight for optional dumb nodes">1
                     </param>
