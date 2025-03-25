@@ -209,7 +209,7 @@ def draw_and_flip_contours(inkex_parent, options, outer_contours, inner_contours
 	start = time.time_ns()
 	import helpers.post_proc.smooth_path as smooth
 
-	outer_contours.sort(key=len, reverse=True)
+	# outer_contours.sort(key=len, reverse=True)
 	if len(inner_contours) > 0: inner_contours.sort(key=len, reverse=True)
 	outer_edges = np.zeros((int(round(overall_images_dims_offsets['max_dpi']*advanced_crop_box['height'], 0)),
 							int(round(overall_images_dims_offsets['max_dpi']*advanced_crop_box['width'], 0))),

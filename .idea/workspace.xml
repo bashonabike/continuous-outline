@@ -4,15 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Intellisimplify working, a few more options">
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Line cleanup all looking good!  Intersections, oblong blips, sharpnesses, all removed well with minimal params inputted.  Great job Liam!!">
       <change afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/British_Columbia_Parliament_Buildings_-_Pano_-_HDR.jpg" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/bg_removed/bgrem_MA44745566-penny-farthing-bike-1200w.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/build_objects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/build_objects.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/post_proc/smooth_path.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/post_proc/smooth_path.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -173,14 +175,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1736210770875</updated>
-    </task>
-    <task id="LOCAL-00018" summary="Dumb round working!  incl dumb af term cond, dsumb weights, dumb starbucks, etc">
-      <option name="closed" value="true" />
-      <created>1740783961799</created>
-      <option name="number" value="00018" />
-      <option name="presentableId" value="LOCAL-00018" />
-      <option name="project" value="LOCAL" />
-      <updated>1740783961799</updated>
     </task>
     <task id="LOCAL-00019" summary="Dumb round working!  incl dumb af term cond, dsumb weights, dumb starbucks, etc">
       <option name="closed" value="true" />
@@ -566,7 +560,15 @@
       <option name="project" value="LOCAL" />
       <updated>1742843162409</updated>
     </task>
-    <option name="localTasksCounter" value="67" />
+    <task id="LOCAL-00067" summary="Line cleanup all looking good!  Intersections, oblong blips, sharpnesses, all removed well with minimal params inputted.  Great job Liam!!">
+      <option name="closed" value="true" />
+      <created>1742858570951</created>
+      <option name="number" value="00067" />
+      <option name="presentableId" value="LOCAL-00067" />
+      <option name="project" value="LOCAL" />
+      <updated>1742858570951</updated>
+    </task>
+    <option name="localTasksCounter" value="68" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -581,7 +583,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Trimming blips funct going" />
     <MESSAGE value="Images for website article" />
     <MESSAGE value="Configured lfo dither" />
     <MESSAGE value="Working on db caching, created data layer and db" />
@@ -606,7 +607,8 @@
     <MESSAGE value="Working on better path alg, making sure hit prescribed points" />
     <MESSAGE value="Built better blip removal using linear alg" />
     <MESSAGE value="Intellisimplify working, a few more options" />
-    <option name="LAST_COMMIT_MESSAGE" value="Intellisimplify working, a few more options" />
+    <MESSAGE value="Line cleanup all looking good!  Intersections, oblong blips, sharpnesses, all removed well with minimal params inputted.  Great job Liam!!" />
+    <option name="LAST_COMMIT_MESSAGE" value="Line cleanup all looking good!  Intersections, oblong blips, sharpnesses, all removed well with minimal params inputted.  Great job Liam!!" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

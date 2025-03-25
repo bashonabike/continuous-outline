@@ -294,7 +294,7 @@ def build_level_1_scratch(parent_inkex, svg_images_with_paths, overall_images_di
     objects.update(final_out_objs)
 
 
-def build_level_2_scratch(options, objects: dict):
+def build_level_2_scratch(parent_inkex, options, objects: dict):
     from helpers.mazify.MazeSections import MazeSections
     from helpers.mazify.MazeAgent import MazeAgent
 
@@ -309,6 +309,31 @@ def build_level_2_scratch(options, objects: dict):
     # Set objects into dict
     inst_out_objects = objects_to_dict(["maze_sections", "maze_agent"])
     objects.update(inst_out_objects)
+
+
+
+    ###TEMP####
+    import inkex
+    for grid_line in maze_sections.grid_lines:
+        commands = []
+        for i, point in enumerate(grid_line):
+            if i == 0:
+                commands.append(['M', point])  # Move to the first point
+            else:
+                commands.append(['L', point])  # Line to the next point
+            # self.msg(str(point))
+        # commands.append(['Z'])  # Close path
+        command_strings = [
+            f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
+        ]
+        commands_str = " ".join(command_strings)
+
+        # Add a new path element to the SVG
+        path_element = inkex.PathElement()
+        path_element.set('d', commands_str)  # Set the path data
+        path_element.style = {'stroke': 'green', 'fill': 'none'}
+        parent_inkex.svg.get_current_layer().add(path_element)
+    #######################################
 
 def build_level_3_scratch(parent_inkex, options, objects: dict, approx_normalized_ctrl_points,
                           overall_images_dims_offsets, advanced_crop_box):
@@ -337,51 +362,51 @@ def build_level_3_scratch(parent_inkex, options, objects: dict, approx_normalize
 
 
 
-    ###TEMP####
-    import inkex
-    sections_points = [(s[1], s[0]) for s in section_path]
-    commands = []
-    for i, point in enumerate(sections_points):
-        if i == 0:
-            commands.append(['M', point])  # Move to the first point
-        else:
-            commands.append(['L', point])  # Line to the next point
-        # self.msg(str(point))
-    # commands.append(['Z'])  # Close path
-    command_strings = [
-        f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
-    ]
-    commands_str = " ".join(command_strings)
-
-    # Add a new path element to the SVG
-    path_element = inkex.PathElement()
-    path_element.set('d', commands_str)  # Set the path data
-    path_element.style = {'stroke': 'green', 'fill': 'none'}
-    parent_inkex.svg.get_current_layer().add(path_element)
-
-
-
-    import inkex
-    sections_points = [(s[1], s[0]) for s in raw_points]
-    commands = []
-    for i, point in enumerate(sections_points):
-        if i == 0:
-            commands.append(['M', point])  # Move to the first point
-        else:
-            commands.append(['L', point])  # Line to the next point
-        # self.msg(str(point))
-    # commands.append(['Z'])  # Close path
-    command_strings = [
-        f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
-    ]
-    commands_str = " ".join(command_strings)
-
-    # Add a new path element to the SVG
-    path_element = inkex.PathElement()
-    path_element.set('d', commands_str)  # Set the path data
-    path_element.style = {'stroke': 'orange', 'fill': 'none'}
-    parent_inkex.svg.get_current_layer().add(path_element)
-    #######################################
+    # ###TEMP####
+    # import inkex
+    # sections_points = [(s[1], s[0]) for s in section_path]
+    # commands = []
+    # for i, point in enumerate(sections_points):
+    #     if i == 0:
+    #         commands.append(['M', point])  # Move to the first point
+    #     else:
+    #         commands.append(['L', point])  # Line to the next point
+    #     # self.msg(str(point))
+    # # commands.append(['Z'])  # Close path
+    # command_strings = [
+    #     f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
+    # ]
+    # commands_str = " ".join(command_strings)
+    #
+    # # Add a new path element to the SVG
+    # path_element = inkex.PathElement()
+    # path_element.set('d', commands_str)  # Set the path data
+    # path_element.style = {'stroke': 'green', 'fill': 'none'}
+    # parent_inkex.svg.get_current_layer().add(path_element)
+    #
+    #
+    #
+    # import inkex
+    # sections_points = [(s[1], s[0]) for s in raw_points]
+    # commands = []
+    # for i, point in enumerate(sections_points):
+    #     if i == 0:
+    #         commands.append(['M', point])  # Move to the first point
+    #     else:
+    #         commands.append(['L', point])  # Line to the next point
+    #     # self.msg(str(point))
+    # # commands.append(['Z'])  # Close path
+    # command_strings = [
+    #     f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
+    # ]
+    # commands_str = " ".join(command_strings)
+    #
+    # # Add a new path element to the SVG
+    # path_element = inkex.PathElement()
+    # path_element.set('d', commands_str)  # Set the path data
+    # path_element.style = {'stroke': 'orange', 'fill': 'none'}
+    # parent_inkex.svg.get_current_layer().add(path_element)
+    # #######################################
 
 def build_level_4_scratch(parent_inkex, options, objects: dict, overall_images_dims_offsets):
     if len(objects['raw_path']) == 0:

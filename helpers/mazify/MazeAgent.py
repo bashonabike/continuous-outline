@@ -44,6 +44,7 @@ class MazeAgent:
                     self.max_tracker_size = len(new_path.section_tracker)
 
             self.maze_sections.set_section_node_cats()
+            self.maze_sections.set_direct_jump_close_nodes()
             self.start_node, self.end_node = None, None
         else:
             self.all_contours_objects, self.outer_contours_objects, self.inner_contours_objects = (all_contours_objects,
@@ -115,12 +116,138 @@ class MazeAgent:
         section_path.append(inflection_points[-1]['closest_graph_node'] +
                             (inflection_points[-1]['closest_node_idx_in_tracker'],))
 
-        # Trace path from tracker path
-        nodes_path = self.set_node_path_from_sec_path(section_path)
-        raw_path_coords = [n.point for n in nodes_path]
-        return raw_path_coords, section_path, approx_ctrl_points_nd.tolist()
+            # section_path.extend(nxex.shortest_path(self.maze_sections.path_graph,
+            #                                        inflection_points[t]['closest_graph_node'],
+            #                                        inflection_points[t + 1]['closest_graph_node'],
+            #                                        weight='weight')[:-1])
 
-    def set_node_path_from_sec_path(self, sections_nodes_path):
+        #TODO: Make this better why djikstra doing weird blips
+        prev_sec, cur_sec = None, None
+        shortcuts = []
+        for i in range(len(section_path)):
+            cur_sec = (section_path[i][0], section_path[i][1])
+            if prev_sec is not None and cur_sec != prev_sec:
+                l_bound, u_bound, cur_src_sec, prev_src_sec = i, i, cur_sec, cur_sec
+                sections_traversed_shared = set()
+                while l_bound >0 and u_bound < len(section_path) - 1 and abs(u_bound - l_bound) < 30:
+                    u_sec = (section_path[u_bound][0], section_path[u_bound][1])
+                    l_sec = (section_path[l_bound][0], section_path[l_bound][1])
+                    if u_sec == l_sec:
+                        l_bound -= 1
+                        u_bound += 1
+                        prev_src_sec = cur_src_sec
+                        sections_traversed_shared.add(cur_src_sec)
+                    elif u_sec == prev_src_sec:
+                        #Allow upper to catch up
+                        u_bound += 1
+                        cur_src_sec = l_sec
+
+                    elif l_sec == prev_src_sec:
+                        #Allow lower to catch up
+                        l_bound -= 1
+                        cur_src_sec = u_sec
+                    else: break
+
+                if u_bound - l_bound > 2 and len(sections_traversed_shared) > 1:
+                    shortcuts.append((l_bound + 1, u_bound - 1))
+                    parent_inkex.msg(f"Short cut {l_bound + 1} -> {u_bound - 1}")
+
+            prev_sec = cur_sec
+
+        # Re-build without shortcuts
+        processed_path = section_path[0:shortcuts[0][0] + 1]
+        for i in range(len(shortcuts)):
+            # NOTE: including the removed boundary so doesn't chop up path too much
+            startpoint, endpoint = (shortcuts[i][1],
+                                    shortcuts[i + 1][0] + 1 if i < len(shortcuts) - 1 else len(section_path))
+            processed_path.append((section_path[startpoint][0], section_path[startpoint][1]))
+
+            processed_path.extend(section_path[startpoint:endpoint])
+        processed_path.extend(section_path[shortcuts[-1][1]:])
+
+        section_path = processed_path
+
+
+        #Insert jump node where direct jump
+        final_section_path = []
+        insert_start = 0
+        for i in range(len(section_path) - 1):
+            if len(section_path[i]) >= 4 and len(section_path[i + 1]) >= 4 \
+                and (section_path[i][2] != section_path[i + 1][2] or
+                    abs(section_path[i][3] - section_path[i + 1][3]) > 1):
+                final_section_path.extend(section_path[insert_start:i + 1])
+                final_section_path.append((section_path[i][0], section_path[i][1]))
+                insert_start = i + 1
+        if insert_start <= len(section_path) - 1:
+            final_section_path.extend(section_path[insert_start:])
+
+
+        # #Trim unneccessary blips
+        # blip_max_len = self.options.maze_sections_across//10
+        # shortcuts = []
+        # for i in range(1, len(section_path) - 1):
+        #     if len(section_path[i]) >= 4 and (len(section_path[i - 1]) == 2 or
+        #                                       section_path[i - 1][2] != section_path[i][2]):
+        #         #Look back, see if deviated from path unneccessarily
+        #         for j in range(i - 2, max(0, i - blip_max_len), -1):
+        #             if len(section_path[j]) >= 4 and section_path[j][2] == section_path[i][2]:
+        #                 section_diff = abs(section_path[j][0] - section_path[i][0]) + \
+        #                     abs(section_path[j][1] - section_path[i][1])
+        #                 #Check if in neighbouring or same section
+        #                 if section_diff <= 1:
+        #                     shortcuts.append([j, i])
+        #                     parent_inkex.msg(f"Short cut from {section_path[j]} to {section_path[i]}")
+        #                     break
+        #
+        #             #TEST: If same section and no must hit point hit
+        #             if len(section_path[j]) >= 4 and abs(section_path[j][0] - section_path[i][0]) + \
+        #                     abs(section_path[j][1] - section_path[i][1]) == 0:
+        #                 shortcuts.append([j, i])
+        #                 parent_inkex.msg(f"Short cut from {section_path[j]} to {section_path[i]}")
+        #                 break
+        #
+        #             if len(section_path[j]) == 5: break #Must hit these points
+        #
+        # # Conjoin as needed
+        # # Sort the index pairs by start index
+        # shortcuts.sort(key=lambda x: x[0])
+        #
+        # conjoined_inouts = []
+        # current_pair = shortcuts[0]
+        #
+        # for pair in shortcuts[1:]:
+        #     if pair[0] <= current_pair[1]:  # Overlapping
+        #         current_pair[1] = max(current_pair[1], pair[1])  # Extend end index
+        #     else:  # No overlap
+        #         conjoined_inouts.append(current_pair)
+        #         current_pair = pair
+        #
+        # conjoined_inouts.append(current_pair)  # Add the last pair
+        #
+        # # Re-build without shortcuts
+        # final_section_path = [section_path[0]]
+        # processed_path = section_path[0:conjoined_inouts[0][0] + 1]
+        # for i in range(len(conjoined_inouts)):
+        #     same_tracker = section_path[conjoined_inouts[i][0]][3] == section_path[conjoined_inouts[i][1]][3]
+        #     if not same_tracker:
+        #         # NOTE: including the removed boundary so doesn't chop up path too much
+        #         startpoint, endpoint = (conjoined_inouts[i][1],
+        #                                 conjoined_inouts[i + 1][0] + 1 if i < len(conjoined_inouts) - 1 else len(section_path))
+        #         processed_path.append((section_path[startpoint][0], section_path[startpoint][1]))
+        #     else:
+        #         startpoint, endpoint = (conjoined_inouts[i][1] + 1,
+        #                                 conjoined_inouts[i + 1][0] + 1 if i < len(conjoined_inouts) - 1 else len(
+        #                                     section_path))
+        #
+        #     processed_path.extend(section_path[startpoint:endpoint])
+        #
+        # parent_inkex.msg(f"Short cutted path: {processed_path}")
+        # Trace path from tracker path
+        nodes_path = self.set_node_path_from_sec_path(parent_inkex, final_section_path)
+        raw_path_coords = [n.point for n in nodes_path]
+        return raw_path_coords, final_section_path, approx_ctrl_points_nd.tolist()
+
+    def set_node_path_from_sec_path(self, parent_inkex, sections_nodes_path):
         nodes_path = []
         jump_path = False
         prev_sect, cur_sect, next_sect = None, None, None
@@ -165,7 +292,8 @@ class MazeAgent:
                     tracker_modulo = trackers_in_path if path_closed else 999999
                     if (next_sect[2] != cur_sect[2] or cur_sect[3] not in
                         ((next_sect[3] + 1)%tracker_modulo, (next_sect[3] - 1)%tracker_modulo)):
-                        raise exception("Something screwy with tracking")
+                        parent_inkex.msg(cur_sect)
+                        raise exception(f"Something screwy with tracking: {cur_sect}")
                     path_rev = (cur_sect[3] - 1)%tracker_modulo == next_sect[3]
                     if path_rev:
                         if cur_tracker_idx == -1:
@@ -194,7 +322,7 @@ class MazeAgent:
                             nodes_path.extend(cur_tracker.nodes[cur_tracker_idx:must_hit_node_idx_post + 1])
                 elif next_sect is not None:
                     #Entering into the abyss, look for next intersection
-                    next_trackerized_sect, sections_path_idx_new = None, -1
+                    next_trackerized_sect, sections_path_idx = None, -1
                     for j in range(i + 2, len(sections_nodes_path)):
                         if len(sections_nodes_path[j]) == 4:
                             # if sections_nodes_path[j] == sections_nodes_path[i]:
@@ -209,8 +337,46 @@ class MazeAgent:
                             #Find best intersection point
                             #TODO: If the next on is part of same path just keep going
                             #TODO: Better handling of not doing weird loopdy loops
+
                             next_tracker = self.all_contours_objects[next_trackerized_sect[2] - 1]. \
                                 section_tracker[next_trackerized_sect[3]]
+
+                            # if sections_path_idx + 1 < len(sections_nodes_path):
+                            #     #Determine next tracker direction
+                            #     if len(sections_nodes_path[sections_path_idx + 1]) >= 4:
+                            #         trackers_in_path = len(next_tracker.path.section_tracker)
+                            #         tracker_modulo = trackers_in_path if path_closed else 999999
+                            #         next_path_rev = ((next_trackerized_sect[3] - 1) % tracker_modulo ==
+                            #                          sections_nodes_path[sections_path_idx + 1][3])
+                            #     else:
+                            #         next_next_section_idx =sections_nodes_path[sections_path_idx + 1]
+                            #         next_fwd_node, next_rev_node = (next_tracker.out_node.walk(),
+                            #                                         next_tracker.in_node.walk(True))
+                            #         next_fwd_sec, next_rev_sec = None, None
+                            #
+                            #         if next_fwd_node is not None:
+                            #             next_fwd_sec = next_fwd_node.section.coords_sec
+                            #         if next_rev_node is not None:
+                            #             next_rev_sec = next_rev_node.section.coords_sec
+                            #
+                            #         if next_rev_node is None:
+                            #             next_path_rev = False
+                            #         elif next_fwd_node is None:
+                            #             next_path_rev = True
+                            #         else:
+                            #             fwd_score = abs(next_fwd_sec[0] - next_next_section_idx[0]) + \
+                            #                 abs(next_fwd_sec[1] - next_next_section_idx[1])
+                            #             rev_score = abs(next_rev_sec[0] - next_next_section_idx[0]) + \
+                            #                 abs(next_rev_sec[1] - next_next_section_idx[1])
+                            #             next_path_rev = rev_score < fwd_score
+                            # else:
+                            #     next_path_rev = False
+                            #
+                            # #Based on next node direction, try to minimize nodes hit on inflection
+                            #
+
+
+
                             inflec_nodes = list(self.find_inflection_points(cur_tracker.nodes,
                                                                             next_tracker.nodes,
                                                                             retrieve_idxs=True))

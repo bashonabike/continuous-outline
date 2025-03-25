@@ -17,7 +17,7 @@ class MazeSections:
             self.img_height, self.img_width = outer_edge.shape
             self.sections, _, self.y_grade, self.x_grade = (
                 self.count_true_pixels_in_sections(outer_edge, m, n, req_details_mask))
-
+            self.grid_lines =self.create_grid_paths(self.x_grade, self.y_grade, options.maze_sections_across)
             self.path_graph = nx.Graph()
             self.set_section_blank_overs_in_graph()
         else:
@@ -35,6 +35,34 @@ class MazeSections:
                    sections=sections, y_grade=y_grade, x_grade=x_grade, img_height=img_height, img_width=img_width,
                    path_graph=path_graph)
 
+    def create_grid_paths(self, x_grade, y_grade, total_intervals):
+        """
+        Creates a series of grid lines stored as paths.
+
+        Args:
+            x_grade: The horizontal spacing between vertical grid lines.
+            y_grade: The vertical spacing between horizontal grid lines.
+            total_intervals: The total number of intervals in both x and y directions.
+
+        Returns:
+            A list of NumPy arrays, where each array represents a grid line path.
+        """
+
+        grid_paths = []
+
+        # Create vertical grid lines
+        for i in range(total_intervals + 1):
+            x = i * x_grade
+            vertical_line = [(x, 0), (x, total_intervals * y_grade)]
+            grid_paths.append(vertical_line)
+
+        # Create horizontal grid lines
+        for i in range(total_intervals + 1):
+            y = i * y_grade
+            horizontal_line = [(0, y), (total_intervals * x_grade, y)]
+            grid_paths.append(horizontal_line)
+
+        return grid_paths
 
     def set_section_blank_overs_in_graph(self):
         #Set sections as nodes into graph
@@ -59,6 +87,19 @@ class MazeSections:
                         if not self.path_graph.has_edge(current_node, neighbor_node):
                             self.path_graph.add_edge(current_node, neighbor_node,
                                                      weight=self.options.dumb_node_blank_weight)
+
+    def set_direct_jump_close_nodes(self):
+        for i in range(self.m):
+            for j in range(self.n):
+                cur_section = self.sections[i, j]
+                for track_from in cur_section.section_trackers:
+                    for track_to in cur_section.section_trackers:
+                        track_from_node = (i, j, track_from.path_num, track_from.tracker_num)
+                        track_to_node = (i, j, track_to.path_num, track_to.tracker_num)
+                        if track_from != track_to and not self.path_graph.has_edge(track_from_node, track_to_node) and \
+                            abs(track_from_node[2] - track_to_node[2]) <= 5:
+                            self.path_graph.add_edge(track_from_node, track_to_node,
+                                                     weight=self.options.dumb_node_optional_weight)
 
     def set_section_node_cats(self):
         for i in range(self.m):
@@ -150,6 +191,8 @@ class MazeSection:
         self.dumb_req = dumb_req
         self.dumb_opt = dumb_opt
 
+        self.section_trackers = []
+
     @classmethod
     def from_df(cls, options, y_start, y_end, x_start, x_end, num_edge_pixels, y_sec, x_sec,
                 is_focus_region, focus_region_nums,
@@ -205,6 +248,7 @@ class MazeSectionTracker:
             self.prev_tracker = prev_tracker
             self.next_tracker = next_tracker
             self.from_db_num_nodes = 0
+            section.section_trackers.append(self)
         else:
             self.path_num = path_num
             self.in_node = None

@@ -756,7 +756,7 @@ class continuous_outline(inkex.EffectExtension):
                         buildscr.build_level_1_scratch(self, svg_images_with_paths, overall_images_dims_offsets,
                                                        normalized_focus_region_specs, advanced_crop_box,
                                                        self.options, objects)
-                        buildscr.build_level_2_scratch(self.options, objects)
+                        buildscr.build_level_2_scratch(self, self.options, objects)
                         start=time.time_ns()
                         buildscr.build_level_3_scratch(self, self.options, objects, formed_normalized_ctrl_points_nd,
                           overall_images_dims_offsets, advanced_crop_box)
@@ -784,7 +784,7 @@ class continuous_outline(inkex.EffectExtension):
                         builddb.build_level_1_data(self.options, retrieved, objects)
 
                         #Levels 2-4 objects from scratch
-                        buildscr.build_level_2_scratch(self.options, objects)
+                        buildscr.build_level_2_scratch(self, self.options, objects)
                         buildscr.build_level_3_scratch(self, self.options, objects, formed_normalized_ctrl_points_nd,
                           overall_images_dims_offsets, advanced_crop_box)
                         buildscr.build_level_4_scratch(self, self.options, objects, overall_images_dims_offsets)

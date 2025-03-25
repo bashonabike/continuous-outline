@@ -182,16 +182,19 @@ def remove_inout(parent_inkex, path, manhatten_max_thickness=0, acuteness_thresh
             else: break
         processed_inouts.append([lower, upper])
 
+    #TODO: SMooth dir look for blips in that??
+
     #Look for blippey deviations that missed the accuteness and sharpness checks
     abrupt_turns = np.abs(((forward_directions - (np.pi + backward_directions) % (2 * np.pi)) + np.pi)
-                           % (2 * np.pi) - np.pi) > np.pi/4
+                           % (2 * np.pi) - np.pi) > np.pi/3
     abrupt_turns_idxs = np.where(abrupt_turns)[0]
 
     for abrupt_turn in abrupt_turns_idxs:
         if abrupt_turn > len(path) - 2 or abrupt_turn < 1: continue
+
         in_dir = (np.pi + backward_directions[abrupt_turn]) % (2 * np.pi)
         out_dir_checks = forward_directions[abrupt_turn + 1:abrupt_turn + 100]
-        out_dir_matches = np.abs(((out_dir_checks - in_dir) + np.pi) % (2 * np.pi) - np.pi) <= 0.3
+        out_dir_matches = np.abs(((out_dir_checks - in_dir) + np.pi) % (2 * np.pi) - np.pi) <= 0.9
         out_dir_match_indices = np.where(out_dir_matches)[0]
         if out_dir_match_indices.size > 0:
             sorted_indices = np.sort(out_dir_match_indices)
