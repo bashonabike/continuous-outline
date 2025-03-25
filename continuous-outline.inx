@@ -28,8 +28,12 @@
     ]]></script>
                     </param>
                     <param name="mask_only_when_complicated_background" type="bool"
-                           gui-text="No inner SLIC if background of mask is complicated (i.e. lots of holes)">False
+                           gui-text="No inner SLIC/Canny-Hull if background of mask is complicated (i.e. lots of holes)">False
                     </param>
+                        <param name="canny_hull" type="bool"
+                           gui-text="Use Canny with hull volume check instead of SLIC (works best when many sharp edges with minimal colour differences between regions)">False
+                    </param>
+
                     <param name="cuda_slic" type="bool" gui-text="Use CUDA SLIC">True
                             <script><![CDATA[
       function load(event) {

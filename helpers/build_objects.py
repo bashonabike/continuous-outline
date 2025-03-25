@@ -209,11 +209,15 @@ def build_level_1_scratch(parent_inkex, svg_images_with_paths, overall_images_di
         if options.mask_only_when_complicated_background and complicated_background:
             do_slic = False
         if do_slic:
-            inner_contours_cur, segments, num_segs = slic.slic_image_boundary_edges(parent_inkex, options, im_float, mask,
-                                                                                    overall_images_dims_offsets,
-                                                                                    svg_image_with_path,
-                                                                                num_segments=options.slic_regions,
-                                                                                enforce_connectivity=False)
+            if not options.canny_hull:
+                inner_contours_cur, segments, num_segs = slic.slic_image_boundary_edges(parent_inkex, options, im_float, mask,
+                                                                                        overall_images_dims_offsets,
+                                                                                        svg_image_with_path,
+                                                                                    num_segments=options.slic_regions,
+                                                                                    enforce_connectivity=False)
+            else:
+                inner_contours_cur = slic.canny_hull_image_boundary_edges(im_unch, overall_images_dims_offsets,
+                                                                          svg_image_with_path)
             inner_contours.extend(inner_contours_cur)
 
     #Flip contours and fill into edge arrays

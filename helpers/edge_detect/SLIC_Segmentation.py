@@ -442,6 +442,52 @@ def slic_image_boundary_edges(parent_inkex, options, im_float, mask, overall_ima
 
 	return final_contours, segments, num_segs_actual
 
+def canny_hull_image_boundary_edges(img_unchanged, overall_images_dims_offsets, svg_image_with_path):
+	"""
+	Opens an image file using OpenCV, finds contours, and returns them.
+
+	Args:
+		image_path: The path to the image file.
+
+	Returns:
+		A list of contours found in the image, or None if an error occurs.
+	"""
+
+	# Convert to grayscale
+	gray = cv2.cvtColor(img_unchanged, cv2.COLOR_BGR2GRAY)
+	if img_unchanged.shape[2] == 4:  # Check if it has an alpha channel
+		gray[img_unchanged[:,:,3] == 0] = 0
+
+	gray = 5*(gray//5)
+
+	# # Apply thresholding (you might need to adjust the threshold value)
+	# _, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+	edges = cv2.Canny(gray, 100, 200)
+	# Find contours
+	contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+	final_contours = []
+
+	contours = [c for c in contours if len(c) > 100]
+	for c in contours:
+		contour = c[:,0,:]
+		hull = cv2.convexHull(contour)
+		area = cv2.contourArea(hull)
+		perimeter = cv2.arcLength(hull, True)
+		if area/perimeter > 10:
+			final_contours.append(c)
+
+	# Offset final contours by prescribed offset amount
+	max_dpi = overall_images_dims_offsets['max_dpi']
+	x_cv_crop_box_offset, y_cv_crop_box_offset = (
+	int(round(max_dpi * svg_image_with_path['x_crop_box_offset'], 0)),
+	int(round(max_dpi * svg_image_with_path['y_crop_box_offset'], 0)))
+	for contour in final_contours:
+		contour[:, :, 0] += x_cv_crop_box_offset
+		contour[:, :, 1] += y_cv_crop_box_offset
+
+	return final_contours
+
 def remove_perimeter_ghosting(options, points_list):
 	"""
 	Eliminates points where x or y is 0 or 1023 from a NumPy array.

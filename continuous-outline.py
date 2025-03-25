@@ -61,7 +61,9 @@ class continuous_outline(inkex.EffectExtension):
         pars.add_argument("--mask_only", type=inkex.Boolean, default=False,
                           help="No inner SLIC")
         pars.add_argument("--mask_only_when_complicated_background", type=inkex.Boolean, default=False,
-                          help="No inner SLIC if background of mask is complicated (i.e. lots of holes)")
+                          help="No inner SLIC/Canny-Hull if background of mask is complicated (i.e. lots of holes)")
+        pars.add_argument("--canny_hull", type=inkex.Boolean, default=False,
+                          help="Use Canny with hull volume check instead of SLIC (works best when many sharp edges with minimal colour differences between regions)")
         pars.add_argument("--cuda_slic", type=inkex.Boolean, default=True,
                           help="Use CUDA SLIC")
         pars.add_argument("--slic_regions", type=int, default=12, help="Number of SLIC regions")

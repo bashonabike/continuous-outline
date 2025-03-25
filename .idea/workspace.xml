@@ -4,19 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Working on why still blipping nailed down weird djiksta, workaround ish">
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Got paths going good, fresh edges can jump btwn interchangable sectionized contours, intersection checking working">
       <change afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/British_Columbia_Parliament_Buildings_-_Pano_-_HDR.jpg" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/bg_removed/bgrem_MA44745566-penny-farthing-bike-1200w.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test_path_cleanup.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test_find_contours_raw.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/continuous-outline.inx" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.inx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/build_objects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/build_objects.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/post_proc/smooth_path.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/post_proc/smooth_path.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -60,6 +57,7 @@
     "Python.SLIC-Segmentation.executor": "Debug",
     "Python.Testing.executor": "Debug",
     "Python.edge_detection.executor": "Run",
+    "Python.test_find_contours_raw.executor": "Run",
     "Python.test_path_cleanup.executor": "Debug",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
@@ -83,7 +81,7 @@
       <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\Trial-AI-Base-Images\_TEMPPPP" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.test_path_cleanup">
+  <component name="RunManager" selected="Python.test_find_contours_raw">
     <configuration name="ProcessTestImages" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="continuous-outline" />
       <option name="ENV_FILES" value="" />
@@ -150,6 +148,28 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="test_find_contours_raw" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="continuous-outline" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test_find_contours_raw.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="test_path_cleanup" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="continuous-outline" />
       <option name="ENV_FILES" value="" />
@@ -173,6 +193,7 @@
       <method v="2" />
     </configuration>
     <list>
+      <item itemvalue="Python.test_find_contours_raw" />
       <item itemvalue="Python.test_path_cleanup" />
       <item itemvalue="Python.ProcessTestImages" />
       <item itemvalue="Python.SLIC_Segmentation" />
@@ -180,6 +201,7 @@
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.test_find_contours_raw" />
         <item itemvalue="Python.test_path_cleanup" />
         <item itemvalue="Python.Testing" />
         <item itemvalue="Python.ProcessTestImages" />
@@ -202,14 +224,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1736210770875</updated>
-    </task>
-    <task id="LOCAL-00020" summary="Debugging &amp; improvements of basic dumb round func">
-      <option name="closed" value="true" />
-      <created>1740982636188</created>
-      <option name="number" value="00020" />
-      <option name="presentableId" value="LOCAL-00020" />
-      <option name="project" value="LOCAL" />
-      <updated>1740982636188</updated>
     </task>
     <task id="LOCAL-00021" summary="Got stuff funcitoning, perf imprv, didn't work well tho, started on path-walking use compass just to find Jumps between paths">
       <option name="closed" value="true" />
@@ -595,7 +609,15 @@
       <option name="project" value="LOCAL" />
       <updated>1742871000832</updated>
     </task>
-    <option name="localTasksCounter" value="69" />
+    <task id="LOCAL-00069" summary="Got paths going good, fresh edges can jump btwn interchangable sectionized contours, intersection checking working">
+      <option name="closed" value="true" />
+      <created>1742939575056</created>
+      <option name="number" value="00069" />
+      <option name="presentableId" value="LOCAL-00069" />
+      <option name="project" value="LOCAL" />
+      <updated>1742939575056</updated>
+    </task>
+    <option name="localTasksCounter" value="70" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -610,7 +632,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Configured lfo dither" />
     <MESSAGE value="Working on db caching, created data layer and db" />
     <MESSAGE value="Setting Level 1 data configured" />
     <MESSAGE value="Got setting data by level configured" />
@@ -635,7 +656,8 @@
     <MESSAGE value="Intellisimplify working, a few more options" />
     <MESSAGE value="Line cleanup all looking good!  Intersections, oblong blips, sharpnesses, all removed well with minimal params inputted.  Great job Liam!!" />
     <MESSAGE value="Working on why still blipping nailed down weird djiksta, workaround ish" />
-    <option name="LAST_COMMIT_MESSAGE" value="Working on why still blipping nailed down weird djiksta, workaround ish" />
+    <MESSAGE value="Got paths going good, fresh edges can jump btwn interchangable sectionized contours, intersection checking working" />
+    <option name="LAST_COMMIT_MESSAGE" value="Got paths going good, fresh edges can jump btwn interchangable sectionized contours, intersection checking working" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -654,6 +676,11 @@
           <url>file://$PROJECT_DIR$/ProcessTestImages.py</url>
           <line>25</line>
           <option name="timeStamp" value="335" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/test_find_contours_raw.py</url>
+          <line>41</line>
+          <option name="timeStamp" value="344" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
