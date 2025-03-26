@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Added Canny-Hull inner lines support">
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Canny working with segment breakup, finessing various aspects">
       <change afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/British_Columbia_Parliament_Buildings_-_Pano_-_HDR.jpg" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/bg_removed/bgrem_MA44745566-penny-farthing-bike-1200w.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
@@ -12,10 +12,7 @@
       <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/build_objects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/build_objects.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test_find_contours_raw.py" beforeDir="false" afterPath="$PROJECT_DIR$/test_find_contours_raw.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -226,14 +223,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1736210770875</updated>
-    </task>
-    <task id="LOCAL-00022" summary="Working on edge-snapping">
-      <option name="closed" value="true" />
-      <created>1741124446590</created>
-      <option name="number" value="00022" />
-      <option name="presentableId" value="LOCAL-00022" />
-      <option name="project" value="LOCAL" />
-      <updated>1741124446590</updated>
     </task>
     <task id="LOCAL-00023" summary="Got all stuff in place!! still need to debug">
       <option name="closed" value="true" />
@@ -619,7 +608,15 @@
       <option name="project" value="LOCAL" />
       <updated>1742944548786</updated>
     </task>
-    <option name="localTasksCounter" value="71" />
+    <task id="LOCAL-00071" summary="Canny working with segment breakup, finessing various aspects">
+      <option name="closed" value="true" />
+      <created>1743017700592</created>
+      <option name="number" value="00071" />
+      <option name="presentableId" value="LOCAL-00071" />
+      <option name="project" value="LOCAL" />
+      <updated>1743017700592</updated>
+    </task>
+    <option name="localTasksCounter" value="72" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -634,7 +631,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Setting Level 1 data configured" />
     <MESSAGE value="Got setting data by level configured" />
     <MESSAGE value="Midway thru build from df working" />
     <MESSAGE value="COnfigured building back from df all objects" />
@@ -659,7 +655,8 @@
     <MESSAGE value="Working on why still blipping nailed down weird djiksta, workaround ish" />
     <MESSAGE value="Got paths going good, fresh edges can jump btwn interchangable sectionized contours, intersection checking working" />
     <MESSAGE value="Added Canny-Hull inner lines support" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added Canny-Hull inner lines support" />
+    <MESSAGE value="Canny working with segment breakup, finessing various aspects" />
+    <option name="LAST_COMMIT_MESSAGE" value="Canny working with segment breakup, finessing various aspects" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

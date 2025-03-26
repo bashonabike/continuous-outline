@@ -436,13 +436,14 @@ def build_level_4_scratch(parent_inkex, options, objects: dict, overall_images_d
         if options.blip_max_thickness > 0 and options.blip_acuteness_threshold > 0:
             remove_blips = clean.remove_inout(parent_inkex, remove_repeated,
                                               options.blip_max_thickness*overall_images_dims_offsets['max_dpi'],
-                                              options.blip_acuteness_threshold)
+                                              options.blip_acuteness_threshold,
+                                              options.blip_max_perimeter*overall_images_dims_offsets['max_dpi'])
         else:
             remove_blips = remove_repeated
         dithered = fx.lfo_dither(remove_blips, 20, 1000, 3.0)
         if options.simplify_intelligent_straighting_cutoff > 0:
             smart_simp = smooth.intelligent_simplify_line(parent_inkex, dithered, options.simplify_intelligent_straighting_cutoff,
-                                                          options.simplify_intelligent_straighting_cutoff/10)
+                                                          options.simplify_intelligent_straighting_cutoff/30)
         else:
             smart_simp = dithered
 

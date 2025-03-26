@@ -25,7 +25,7 @@ def remove_repeated_coords(coords):
 
 # def remove_intersecting_gross_squiggle(path, )
 
-def remove_inout(parent_inkex, path, manhatten_max_thickness=0, acuteness_threshold=0.15):
+def remove_inout(parent_inkex, path, manhatten_max_thickness=0, acuteness_threshold=0.15, blip_max_perimeter=1000):
     import numpy as np
 
     def manhatten_dist(p1, p2):
@@ -135,13 +135,18 @@ def remove_inout(parent_inkex, path, manhatten_max_thickness=0, acuteness_thresh
         smoothed_fwd_dir = np.hstack((smoothed_fwd_dir, np.array(0)))
         smoothed_rev_dir = np.hstack((np.array(0), smoothed_rev_dir))
 
-        return forward_directions, backward_directions, smoothed_fwd_dir, smoothed_rev_dir
+        distances = np.linalg.norm(np.diff(path, axis=0), axis=1)
+        forward_dist = np.hstack((distances, np.array(0)))
+        backward_dist = np.hstack((np.array(0), distances))
+
+        return forward_directions, backward_directions, smoothed_fwd_dir, smoothed_rev_dir, forward_dist, backward_dist
 
     #Also add in sharp points to consider
     from scipy.ndimage import gaussian_filter1d
     sharpness_cutoff = 6*acuteness_threshold
     forward_directions, backward_directions,\
-        smoothed_fwd_dir, smoothed_rev_dir = calculate_directions(coordinates_nd, sigma=2*sharpness_cutoff)
+        smoothed_fwd_dir, smoothed_rev_dir \
+        , forward_dist, backward_dist = calculate_directions(coordinates_nd, sigma=2*sharpness_cutoff)
     sharp_points = np.abs(((forward_directions - backward_directions) + np.pi) % (2 * np.pi) - np.pi) <= sharpness_cutoff
     sharp_points_idxs = np.where(sharp_points)[0]
     blip_apex_indices = list(set(blip_apex_indices + sharp_points_idxs.tolist()))
@@ -194,9 +199,8 @@ def remove_inout(parent_inkex, path, manhatten_max_thickness=0, acuteness_thresh
                 #Allow lower to catch up
                 lower -= 1
             else: break
+        if np.sum(forward_dist[lower:upper]) > blip_max_perimeter: continue
         processed_inouts.append([lower, upper])
-
-    #TODO: SMooth dir look for blips in that??
 
     #Look for blippey deviations that missed the accuteness and sharpness checks
     abrupt_turns = np.abs(((smoothed_fwd_dir - (np.pi + smoothed_rev_dir) % (2 * np.pi)) + np.pi)
@@ -221,7 +225,8 @@ def remove_inout(parent_inkex, path, manhatten_max_thickness=0, acuteness_thresh
         if out_dir_match_indices.size > 0:
             sorted_indices = np.sort(out_dir_match_indices)
             for idx in sorted_indices:
-                if manhatten_dist(path[abrupt_turn], path[abrupt_turn + 1 + idx]) <= manhatten_max_thickness:
+                if manhatten_dist(path[abrupt_turn], path[abrupt_turn + 1 + idx]) <= manhatten_max_thickness and \
+                    np.sum(forward_dist[abrupt_turn:abrupt_turn + idx]) <= blip_max_perimeter:
                     processed_inouts.append([abrupt_turn, abrupt_turn + 1 + idx])
                     break
 

@@ -136,6 +136,8 @@ class continuous_outline(inkex.EffectExtension):
                           help="Preserve topology on simplify")
         pars.add_argument("--blip_max_thickness", type=int, default=0,
                           help="Max thickness of blip for removal")
+        pars.add_argument("--blip_max_perimeter", type=int, default=0,
+                          help="Max perimeter of blip for removal")
         pars.add_argument("--blip_acuteness_threshold", type=float, default=0.15,
                           help="Acuteness threshold for blip removal (lower is sharper)")
 
