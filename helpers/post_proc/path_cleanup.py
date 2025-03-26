@@ -249,8 +249,8 @@ def remove_inout(parent_inkex, path, manhatten_max_thickness=0, acuteness_thresh
         if prev_intersect_end is not None and prev_intersect_end >= intersections_src_start_idx:
             #Eliminate pairs already checked in prev iteration
             intersect_cutoff = prev_intersect_end - intersections_src_start_idx
-            pairs_array = pairs_array[np.where(np.logical_and(pairs_array[:, 0] > intersect_cutoff,
-                                                              pairs_array[:, 1] > intersect_cutoff))[0]]
+            pairs_array = pairs_array[np.where(np.logical_or(pairs_array[:, 0] > intersect_cutoff,
+                                                             pairs_array[:, 1] > intersect_cutoff))[0]]
 
         i_indices = pairs_array[:, 0]
         j_indices = pairs_array[:, 1]
