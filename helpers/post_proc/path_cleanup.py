@@ -215,6 +215,7 @@ def remove_inout(parent_inkex, path, manhatten_max_thickness=0, acuteness_thresh
     vector_centroids = (vector_in + vector_out) / 2
     from itertools import combinations
 
+    prev_intersect_end = None
     for abrupt_turn in abrupt_turns_idxs:
         if abrupt_turn > len(path) - 2 or abrupt_turn < 1: continue
 
@@ -245,6 +246,12 @@ def remove_inout(parent_inkex, path, manhatten_max_thickness=0, acuteness_thresh
         pairs_array = np.array(pairs)
         #Remove adjacent vectors, falsely trigger intersections
         pairs_array = pairs_array[np.where(np.abs(pairs_array[:, 0] - pairs_array[:, 1]) > 1)[0]]
+        if prev_intersect_end is not None and prev_intersect_end >= intersections_src_start_idx:
+            #Eliminate pairs already checked in prev iteration
+            intersect_cutoff = prev_intersect_end - intersections_src_start_idx
+            pairs_array = pairs_array[np.where(np.logical_and(pairs_array[:, 0] > intersect_cutoff,
+                                                              pairs_array[:, 1] > intersect_cutoff))[0]]
+
         i_indices = pairs_array[:, 0]
         j_indices = pairs_array[:, 1]
 
@@ -274,6 +281,10 @@ def remove_inout(parent_inkex, path, manhatten_max_thickness=0, acuteness_thresh
                 else:
                     processed_inouts.append([intersections_src_start_idx + intersection_pair[1],
                                          intersections_src_start_idx + intersection_pair[0] + 1])
+
+        prev_intersect_end = intersections_src_end_idx
+
+
 
     #Conjoin as needed
     # Sort the index pairs by start index

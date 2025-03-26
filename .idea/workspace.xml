@@ -4,14 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Canny working with segment breakup, finessing various aspects">
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Added perimeter max check for blips">
       <change afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/British_Columbia_Parliament_Buildings_-_Pano_-_HDR.jpg" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/bg_removed/bgrem_MA44745566-penny-farthing-bike-1200w.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/continuous-outline.inx" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.inx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/build_objects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/build_objects.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -223,14 +219,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1736210770875</updated>
-    </task>
-    <task id="LOCAL-00023" summary="Got all stuff in place!! still need to debug">
-      <option name="closed" value="true" />
-      <created>1741138620096</created>
-      <option name="number" value="00023" />
-      <option name="presentableId" value="LOCAL-00023" />
-      <option name="project" value="LOCAL" />
-      <updated>1741138620096</updated>
     </task>
     <task id="LOCAL-00024" summary="Debugged edge tracking, finessing magnetism etc">
       <option name="closed" value="true" />
@@ -616,7 +604,15 @@
       <option name="project" value="LOCAL" />
       <updated>1743017700592</updated>
     </task>
-    <option name="localTasksCounter" value="72" />
+    <task id="LOCAL-00072" summary="Added perimeter max check for blips">
+      <option name="closed" value="true" />
+      <created>1743020187619</created>
+      <option name="number" value="00072" />
+      <option name="presentableId" value="LOCAL-00072" />
+      <option name="project" value="LOCAL" />
+      <updated>1743020187619</updated>
+    </task>
+    <option name="localTasksCounter" value="73" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -631,7 +627,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Got setting data by level configured" />
     <MESSAGE value="Midway thru build from df working" />
     <MESSAGE value="COnfigured building back from df all objects" />
     <MESSAGE value="WOrking on DAL,  class funcitons fixed up" />
@@ -656,7 +651,8 @@
     <MESSAGE value="Got paths going good, fresh edges can jump btwn interchangable sectionized contours, intersection checking working" />
     <MESSAGE value="Added Canny-Hull inner lines support" />
     <MESSAGE value="Canny working with segment breakup, finessing various aspects" />
-    <option name="LAST_COMMIT_MESSAGE" value="Canny working with segment breakup, finessing various aspects" />
+    <MESSAGE value="Added perimeter max check for blips" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added perimeter max check for blips" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
