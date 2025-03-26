@@ -116,7 +116,7 @@ class MazeSections:
                             check_if_tracks_parallel(track_from, track_to):
                             self.path_graph.add_edge(track_from_node, track_to_node,
                                                      weight=0)
-                            parent_inkex.msg(f"Jump node {track_from_node} to {track_to_node}")
+                            # parent_inkex.msg(f"Jump node {track_from_node} to {track_to_node}")
 
 
     def set_section_node_cats(self):

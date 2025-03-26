@@ -96,13 +96,13 @@ class MazeAgent:
 
             node_trace_coord_path.append(closest_node.point)
 
-            ####TEMP###
-            import inkex
-            rect_style = 'fill:#000000;stroke:none;stroke-width:0.264583'
-            el2 = inkex.Rectangle.new(closest_sec.xmin, closest_sec.ymin, self.maze_sections.x_grade, self.maze_sections.y_grade)
-            el2.style = rect_style
-            parent_inkex.svg.get_current_layer().add(el2)
-            ###############
+            # ####TEMP###
+            # import inkex
+            # rect_style = 'fill:#000000;stroke:none;stroke-width:0.264583'
+            # el2 = inkex.Rectangle.new(closest_sec.xmin, closest_sec.ymin, self.maze_sections.x_grade, self.maze_sections.y_grade)
+            # el2.style = rect_style
+            # parent_inkex.svg.get_current_layer().add(el2)
+            # ###############
 
             node_path_idx = closest_node.num
             closest_node_idx_in_tracker = node_path_idx - closest_node.section_tracker.in_node.num
@@ -122,28 +122,28 @@ class MazeAgent:
 
             prev_lock_node = closest_node
 
-        #TEMP#####
-        import inkex
-        commands = []
-        lock_points = [(p[1], p[0]) for p in node_trace_coord_path]
-        for i, point in enumerate(lock_points):
-            if i == 0:
-                commands.append(['M', point])  # Move to the first point
-            else:
-                commands.append(['L', point])  # Line to the next point
-            # self.msg(str(point))
-        # commands.append(['Z'])  # Close path
-        command_strings = [
-            f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
-        ]
-        commands_str = " ".join(command_strings)
-
-        # Add a new path element to the SVG
-        path_element = inkex.PathElement()
-        path_element.set('d', commands_str)  # Set the path data
-        path_element.style = {'stroke': 'grey', 'fill': 'none'}
-        parent_inkex.svg.get_current_layer().add(path_element)
-        # #######################################
+        # #TEMP#####
+        # import inkex
+        # commands = []
+        # lock_points = [(p[1], p[0]) for p in node_trace_coord_path]
+        # for i, point in enumerate(lock_points):
+        #     if i == 0:
+        #         commands.append(['M', point])  # Move to the first point
+        #     else:
+        #         commands.append(['L', point])  # Line to the next point
+        #     # self.msg(str(point))
+        # # commands.append(['Z'])  # Close path
+        # command_strings = [
+        #     f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
+        # ]
+        # commands_str = " ".join(command_strings)
+        #
+        # # Add a new path element to the SVG
+        # path_element = inkex.PathElement()
+        # path_element.set('d', commands_str)  # Set the path data
+        # path_element.style = {'stroke': 'grey', 'fill': 'none'}
+        # parent_inkex.svg.get_current_layer().add(path_element)
+        # # #######################################
 
 
 

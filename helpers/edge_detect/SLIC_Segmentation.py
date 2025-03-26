@@ -205,12 +205,12 @@ def pixel_map_from_edge_contours(shape, contours, offset_idx):
 
 
 def draw_and_flip_contours(inkex_parent, options, outer_contours, inner_contours, overall_images_dims_offsets,
-						   advanced_crop_box):
+						   advanced_crop_box, inner_split=None):
 	start = time.time_ns()
 	import helpers.post_proc.smooth_path as smooth
 
 	# outer_contours.sort(key=len, reverse=True)
-	if len(inner_contours) > 0: inner_contours.sort(key=len, reverse=True)
+	# if len(inner_contours) > 0: inner_contours.sort(key=len, reverse=True)
 	outer_edges = np.zeros((int(round(overall_images_dims_offsets['max_dpi']*advanced_crop_box['height'], 0)),
 							int(round(overall_images_dims_offsets['max_dpi']*advanced_crop_box['width'], 0))),
 						   dtype=np.uint16)
@@ -237,7 +237,7 @@ def draw_and_flip_contours(inkex_parent, options, outer_contours, inner_contours
 	outer_edges[perimeter_mask] = 0
 	if len(inner_contours) > 0: inner_edges[perimeter_mask] = 0
 
-	def flip_and_process_contours(contours):
+	def flip_and_process_contours(contours, inner=False):
 		min_y, min_x, max_y, max_x = 99999, 99999, -1, -1
 		flipped_contours = []
 
@@ -254,8 +254,11 @@ def draw_and_flip_contours(inkex_parent, options, outer_contours, inner_contours
 			min_y, min_x = int(min(min_y, min(ys))), int(min(min_x, min(xs)))
 			max_y, max_x = int(max(max_y, max(ys))), int(max(max_x, max(xs)))
 
-			# Remove portion of contours along perimeter
-			processed_contours = remove_perimeter_ghosting(options, cur_contour)
+			if inner:
+				# Remove portion of contours along perimeter
+				processed_contours = remove_perimeter_ghosting(options.max_inner_path_seg_manhatten_length, cur_contour)
+			else:
+				processed_contours = [cur_contour]
 
 			flipped_contours.extend(processed_contours)
 
@@ -267,7 +270,10 @@ def draw_and_flip_contours(inkex_parent, options, outer_contours, inner_contours
 	# Flip contours to yx to conform to cv standard
 	flipped_outer_contours, bounds_outer = flip_and_process_contours(outer_contours)
 	if len(inner_contours) > 0:
-		flipped_inner_contours, bounds_inner = flip_and_process_contours(inner_contours)
+		if inner_split is None:
+			flipped_inner_contours, bounds_inner = flip_and_process_contours(inner_contours, True)
+		else:
+			flipped_inner_contours, bounds_inner = flip_and_process_contours(inner_split, True)
 	else:
 		flipped_inner_contours, bounds_inner = [], None
 
@@ -442,7 +448,82 @@ def slic_image_boundary_edges(parent_inkex, options, im_float, mask, overall_ima
 
 	return final_contours, segments, num_segs_actual
 
-def canny_hull_image_boundary_edges(img_unchanged, overall_images_dims_offsets, svg_image_with_path):
+def split_contour_on_inflection_apex(contour):
+	if len(contour) <= 2:
+		return [contour]  # Need at least 2 points for differences
+
+	#Check if contour is closed
+	closed = np.linalg.norm(contour[0,:,:] - contour[-1,:,:]) < 20
+
+	#Determine normalized gradients
+	next_points = np.roll(contour, -1, axis=0)  # Shift points to get next points
+	gradients = next_points - contour
+	mags = np.linalg.norm(gradients, axis=2, keepdims=True)
+	grad_norm = np.where(mags == 0, gradients, gradients / mags)
+
+	#Find instances of turnaround
+	roll_fwd, roll_back = np.roll(grad_norm, 1, axis=0), np.roll(grad_norm, -1, axis=0)
+	apex_negation = np.linalg.norm(roll_back + grad_norm, axis=2)
+	bridge_negation = np.linalg.norm(roll_fwd + roll_back, axis=2)
+	turnarounds = np.where(np.logical_or(apex_negation < 0.5, bridge_negation < 0.5))[0]
+	apex_indices = turnarounds
+
+	#
+	#
+	# #Convolve with 1 wide kernel to find bridge loop points
+	# kernel_11 = np.ones(11)
+	# if closed:
+	#     #Pad for wrapping around
+	#     padded_grads = np.vstack((gradients[-5:,:], gradients, gradients[:5,:]))
+	#     summed_bridge_x = np.convolve(padded_grads[:,0,0], kernel_11, mode='valid')
+	#     summed_bridge_y = np.convolve(padded_grads[:,0,1], kernel_11, mode='valid')
+	# else:
+	#     summed_bridge_x = np.convolve(gradients[:,0,0], kernel_11, mode='same')
+	#     summed_bridge_y = np.convolve(gradients[:,0,1], kernel_11, mode='same')
+	#
+	# #Add 12th point for apex loop points
+	# grads_12th = np.roll(gradients, -6, axis=0)
+	# summed_apex_x = summed_bridge_x + grads_12th[:,0,0]
+	# summed_apex_y = summed_bridge_y + grads_12th[:,0,1]
+	#
+	# #Find points where path converges on itself
+	# bridge_points = np.logical_and(summed_bridge_x == 0, summed_bridge_y == 0)
+	# apex_points = np.logical_and(summed_apex_x == 0, summed_apex_y == 0)
+	# apex_indices = np.where(np.logical_or(bridge_points, apex_points))[0]
+	# if apex_indices.size == 0:
+	#     return [contour]
+
+	# mags = np.linalg.norm(gradients, axis=2, keepdims=True)
+	# grad_norm = np.where(mags == 0, gradients, gradients / mags)
+	#
+	# #Determine laplacians and inflection points (sign changes)
+	# laplacians = np.roll(grad_norm, -1, axis=0) - grad_norm
+	# inflection_points = np.sum(np.roll(laplacians, -1, axis=0)*laplacians, axis=2)[:,0] < 0
+	# sharp_turns = np.linalg.norm(laplacians, axis=2)[:,0] >= 2
+	#
+	# #Find likely apexes and split on them
+	# apex_indices = np.where(np.logical_and(inflection_points, sharp_turns))[0]
+	final_contours = []
+	for i in range(len(apex_indices)):
+		if closed:
+			i_nx = (i + 1) % len(apex_indices)
+			if apex_indices[i_nx] > apex_indices[i] and apex_indices[i_nx] - apex_indices[i] > 0 :
+				final_contours.append(contour[apex_indices[i]:apex_indices[i_nx] + 1])
+			else:
+				#Loop around
+				split_contour = np.vstack((contour[apex_indices[i]:], contour[:apex_indices[i_nx] + 1]))
+				if len(split_contour) > 1:
+					final_contours.append(split_contour)
+		else:
+			if i >= len(apex_indices) - 1 or apex_indices[i] < 1 or apex_indices[i] >= len(contour) - 1:
+				continue #Ignore last point since not wrapping around
+			i_nx = i + 1
+			if apex_indices[i_nx] - apex_indices[i] > 0:
+				final_contours.append(contour[apex_indices[i]:apex_indices[i_nx] + 1])
+
+	return final_contours
+
+def canny_image_boundary_edges(options, img_unchanged, overall_images_dims_offsets, svg_image_with_path):
 	"""
 	Opens an image file using OpenCV, finds contours, and returns them.
 
@@ -457,38 +538,44 @@ def canny_hull_image_boundary_edges(img_unchanged, overall_images_dims_offsets, 
 	gray = cv2.cvtColor(img_unchanged, cv2.COLOR_BGR2GRAY)
 	if img_unchanged.shape[2] == 4:  # Check if it has an alpha channel
 		gray[img_unchanged[:,:,3] == 0] = 0
-
-	gray = 5*(gray//5)
+	if options.canny_quantize_bins > 0:
+		min_grade, max_grade = np.min(gray), np.max(gray)
+		downscale = int(round((max_grade - min_grade) / options.canny_quantize_bins, 0))
+		gray -= min_grade
+		gray = downscale*(gray//downscale)
 
 	# # Apply thresholding (you might need to adjust the threshold value)
 	# _, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
 	edges = cv2.Canny(gray, 100, 200)
 	# Find contours
 	contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-	final_contours = []
-
-	contours = [c for c in contours if len(c) > 100]
-	for c in contours:
-		contour = c[:,0,:]
-		hull = cv2.convexHull(contour)
-		area = cv2.contourArea(hull)
-		perimeter = cv2.arcLength(hull, True)
-		if area/perimeter > 10:
-			final_contours.append(c)
+	#NOTE: Mult by 2 since all contours dobule back on themselves
+	contours = [c for c in contours if len(c) >= 2*options.canny_min_contour_length]
 
 	# Offset final contours by prescribed offset amount
 	max_dpi = overall_images_dims_offsets['max_dpi']
 	x_cv_crop_box_offset, y_cv_crop_box_offset = (
 	int(round(max_dpi * svg_image_with_path['x_crop_box_offset'], 0)),
 	int(round(max_dpi * svg_image_with_path['y_crop_box_offset'], 0)))
-	for contour in final_contours:
+	for contour in contours:
 		contour[:, :, 0] += x_cv_crop_box_offset
 		contour[:, :, 1] += y_cv_crop_box_offset
+	# for c in contours:
+	# 	contour = c[:,0,:]
+	# 	hull = cv2.convexHull(contour)
+	# 	area = cv2.contourArea(hull)
+	# 	perimeter = cv2.arcLength(hull, True)
+	# 	if area/perimeter > 10:
+	# 		final_contours.append(c)
 
-	return final_contours
+	#SPlit contours so not doing weird loopdy loops inside sections
+	split_contours = []
+	for c in contours:
+		split_contours.extend(split_contour_on_inflection_apex(c))
 
-def remove_perimeter_ghosting(options, points_list):
+	return contours, split_contours
+
+def remove_perimeter_ghosting(max_path_len, points_list):
 	"""
 	Eliminates points where x or y is 0 or 1023 from a NumPy array.
 
@@ -519,7 +606,7 @@ def remove_perimeter_ghosting(options, points_list):
 	diffs = np.diff(np.vstack((points_array, points_array[0])), axis=0)
 	# Calculate the Manhattan distances
 	distances = np.sum(np.abs(diffs), axis=1)
-	valid_distances_mask = distances <= options.max_inner_path_seg_manhatten_length
+	valid_distances_mask = distances <= max_path_len
 	#If just last one fails, assume unclosed negate
 	if not valid_distances_mask[-1] and valid_distances_mask[-2]: valid_distances_mask[-1] = True
 
@@ -544,8 +631,6 @@ def remove_perimeter_ghosting(options, points_list):
 
 	if len(points_list) - 1 - false_segments[-1][-1] > 1:
 		segments.append(points_list[false_segments[-1][1] + 1:len(points_list) - 1])
-
-
 
 	return segments
 

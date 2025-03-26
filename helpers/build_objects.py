@@ -1,12 +1,16 @@
 #region Helpers
 
-def shift_contours(contours: list, shift_y: int, shift_x: int) -> list:
+def shift_contours(parent_inkex, contours: list, shift_y: int, shift_x: int) -> list:
     import numpy as np
     contours_shifted = []
     for contour in contours:
         contour_nd = np.array(contour)
-        contour_nd[:, 0] += shift_y
-        contour_nd[:, 1] += shift_x
+        try:
+            contour_nd[:, 0] += shift_y
+            contour_nd[:, 1] += shift_x
+        except:
+            parent_inkex.msg(contour_nd)
+            raise Exception("Shifting faile")
         contours_shifted.append(contour_nd.tolist())
     return contours_shifted
 
@@ -27,9 +31,9 @@ def shift_and_crop(parent_inkex, outer_edges, outer_contours_yx, bounds_outer,
     shift_y, shift_x = (-1) * crop[0][0], (-1) * crop[0][1]
     outer_edges_cropped = outer_edges[crop[0][0]:crop[1][0] + 1, crop[0][1]:crop[1][1] + 1]
     inner_edges_cropped = inner_edges[crop[0][0]:crop[1][0] + 1, crop[0][1]:crop[1][1] + 1]
-    outer_contours_yx_cropped = shift_contours(outer_contours_yx, shift_y, shift_x)
+    outer_contours_yx_cropped = shift_contours(parent_inkex, outer_contours_yx, shift_y, shift_x)
     if len(inner_contours_yx) > 0:
-        inner_contours_yx_cropped = shift_contours(inner_contours_yx, shift_y, shift_x)
+        inner_contours_yx_cropped = shift_contours(parent_inkex, inner_contours_yx, shift_y, shift_x)
     else:
         inner_contours_yx_cropped = []
 
@@ -164,7 +168,7 @@ def build_level_1_scratch(parent_inkex, svg_images_with_paths, overall_images_di
 
     #TODO: Configure blend mode
     # if not options.slic_multi_image_conjoin_processing:
-    outer_contours, inner_contours = [], []
+    outer_contours, inner_contours, inner_contours_split = [], [], []
     start = time.time_ns()
     for svg_image_with_path in svg_images_with_paths:
         im_unch = svg_image_with_path['img_cv_cropped']
@@ -216,8 +220,9 @@ def build_level_1_scratch(parent_inkex, svg_images_with_paths, overall_images_di
                                                                                     num_segments=options.slic_regions,
                                                                                     enforce_connectivity=False)
             else:
-                inner_contours_cur = slic.canny_hull_image_boundary_edges(im_unch, overall_images_dims_offsets,
-                                                                          svg_image_with_path)
+                inner_contours_cur, inner_contours_split_cur = (
+                    slic.canny_image_boundary_edges(options, im_unch, overall_images_dims_offsets, svg_image_with_path))
+                inner_contours_split.extend(inner_contours_split_cur)
             inner_contours.extend(inner_contours_cur)
 
     #Flip contours and fill into edge arrays
@@ -225,33 +230,36 @@ def build_level_1_scratch(parent_inkex, svg_images_with_paths, overall_images_di
      outer_contours_yx, inner_contours_yx,
      bounds_outer, bounds_inner) = slic.draw_and_flip_contours(parent_inkex, options, outer_contours,
                                                                inner_contours, overall_images_dims_offsets,
-                                                               advanced_crop_box)
+                                                               advanced_crop_box,
+                                                               inner_split=inner_contours_split if options.canny_hull
+                                                               else None)
+    parent_inkex.msg(f"inner conjoined {len(inner_contours)} split {len(inner_contours_split)}")
 
     end = time.time_ns()
     parent_inkex.msg(f"SLIC took {(end - start) / 1e6} ms")
 
-    ###TEMP####
-    import inkex
-    for outer_cont in outer_contours + inner_contours:
-        commands = []
-        for i, point in enumerate(outer_cont):
-            if i == 0:
-                commands.append(['M', point[0]])  # Move to the first point
-            else:
-                commands.append(['L', point[0]])  # Line to the next point
-            # self.msg(str(point))
-        # commands.append(['Z'])  # Close path
-        command_strings = [
-            f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
-        ]
-        commands_str = " ".join(command_strings)
-
-        # Add a new path element to the SVG
-        path_element = inkex.PathElement()
-        path_element.set('d', commands_str)  # Set the path data
-        path_element.style = {'stroke': 'blue', 'fill': 'none'}
-        parent_inkex.svg.get_current_layer().add(path_element)
-    #######################################
+    # ###TEMP####
+    # import inkex
+    # for outer_cont in outer_contours + inner_contours:
+    #     commands = []
+    #     for i, point in enumerate(outer_cont):
+    #         if i == 0:
+    #             commands.append(['M', point[0]])  # Move to the first point
+    #         else:
+    #             commands.append(['L', point[0]])  # Line to the next point
+    #         # self.msg(str(point))
+    #     # commands.append(['Z'])  # Close path
+    #     command_strings = [
+    #         f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
+    #     ]
+    #     commands_str = " ".join(command_strings)
+    #
+    #     # Add a new path element to the SVG
+    #     path_element = inkex.PathElement()
+    #     path_element.set('d', commands_str)  # Set the path data
+    #     path_element.style = {'stroke': 'blue', 'fill': 'none'}
+    #     parent_inkex.svg.get_current_layer().add(path_element)
+    # #######################################
 
 
 
@@ -316,28 +324,28 @@ def build_level_2_scratch(parent_inkex, options, objects: dict):
 
 
 
-    ###TEMP####
-    import inkex
-    for grid_line in maze_sections.grid_lines:
-        commands = []
-        for i, point in enumerate(grid_line):
-            if i == 0:
-                commands.append(['M', point])  # Move to the first point
-            else:
-                commands.append(['L', point])  # Line to the next point
-            # self.msg(str(point))
-        # commands.append(['Z'])  # Close path
-        command_strings = [
-            f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
-        ]
-        commands_str = " ".join(command_strings)
-
-        # Add a new path element to the SVG
-        path_element = inkex.PathElement()
-        path_element.set('d', commands_str)  # Set the path data
-        path_element.style = {'stroke': 'green', 'fill': 'none'}
-        parent_inkex.svg.get_current_layer().add(path_element)
-    #######################################
+    # ###TEMP####
+    # import inkex
+    # for grid_line in maze_sections.grid_lines:
+    #     commands = []
+    #     for i, point in enumerate(grid_line):
+    #         if i == 0:
+    #             commands.append(['M', point])  # Move to the first point
+    #         else:
+    #             commands.append(['L', point])  # Line to the next point
+    #         # self.msg(str(point))
+    #     # commands.append(['Z'])  # Close path
+    #     command_strings = [
+    #         f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
+    #     ]
+    #     commands_str = " ".join(command_strings)
+    #
+    #     # Add a new path element to the SVG
+    #     path_element = inkex.PathElement()
+    #     path_element.set('d', commands_str)  # Set the path data
+    #     path_element.style = {'stroke': 'green', 'fill': 'none'}
+    #     parent_inkex.svg.get_current_layer().add(path_element)
+    # #######################################
 
 def build_level_3_scratch(parent_inkex, options, objects: dict, approx_normalized_ctrl_points,
                           overall_images_dims_offsets, advanced_crop_box):
@@ -358,7 +366,7 @@ def build_level_3_scratch(parent_inkex, options, objects: dict, approx_normalize
         objects['maze_agent'].run_round_trace_approx_path(parent_inkex, approx_ctrl_points_nd,
                                                           overall_images_dims_offsets['max_dpi']*options.max_magnet_lock_dist))
     if len(raw_path_coords_cropped) > 0:
-        raw_path = shift_contours([raw_path_coords_cropped], (-1)*objects['shift_y'], (-1)*objects['shift_x'])[0]
+        raw_path = shift_contours(parent_inkex, [raw_path_coords_cropped], (-1)*objects['shift_y'], (-1)*objects['shift_x'])[0]
     else:
         raw_path=raw_path_coords_cropped
 
@@ -370,50 +378,50 @@ def build_level_3_scratch(parent_inkex, options, objects: dict, approx_normalize
 
 
 
-    # ###TEMP####
-    import inkex
-    rough_points = [(s[1], s[0]) for s in approx_ctrl_points_nd.tolist()]
-    preview_layer = inkex.etree.Element(inkex.addNS('g', 'svg'),
-                                        None, nsmap=inkex.NSS)
-    preview_layer.set(inkex.addNS('groupmode', 'inkscape'), 'layer')
-    preview_layer.set(inkex.addNS('label', 'inkscape'), 'Preview')
-    preview_layer.set(inkex.addNS('lock', 'inkscape'), 'true')
-    preview_layer.set(inkex.addNS('insensitive', 'inkscape'), 'true')
-
-    preview_group = inkex.etree.SubElement(preview_layer, inkex.addNS('g', 'svg'))
-    preview_group.set('id', 'preview_group')  # give the group an id so it can be found later.
-    preview_group.set(inkex.addNS('lock', 'inkscape'), 'true')  # give the group an id so it can be found later.
-
-    commands = []
-    for i, point in enumerate(rough_points):
-        x, y = point[0], point[1]
-        circle_style = 'fill:#000000;stroke:none;stroke-width:0.264583'
-        el = inkex.Circle.new(center=(x, y), radius=2)
-        el.style = circle_style
-        parent_inkex.svg.get_current_layer().add(el)
-
-
-
-    import inkex
-    commands = []
-    for i, point in enumerate(rough_points):
-        if i == 0:
-            commands.append(['M', point])  # Move to the first point
-        else:
-            commands.append(['L', point])  # Line to the next point
-        # self.msg(str(point))
-    # commands.append(['Z'])  # Close path
-    command_strings = [
-        f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
-    ]
-    commands_str = " ".join(command_strings)
-
-    # Add a new path element to the SVG
-    path_element = inkex.PathElement()
-    path_element.set('d', commands_str)  # Set the path data
-    path_element.style = {'stroke': 'red', 'fill': 'none'}
-    parent_inkex.svg.get_current_layer().add(path_element)
-    # #######################################
+    # # ###TEMP####
+    # import inkex
+    # rough_points = [(s[1], s[0]) for s in approx_ctrl_points_nd.tolist()]
+    # preview_layer = inkex.etree.Element(inkex.addNS('g', 'svg'),
+    #                                     None, nsmap=inkex.NSS)
+    # preview_layer.set(inkex.addNS('groupmode', 'inkscape'), 'layer')
+    # preview_layer.set(inkex.addNS('label', 'inkscape'), 'Preview')
+    # preview_layer.set(inkex.addNS('lock', 'inkscape'), 'true')
+    # preview_layer.set(inkex.addNS('insensitive', 'inkscape'), 'true')
+    #
+    # preview_group = inkex.etree.SubElement(preview_layer, inkex.addNS('g', 'svg'))
+    # preview_group.set('id', 'preview_group')  # give the group an id so it can be found later.
+    # preview_group.set(inkex.addNS('lock', 'inkscape'), 'true')  # give the group an id so it can be found later.
+    #
+    # commands = []
+    # for i, point in enumerate(rough_points):
+    #     x, y = point[0], point[1]
+    #     circle_style = 'fill:#000000;stroke:none;stroke-width:0.264583'
+    #     el = inkex.Circle.new(center=(x, y), radius=2)
+    #     el.style = circle_style
+    #     parent_inkex.svg.get_current_layer().add(el)
+    #
+    #
+    #
+    # import inkex
+    # commands = []
+    # for i, point in enumerate(rough_points):
+    #     if i == 0:
+    #         commands.append(['M', point])  # Move to the first point
+    #     else:
+    #         commands.append(['L', point])  # Line to the next point
+    #     # self.msg(str(point))
+    # # commands.append(['Z'])  # Close path
+    # command_strings = [
+    #     f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
+    # ]
+    # commands_str = " ".join(command_strings)
+    #
+    # # Add a new path element to the SVG
+    # path_element = inkex.PathElement()
+    # path_element.set('d', commands_str)  # Set the path data
+    # path_element.style = {'stroke': 'red', 'fill': 'none'}
+    # parent_inkex.svg.get_current_layer().add(path_element)
+    # # #######################################
 
 def build_level_4_scratch(parent_inkex, options, objects: dict, overall_images_dims_offsets):
     if len(objects['raw_path']) == 0:
