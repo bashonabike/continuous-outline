@@ -4,16 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Efficiency boost for intersection checking">
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Various fixups">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/continuous-outline.inx" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.inx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/build_objects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/build_objects.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/post_proc/smooth_path.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/post_proc/smooth_path.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test_path_cleanup.py" beforeDir="false" afterPath="$PROJECT_DIR$/test_path_cleanup.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/NetworkxExtension.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/NetworkxExtension.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -224,14 +223,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1736210770875</updated>
-    </task>
-    <task id="LOCAL-00026" summary="Dumb nodes breaking into sections working, got weighted efficient djikstra going! defs a start">
-      <option name="closed" value="true" />
-      <created>1741241770726</created>
-      <option name="number" value="00026" />
-      <option name="presentableId" value="LOCAL-00026" />
-      <option name="project" value="LOCAL" />
-      <updated>1741241770726</updated>
     </task>
     <task id="LOCAL-00027" summary="Got start/end going for travelling salesman, nodes walking etc coded for walk not tested yet tho">
       <option name="closed" value="true" />
@@ -617,7 +608,15 @@
       <option name="project" value="LOCAL" />
       <updated>1743020718555</updated>
     </task>
-    <option name="localTasksCounter" value="75" />
+    <task id="LOCAL-00075" summary="Various fixups">
+      <option name="closed" value="true" />
+      <created>1743042562486</created>
+      <option name="number" value="00075" />
+      <option name="presentableId" value="LOCAL-00075" />
+      <option name="project" value="LOCAL" />
+      <updated>1743042562486</updated>
+    </task>
+    <option name="localTasksCounter" value="76" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -632,7 +631,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="COnfigured building back from df all objects" />
     <MESSAGE value="WOrking on DAL,  class funcitons fixed up" />
     <MESSAGE value="Object rebuilding from db all working woo!  Except raw &amp; formed" />
     <MESSAGE value="Object building all done" />
@@ -657,7 +655,8 @@
     <MESSAGE value="Canny working with segment breakup, finessing various aspects" />
     <MESSAGE value="Added perimeter max check for blips" />
     <MESSAGE value="Efficiency boost for intersection checking" />
-    <option name="LAST_COMMIT_MESSAGE" value="Efficiency boost for intersection checking" />
+    <MESSAGE value="Various fixups" />
+    <option name="LAST_COMMIT_MESSAGE" value="Various fixups" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

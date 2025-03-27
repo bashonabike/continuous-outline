@@ -135,7 +135,7 @@ class continuous_outline(inkex.EffectExtension):
         pars.add_argument("--trace_inner_too", type=inkex.Boolean, default=False,
                           help="Enable tracing of inner contours (dep on rough trace input)")
         pars.add_argument("--scorched_earth", type=inkex.Boolean, default=True, help="Enable scorched earth mode")
-        pars.add_argument("--scorched_earth_weight_multiplier", type=int, default=6,
+        pars.add_argument("--scorched_earth_weight_multiplier", type=int, default=2,
                           help="Weight multiplier for scorched earth mode")
         pars.add_argument("--simplify_intelligent_straighting_cutoff", type=int, default=20,
                           help="Preserve desired details but simplify long sections greater than length")
@@ -149,11 +149,10 @@ class continuous_outline(inkex.EffectExtension):
                           help="Max perimeter of blip for removal")
         pars.add_argument("--blip_acuteness_threshold", type=float, default=0.15,
                           help="Acuteness threshold for blip removal (lower is sharper)")
+        pars.add_argument("--dither", type=int, default=0,
+                          help="Add periodic dither to line for texture")
 
-        #TODO: Constrict mask setting
-        #TODO: No inners if mask for image too complicated (i.e. penny farthing) but do inners for leg
         #TODO: More sophisticated jumping, so don't need to simplify in inkscape which washes out desired features (goal!)
-        #Maybe section into "intricate feature" vs straight lines by simplifying, then keeping any simplified bits with length between points greater than thresh, else use orig dete
 
 
         pars.add_argument("--preview", type=inkex.Boolean, default=True, help="Preview before committing")
@@ -955,11 +954,14 @@ class continuous_outline(inkex.EffectExtension):
                         # Set updated params into db
                         self.set_params_into_db(data_ret)
                     else:
-                        for command_str in command_strs:
+                        for i,  command_str in enumerate(command_strs):
                             # Add a new path element to the SVG
                             path_element = inkex.PathElement()
                             path_element.set('d', command_str)  # Set the path data
-                            path_element.style = {'stroke': 'black', 'fill': 'none', 'stroke-width': '7'}
+                            if i == 0:
+                                path_element.style = {'stroke': 'grey', 'fill': 'none', 'stroke-width': '4'}
+                            else:
+                                path_element.style = {'stroke': 'black', 'fill': 'none', 'stroke-width': '7'}
                             self.svg.get_current_layer().add(path_element)
 
                         #Clear the database

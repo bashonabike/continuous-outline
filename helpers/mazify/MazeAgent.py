@@ -122,28 +122,6 @@ class MazeAgent:
 
             prev_lock_node = closest_node
 
-        # #TEMP#####
-        # import inkex
-        # commands = []
-        # lock_points = [(p[1], p[0]) for p in node_trace_coord_path]
-        # for i, point in enumerate(lock_points):
-        #     if i == 0:
-        #         commands.append(['M', point])  # Move to the first point
-        #     else:
-        #         commands.append(['L', point])  # Line to the next point
-        #     # self.msg(str(point))
-        # # commands.append(['Z'])  # Close path
-        # command_strings = [
-        #     f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
-        # ]
-        # commands_str = " ".join(command_strings)
-        #
-        # # Add a new path element to the SVG
-        # path_element = inkex.PathElement()
-        # path_element.set('d', commands_str)  # Set the path data
-        # path_element.style = {'stroke': 'grey', 'fill': 'none'}
-        # parent_inkex.svg.get_current_layer().add(path_element)
-        # # #######################################
 
 
 
@@ -161,10 +139,24 @@ class MazeAgent:
         # section_path.append(inflection_points[-1]['closest_graph_node'] +
         #                     (inflection_points[-1]['closest_node_idx_in_tracker'],))
 
-            section_path.extend(nxex.shortest_path(self.maze_sections.path_graph,
+            path_segment = nxex.shortest_path(self.maze_sections.path_graph,
                                                    inflection_points[t]['closest_graph_node'],
                                                    inflection_points[t + 1]['closest_graph_node'],
-                                                   weight='weight')[:-1])
+                                                   weight='weight')
+            if len(path_segment) > 2*(abs(inflection_points[t]['closest_graph_node'][0] -
+                                          inflection_points[t + 1]['closest_graph_node'][0]) +
+                                      abs(inflection_points[t]['closest_graph_node'][1] -
+                                          inflection_points[t + 1]['closest_graph_node'][1])):
+                #Retry path, test if shorter
+                path_test = nxex.shortest_path(self.maze_sections.path_graph,
+                                                   inflection_points[t]['closest_graph_node'],
+                                                   inflection_points[t + 1]['closest_graph_node'],
+                                                   weight='weight', test_only=True)
+                if len(path_test) < len(path_segment):
+                    nxex.burn_path(self.maze_sections.path_graph, path_test)
+                    path_segment = path_test
+
+            section_path.extend(path_segment[:-1])
         section_path.append(inflection_points[-1]['closest_graph_node'])
 
         # prev_sec, cur_sec = None, None
@@ -291,7 +283,7 @@ class MazeAgent:
         # Trace path from tracker path
         nodes_path = self.set_node_path_from_sec_path(parent_inkex, final_section_path)
         raw_path_coords = [n.point for n in nodes_path]
-        return raw_path_coords, final_section_path, approx_ctrl_points_nd.tolist()
+        return raw_path_coords, final_section_path, approx_ctrl_points_nd.tolist(), node_trace_coord_path
 
     def set_node_path_from_sec_path(self, parent_inkex, sections_nodes_path):
         nodes_path = []

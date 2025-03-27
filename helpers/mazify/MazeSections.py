@@ -92,17 +92,37 @@ class MazeSections:
         def manhatten_dist_nodes(node1, node2):
             return abs(node1.point[0] - node2.point[0]) + abs(node1.point[1] - node2.point[1])
 
-        def check_if_tracks_parallel(track_from, track_to):
+        def check_likely_cross(track_from, track_to):
+            #If straddles in either dimension, likely intersection
+            for dim in range(2):
+                if (min(track_from.in_node.point[dim], track_from.out_node.point[dim]) <
+                    min(track_to.in_node.point[dim], track_to.out_node.point[dim]) <=
+                    max(track_to.in_node.point[dim], track_to.out_node.point[dim]) <
+                    max(track_from.in_node.point[dim], track_from.out_node.point[dim])):
+                    return True
+
+            return False
+
+        def check_if_tracks_parallel_or_crisscross(parent_inkex, track_from, track_to):
             edge_node_from_in, edge_node_to_in = track_from.in_node, track_to.in_node
             edge_node_from_out, edge_node_to_out = track_from.out_node, track_to.out_node
-            if (manhatten_dist_nodes(edge_node_from_in, edge_node_to_in) +
-                manhatten_dist_nodes(edge_node_from_out, edge_node_to_out)) <= \
-                    (self.y_grade + self.x_grade)//5:
+            front_to_front_dist = (manhatten_dist_nodes(edge_node_from_in, edge_node_to_in) +
+                manhatten_dist_nodes(edge_node_from_out, edge_node_to_out))
+            if front_to_front_dist <= (self.y_grade + self.x_grade)//5:
+                #Parallel
                 return True
-            elif (manhatten_dist_nodes(edge_node_from_in, edge_node_to_out) +
-                manhatten_dist_nodes(edge_node_from_out, edge_node_to_in)) <= \
-                    (self.y_grade + self.x_grade)//5:
-                return True
+            else:
+                front_to_back_dist = (manhatten_dist_nodes(edge_node_from_in, edge_node_to_out) +
+                    manhatten_dist_nodes(edge_node_from_out, edge_node_to_in))
+                if front_to_back_dist <= (self.y_grade + self.x_grade)//5:
+                    return True
+                elif check_likely_cross(track_from, track_to):
+                    parent_inkex.msg(f"Likely cross at {track_from.section.coords_sec}")
+                    return True
+                elif check_likely_cross(track_to, track_from):
+                    parent_inkex.msg(f"Likely cross at {track_from.section.coords_sec}")
+                    return True
+
             return False
 
         for i in range(self.m):
@@ -113,7 +133,7 @@ class MazeSections:
                         track_from_node = (i, j, track_from.path_num, track_from.tracker_num)
                         track_to_node = (i, j, track_to.path_num, track_to.tracker_num)
                         if track_from != track_to and not self.path_graph.has_edge(track_from_node, track_to_node) and \
-                            check_if_tracks_parallel(track_from, track_to):
+                            check_if_tracks_parallel_or_crisscross(parent_inkex, track_from, track_to):
                             self.path_graph.add_edge(track_from_node, track_to_node,
                                                      weight=0)
                             # parent_inkex.msg(f"Jump node {track_from_node} to {track_to_node}")

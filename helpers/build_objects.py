@@ -290,12 +290,12 @@ def build_level_1_scratch(parent_inkex, svg_images_with_paths, overall_images_di
     preview_layer = inkex.etree.Element(inkex.addNS('g', 'svg'),
                                         None, nsmap=inkex.NSS)
     preview_layer.set(inkex.addNS('groupmode', 'inkscape'), 'layer')
-    preview_layer.set(inkex.addNS('label', 'inkscape'), 'Preview')
+    preview_layer.set(inkex.addNS('label', 'inkscape'), 'Contours')
     preview_layer.set(inkex.addNS('lock', 'inkscape'), 'true')
     preview_layer.set(inkex.addNS('insensitive', 'inkscape'), 'true')
 
     preview_group = inkex.etree.SubElement(preview_layer, inkex.addNS('g', 'svg'))
-    preview_group.set('id', 'preview_group')  # give the group an id so it can be found later.
+    preview_group.set('id', 'contours_group')  # give the group an id so it can be found later.
     preview_group.set(inkex.addNS('lock', 'inkscape'), 'true')  # give the group an id so it can be found later.
 
 
@@ -419,7 +419,7 @@ def build_level_3_scratch(parent_inkex, options, objects: dict, approx_normalize
     # for ctrl in approx_ctrl_points_nd.tolist():
     #     parent_inkex.msg(ctrl)
     #Trace n center
-    raw_path_coords_cropped, section_path, raw_points = (
+    raw_path_coords_cropped, section_path, raw_points, node_trace_coord_path = (
         objects['maze_agent'].run_round_trace_approx_path(parent_inkex, approx_ctrl_points_nd,
                                                           overall_images_dims_offsets['max_dpi']*options.max_magnet_lock_dist))
     if len(raw_path_coords_cropped) > 0:
@@ -430,6 +430,34 @@ def build_level_3_scratch(parent_inkex, options, objects: dict, approx_normalize
     # Set objects into dict
     inst_out_objects = objects_to_dict(["raw_path", "img_height", "img_width"])
     objects.update(inst_out_objects)
+
+    # TEMP#####
+    import inkex
+    node_trace_coord_path_nd = np.array(node_trace_coord_path)
+    shift_nd = np.array([advanced_crop_box['x'], advanced_crop_box['y']]) + np.array(
+        [objects['shift_y'], objects['shift_x']])
+    node_trace_coord_path_nd = (node_trace_coord_path_nd / overall_images_dims_offsets['max_dpi']) + shift_nd
+    node_trace_coord_path = node_trace_coord_path_nd.tolist()
+    commands = []
+    lock_points = [(p[1], p[0]) for p in node_trace_coord_path]
+    for i, point in enumerate(lock_points):
+        if i == 0:
+            commands.append(['M', point])  # Move to the first point
+        else:
+            commands.append(['L', point])  # Line to the next point
+        # self.msg(str(point))
+    # commands.append(['Z'])  # Close path
+    command_strings = [
+        f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
+    ]
+    commands_str = " ".join(command_strings)
+
+    # Add a new path element to the SVG
+    path_element = inkex.PathElement()
+    path_element.set('d', commands_str)  # Set the path data
+    path_element.style = {'stroke': 'grey', 'fill': 'none'}
+    parent_inkex.svg.get_current_layer().add(path_element)
+    # #######################################
 
     # parent_inkex.msg(raw_path)
 
@@ -497,7 +525,10 @@ def build_level_4_scratch(parent_inkex, options, objects: dict, overall_images_d
                                               options.blip_max_perimeter*overall_images_dims_offsets['max_dpi'])
         else:
             remove_blips = remove_repeated
-        dithered = fx.lfo_dither(remove_blips, 20, 1000, 3.0)
+        if options.dither > 0:
+            dithered = fx.lfo_dither(remove_blips, 2*options.dither, 100*options.dither, options.dither/3)
+        else:
+            dithered = remove_blips
         if options.simplify_intelligent_straighting_cutoff > 0:
             smart_simp = smooth.intelligent_simplify_line(parent_inkex, dithered, options.simplify_intelligent_straighting_cutoff,
                                                           options.simplify_intelligent_straighting_cutoff/30)
