@@ -42,12 +42,19 @@ class continuous_outline(inkex.EffectExtension):
         url = urllib_parse.urlparse(xlink)
         href = urllib_request.url2pathname(url.path)
 
+
         # Primary location always the filename itself.
-        path = self.absolute_href(href or '')
+        path = self.absolute_href(href)
+        if os.name == 'nt':
+            path_formed = path.replace("\\", "\\\\")
+        else:
+            path_formed = path
 
         # Backup directory where we can find the image
-        if not os.path.isfile(path):
+        if not os.path.isfile(path_formed):
             path = element.get('sodipodi:absref', path)
+        else:
+            path = path_formed
 
         if not os.path.isfile(path):
             inkex.errormsg('File not found "{}". Unable to embed image.').format(path)
@@ -62,6 +69,8 @@ class continuous_outline(inkex.EffectExtension):
                           help="No inner SLIC")
         pars.add_argument("--mask_only_when_complicated_background", type=inkex.Boolean, default=False,
                           help="No inner SLIC/Canny if background of mask is complicated (i.e. lots of holes)")
+        pars.add_argument("--attempt_mask_jpeg", type=inkex.Boolean, default=False,
+                          help="Attempt to mask outline of any JPEG (use Max transparency % considered background)")
         pars.add_argument("--canny_hull", type=inkex.Boolean, default=False,
                           help="Use Canny instead of SLIC (works best when many sharp edges with minimal colour differences between regions)")
 
@@ -950,7 +959,7 @@ class continuous_outline(inkex.EffectExtension):
                             # Add a new path element to the SVG
                             path_element = inkex.PathElement()
                             path_element.set('d', command_str)  # Set the path data
-                            path_element.style = {'stroke': 'black', 'fill': 'none'}
+                            path_element.style = {'stroke': 'black', 'fill': 'none', 'stroke-width': '7'}
                             self.svg.get_current_layer().add(path_element)
 
                         #Clear the database

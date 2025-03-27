@@ -92,12 +92,13 @@ def intelligent_simplify_line(parent_inkex, coords, straitening_cutoff_length, t
         lower_nd, upper_nd = simplified_np[long_stretch_lowers[i]], simplified_np[long_stretch_uppers[i]]
         orig_exit_pt = get_lowest_index_within_tolerance_norm(parent_inkex, lower_nd, orig_nd, orig_path_ctr,
                                                               test_tolerance)
-        final_path.extend(coords[orig_path_ctr:orig_exit_pt + 1])
-        orig_path_ctr = orig_exit_pt + 1
-        final_path.extend(test_simplified_coords[long_stretch_lowers[i] + 1:long_stretch_uppers[i]])
-        orig_entry_pt = get_lowest_index_within_tolerance_norm(parent_inkex, upper_nd, orig_nd ,orig_path_ctr,
-                                                               test_tolerance)
-        orig_path_ctr = orig_entry_pt
+        if orig_exit_pt is not None:
+            orig_entry_pt = get_lowest_index_within_tolerance_norm(parent_inkex, upper_nd, orig_nd ,orig_path_ctr + 1,
+                                                                   test_tolerance)
+            if orig_entry_pt is not None:
+                final_path.extend(coords[orig_path_ctr:orig_exit_pt + 1])
+                final_path.extend(test_simplified_coords[long_stretch_lowers[i] + 1:long_stretch_uppers[i]])
+                orig_path_ctr = orig_entry_pt
         # parent_inkex.msg(f"intellibound {orig_exit_pt} in {orig_entry_pt} out")
 
     if orig_path_ctr is not None and orig_path_ctr < len(coords): final_path.extend(coords[orig_path_ctr:])

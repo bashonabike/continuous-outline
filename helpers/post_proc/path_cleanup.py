@@ -205,9 +205,10 @@ def remove_inout(parent_inkex, path, manhatten_max_thickness=0, acuteness_thresh
     #Look for blippey deviations that missed the accuteness and sharpness checks
     abrupt_turns = np.abs(((smoothed_fwd_dir - (np.pi + smoothed_rev_dir) % (2 * np.pi)) + np.pi)
                            % (2 * np.pi) - np.pi) > np.pi/3
+    squiggles = np.abs(smoothed_fwd_dir - forward_directions) > np.pi/3
     # abrupt_turns = np.abs(((forward_directions - (np.pi + backward_directions) % (2 * np.pi)) + np.pi)
     #                        % (2 * np.pi) - np.pi) > np.pi/3
-    abrupt_turns_idxs = np.where(abrupt_turns)[0]
+    abrupt_turns_idxs = np.where(np.logical_or(squiggles, abrupt_turns))[0]
 
     #Set up intersection vectors
     vector_in, vector_out = np.array(path[:-1]), np.array(path[1:])

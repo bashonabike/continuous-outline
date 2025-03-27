@@ -8,6 +8,9 @@ import cv2
 # from simplification.cutil import simplify_coords
 import time
 
+from sympy import false
+
+
 # import helpers.mazify.temp_options as options
 
 
@@ -254,11 +257,11 @@ def draw_and_flip_contours(inkex_parent, options, outer_contours, inner_contours
 			min_y, min_x = int(min(min_y, min(ys))), int(min(min_x, min(xs)))
 			max_y, max_x = int(max(max_y, max(ys))), int(max(max_x, max(xs)))
 
-			if inner:
+			# if inner:
 				# Remove portion of contours along perimeter
-				processed_contours = remove_perimeter_ghosting(options.max_inner_path_seg_manhatten_length, cur_contour)
-			else:
-				processed_contours = [cur_contour]
+			processed_contours = remove_perimeter_ghosting(inkex_parent, options.max_inner_path_seg_manhatten_length, cur_contour)
+			# else:
+			# 	processed_contours = [cur_contour]
 
 			flipped_contours.extend(processed_contours)
 
@@ -297,11 +300,13 @@ def mask_boundary_edges(parent_inkex, options, img_unchanged, overall_images_dim
 		max_alpha = np.max(alpha)
 		transparancy_cutoff = options.transparancy_cutoff * max_alpha
 		mask = np.where(alpha > transparancy_cutoff, 255, 0).astype(np.uint8)  # Create binary mask
-	else:
+	elif options.attempt_mask_jpeg:
 		# Image has no alpha channel, treat white as background
 		grey = cv2.cvtColor(img_unchanged, cv2.COLOR_BGR2GRAY)
 		_, inverted = cv2.threshold(grey, (1.0-options.transparancy_cutoff)*np.max(grey), 1, cv2.THRESH_BINARY)
 		mask = np.where(inverted == 0, 255, 0).astype(np.uint8)  # Create binary mask
+	else:
+		return [], [], None, False
 
 	if options.mask_retain_inner_transparencies:
 		if options.mask_retain_inner_erosion > 0:
@@ -350,6 +355,10 @@ def mask_boundary_edges(parent_inkex, options, img_unchanged, overall_images_dim
 
 	final_contours = [c['contour'] for c in sorted(final_contours_with_len,
 												   key = lambda contour: contour['length'], reverse=True)]
+
+	complicated_background = len(final_contours) > 4
+
+
 	end = time.time_ns()
 	parent_inkex.msg("TIMING: " + str((end - start) / 1e6) + " ms to remove too short outer contours")
 
@@ -363,10 +372,15 @@ def mask_boundary_edges(parent_inkex, options, img_unchanged, overall_images_dim
 		contour[:, :, 1] = np.round(scale*contour[:, :, 1]).astype(np.int32) + y_cv_crop_box_offset
 		parent_inkex.msg(f"Max contour  x: {np.max(contour[:, :, 0])} y: {np.max(contour[:, :, 1])} for dpi {svg_image_with_path['img_dpi']}")
 
-	complicated_background = len(final_contours) > 7
 	parent_inkex.msg(f"{len(final_contours)} final contours")
 
-	return final_contours,  mask, complicated_background
+	sub_in_contours = []
+	if options.mask_retain_inner_transparencies:
+		#Switch smaller outers to inners
+		sub_in_contours = final_contours[1:]
+		final_contours = [final_contours[0]]
+
+	return final_contours,sub_in_contours,  mask, complicated_background
 
 #C:\Users\liamc\PycharmProjects\continuous-outline\helpers\edge_detect\SLIC_Alg_Overview
 
@@ -405,7 +419,7 @@ def slic_image_boundary_edges(parent_inkex, options, im_float, mask, overall_ima
 	if parent_inkex is not None: parent_inkex.msg(str(time_pre_updates) + " ms to do pre-cython prep of image slic")
 
 
-	if options.constrain_slic_within_mask:
+	if mask is not None and options.constrain_slic_within_mask:
 		#Blank outside of mask
 		downsampled_mask, _ = try_downsample_mask(parent_inkex, mask, options)
 		parent_inkex.msg(f"downsampled mask max: {downsampled_mask.max()} min: {downsampled_mask.min()}")
@@ -575,7 +589,7 @@ def canny_image_boundary_edges(options, img_unchanged, overall_images_dims_offse
 
 	return contours, split_contours
 
-def remove_perimeter_ghosting(max_path_len, points_list):
+def remove_perimeter_ghosting(inkex_parent, max_path_len, points_list):
 	"""
 	Eliminates points where x or y is 0 or 1023 from a NumPy array.
 
@@ -603,9 +617,11 @@ def remove_perimeter_ghosting(max_path_len, points_list):
 
 	#Check for long flat stretches, may be ghosting
 	#Pad with first point so distance array shape conforms
-	diffs = np.diff(np.vstack((points_array, points_array[0])), axis=0)
-	# Calculate the Manhattan distances
-	distances = np.sum(np.abs(diffs), axis=1)
+	diffs = np.abs(np.diff(np.vstack((points_array, points_array[0])), axis=0))
+	# Calculate the Manhattan distances and ratio
+	# inkex_parent.msg((1 + diffs[:, 0]) / (1 + diffs[:, 1]))
+
+	distances = np.maximum((1 + diffs[:,0])/(1 + diffs[:,1]), (1 + diffs[:,1])/(1 + diffs[:,0]))
 	valid_distances_mask = distances <= max_path_len
 	#If just last one fails, assume unclosed negate
 	if not valid_distances_mask[-1] and valid_distances_mask[-2]: valid_distances_mask[-1] = True

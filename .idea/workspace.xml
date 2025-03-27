@@ -5,10 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Efficiency boost for intersection checking">
-      <change afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/British_Columbia_Parliament_Buildings_-_Pano_-_HDR.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Trial-AI-Base-Images/bg_removed/bgrem_MA44745566-penny-farthing-bike-1200w.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/continuous-outline.inx" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.inx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/build_objects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/build_objects.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/post_proc/smooth_path.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/post_proc/smooth_path.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test_path_cleanup.py" beforeDir="false" afterPath="$PROJECT_DIR$/test_path_cleanup.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -53,7 +58,7 @@
     "Python.Testing.executor": "Debug",
     "Python.edge_detection.executor": "Run",
     "Python.test_find_contours_raw.executor": "Run",
-    "Python.test_path_cleanup.executor": "Debug",
+    "Python.test_path_cleanup.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "com.codeium.enabled": "true",
@@ -76,7 +81,7 @@
       <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\Trial-AI-Base-Images\_TEMPPPP" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.test_find_contours_raw">
+  <component name="RunManager" selected="Python.test_path_cleanup">
     <configuration name="ProcessTestImages" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="continuous-outline" />
       <option name="ENV_FILES" value="" />
@@ -196,10 +201,10 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.test_find_contours_raw" />
         <item itemvalue="Python.test_path_cleanup" />
-        <item itemvalue="Python.Testing" />
         <item itemvalue="Python.ProcessTestImages" />
+        <item itemvalue="Python.test_find_contours_raw" />
+        <item itemvalue="Python.Testing" />
         <item itemvalue="Python.SLIC_Segmentation" />
       </list>
     </recent_temporary>
@@ -219,14 +224,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1736210770875</updated>
-    </task>
-    <task id="LOCAL-00025" summary="Dumb nodes breaking into sections working, got weighted efficient djikstra going! defs a start">
-      <option name="closed" value="true" />
-      <created>1741224212391</created>
-      <option name="number" value="00025" />
-      <option name="presentableId" value="LOCAL-00025" />
-      <option name="project" value="LOCAL" />
-      <updated>1741224212391</updated>
     </task>
     <task id="LOCAL-00026" summary="Dumb nodes breaking into sections working, got weighted efficient djikstra going! defs a start">
       <option name="closed" value="true" />
@@ -612,7 +609,15 @@
       <option name="project" value="LOCAL" />
       <updated>1743020624517</updated>
     </task>
-    <option name="localTasksCounter" value="74" />
+    <task id="LOCAL-00074" summary="Efficiency boost for intersection checking">
+      <option name="closed" value="true" />
+      <created>1743020718555</created>
+      <option name="number" value="00074" />
+      <option name="presentableId" value="LOCAL-00074" />
+      <option name="project" value="LOCAL" />
+      <updated>1743020718555</updated>
+    </task>
+    <option name="localTasksCounter" value="75" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
