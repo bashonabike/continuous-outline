@@ -36,7 +36,7 @@ class MazeAgent:
                 max_inner_contour_len = 0
             self.max_tracker_size = 0
             for i in range(len(self.all_contours)):
-                new_path = EdgePath(options, i + 1, self.all_contours[i], maze_sections, i < len(self.outer_contours),
+                new_path = EdgePath(parent_inkex, options, i + 1, self.all_contours[i], maze_sections, i < len(self.outer_contours),
                                     max_inner_contour_len)
                 self.all_contours_objects.append(new_path)
                 if new_path.outer: self.outer_contours_objects.append(new_path)
@@ -88,11 +88,15 @@ class MazeAgent:
                                                                    self.maze_sections.x_grade)))
         prev_lock_node = None
         node_trace_coord_path = []
+        test_output_trace_coords = []
         for ctrl_sec, orig_pt in zip(sectionized_ctrl_points.tolist(), approx_ctrl_points_nd.tolist()):
             #Find closest point in section with locking if appl
-            closest_sec, closest_node = self.find_suitable_inflec_node(ctrl_sec, orig_pt, search_sects, prev_lock_node,
+            closest_sec, closest_node = self.find_suitable_inflec_node(parent_inkex, ctrl_sec, orig_pt, search_sects, prev_lock_node,
                                                                        search_grid_width,
                                                                        self.options.prefer_outer_contours_locking)
+            # if abs(ctrl_sec[0] - closest_sec.coords_sec[0]) + abs(ctrl_sec[1] - closest_sec.coords_sec[1]) > 0:
+            # parent_inkex.msg(f"Sec {ctrl_sec} has req {self.maze_sections.sections[ctrl_sec[0], ctrl_sec[1]].dumb_req} opt {self.maze_sections.sections[ctrl_sec[0], ctrl_sec[1]].dumb_opt}")
+            test_output_trace_coords.append({"pt": closest_node.point, "sec_orig": str(ctrl_sec)})
 
             node_trace_coord_path.append(closest_node.point)
 
@@ -117,15 +121,35 @@ class MazeAgent:
                                       "closest_node_idx_in_tracker": closest_node_idx_in_tracker,
                                       "closest_pt": closest_node.point,
                                       "closest_graph_node": closest_graph_node})
-            parent_inkex.msg(f"{ctrl_sec} -> {inflection_points[-1]['closest_sec_coords']}")
-            parent_inkex.msg(f"{orig_pt} -> {inflection_points[-1]['closest_pt']}")
+            # parent_inkex.msg(f"{ctrl_sec} -> {inflection_points[-1]['closest_sec_coords']}")
+            # parent_inkex.msg(f"{orig_pt} -> {inflection_points[-1]['closest_pt']}")
 
             prev_lock_node = closest_node
 
 
 
 
-        ###########
+        # ###########teeemppppp
+        # valid_edges = []
+        # all_graph_edges = self.maze_sections.path_graph.edges(data=True)
+        # for u, v, data in all_graph_edges:
+        #     if 85 <= u[0] <= 100 and 85 <= v[0] <= 100 and 50 <= u[1] <= 70 and 50 <= v[1] <= 70:
+        #         valid_edges.append((u, v, data))
+        #
+        # parent_inkex.msg(valid_edges)
+
+    #     x = "1698.2827175444538"
+    #     y = "2437.924523666384"
+    #     text = "[95, 57]"
+    #     style = "font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:192px;font-family:sans-serif;"
+    #     id = "text163" / >
+    #
+    # < text
+    # x = "1898.1068003556309"
+    # y = "2441.096334504657"
+    # text = "[96, 62]"
+
+    ###########################
 
         # Determine best path for rough trace
         section_path = []
@@ -143,10 +167,20 @@ class MazeAgent:
                                                    inflection_points[t]['closest_graph_node'],
                                                    inflection_points[t + 1]['closest_graph_node'],
                                                    weight='weight')
+            retry_seg = False
             if len(path_segment) > 2*(abs(inflection_points[t]['closest_graph_node'][0] -
                                           inflection_points[t + 1]['closest_graph_node'][0]) +
                                       abs(inflection_points[t]['closest_graph_node'][1] -
                                           inflection_points[t + 1]['closest_graph_node'][1])):
+                #If very long path, retry
+                retry_seg = True
+            else:
+                sections_crossed = [(n[0], n[1]) for n in path_segment if len(n) > 2]
+                if len(sections_crossed) > 0 and len(sections_crossed)/len(set(sections_crossed)) > 1.6:
+                    #If frequently doubles back on itself, retry
+                    retry_seg = True
+
+            if retry_seg:
                 #Retry path, test if shorter
                 path_test = nxex.shortest_path(self.maze_sections.path_graph,
                                                    inflection_points[t]['closest_graph_node'],
@@ -283,7 +317,7 @@ class MazeAgent:
         # Trace path from tracker path
         nodes_path = self.set_node_path_from_sec_path(parent_inkex, final_section_path)
         raw_path_coords = [n.point for n in nodes_path]
-        return raw_path_coords, final_section_path, approx_ctrl_points_nd.tolist(), node_trace_coord_path
+        return raw_path_coords, final_section_path, approx_ctrl_points_nd.tolist(), node_trace_coord_path, test_output_trace_coords
 
     def set_node_path_from_sec_path(self, parent_inkex, sections_nodes_path):
         nodes_path = []
@@ -466,7 +500,8 @@ class MazeAgent:
                 must_hit_node_idx_pre, must_hit_node_idx_post = must_hit_node_idx_post, None
         return nodes_path
 
-    def find_suitable_inflec_node(self, ctrl_sec, orig_pt, search_sects, prev_lock_node, search_grid_width, prefer_outer):
+    def find_suitable_inflec_node(self, parent_inkex, ctrl_sec, orig_pt, search_sects, prev_lock_node,
+                                  search_grid_width, prefer_outer):
         lock_cands = []
         if prev_lock_node is not None or prefer_outer:
             if prev_lock_node is not None:

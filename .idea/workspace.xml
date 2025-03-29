@@ -4,15 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Various fixups">
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Added double-burn support avoid weird double back loops, added 0 weight jumps for likely interesections">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/continuous-outline.inx" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.inx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/build_objects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/build_objects.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/NetworkxExtension.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/NetworkxExtension.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test_path_cleanup.py" beforeDir="false" afterPath="$PROJECT_DIR$/test_path_cleanup.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -57,7 +57,7 @@
     "Python.Testing.executor": "Debug",
     "Python.edge_detection.executor": "Run",
     "Python.test_find_contours_raw.executor": "Run",
-    "Python.test_path_cleanup.executor": "Run",
+    "Python.test_path_cleanup.executor": "Debug",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "com.codeium.enabled": "true",
@@ -223,14 +223,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1736210770875</updated>
-    </task>
-    <task id="LOCAL-00027" summary="Got start/end going for travelling salesman, nodes walking etc coded for walk not tested yet tho">
-      <option name="closed" value="true" />
-      <created>1741291558138</created>
-      <option name="number" value="00027" />
-      <option name="presentableId" value="LOCAL-00027" />
-      <option name="project" value="LOCAL" />
-      <updated>1741291558138</updated>
     </task>
     <task id="LOCAL-00028" summary="Configured cropping for your efficiency">
       <option name="closed" value="true" />
@@ -616,7 +608,15 @@
       <option name="project" value="LOCAL" />
       <updated>1743042562486</updated>
     </task>
-    <option name="localTasksCounter" value="76" />
+    <task id="LOCAL-00076" summary="Added double-burn support avoid weird double back loops, added 0 weight jumps for likely interesections">
+      <option name="closed" value="true" />
+      <created>1743095967571</created>
+      <option name="number" value="00076" />
+      <option name="presentableId" value="LOCAL-00076" />
+      <option name="project" value="LOCAL" />
+      <updated>1743095967571</updated>
+    </task>
+    <option name="localTasksCounter" value="77" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -631,7 +631,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="WOrking on DAL,  class funcitons fixed up" />
     <MESSAGE value="Object rebuilding from db all working woo!  Except raw &amp; formed" />
     <MESSAGE value="Object building all done" />
     <MESSAGE value="Workingon extension, got build objects from scratch func going" />
@@ -656,7 +655,8 @@
     <MESSAGE value="Added perimeter max check for blips" />
     <MESSAGE value="Efficiency boost for intersection checking" />
     <MESSAGE value="Various fixups" />
-    <option name="LAST_COMMIT_MESSAGE" value="Various fixups" />
+    <MESSAGE value="Added double-burn support avoid weird double back loops, added 0 weight jumps for likely interesections" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added double-burn support avoid weird double back loops, added 0 weight jumps for likely interesections" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -675,6 +675,11 @@
           <url>file://$PROJECT_DIR$/ProcessTestImages.py</url>
           <line>25</line>
           <option name="timeStamp" value="335" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/test_path_cleanup.py</url>
+          <line>73</line>
+          <option name="timeStamp" value="365" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

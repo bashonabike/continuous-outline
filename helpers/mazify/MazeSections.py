@@ -117,10 +117,8 @@ class MazeSections:
                 if front_to_back_dist <= (self.y_grade + self.x_grade)//5:
                     return True
                 elif check_likely_cross(track_from, track_to):
-                    parent_inkex.msg(f"Likely cross at {track_from.section.coords_sec}")
                     return True
                 elif check_likely_cross(track_to, track_from):
-                    parent_inkex.msg(f"Likely cross at {track_from.section.coords_sec}")
                     return True
 
             return False

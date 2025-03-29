@@ -624,30 +624,36 @@ def remove_perimeter_ghosting(inkex_parent, max_path_len, points_list):
 	distances = np.maximum((1 + diffs[:,0])/(1 + diffs[:,1]), (1 + diffs[:,1])/(1 + diffs[:,0]))
 	valid_distances_mask = distances <= max_path_len
 	#If just last one fails, assume unclosed negate
-	if not valid_distances_mask[-1] and valid_distances_mask[-2]: valid_distances_mask[-1] = True
+	# if not valid_distances_mask[-1] and valid_distances_mask[-2]: valid_distances_mask[-1] = True
 
-	#Find splits in contour
+	#Find splits in contour, pad with last diff if not closed contour
 	false_indices = np.where(valid_distances_mask == False)[0]
+	if len(false_indices) == 0: return [points_array]
+	if (np.linalg.norm(diffs[-1]) > max_path_len and
+			(len(false_indices) == 0 or false_indices[-1] != len(points_array) - 1)):
+		false_indices = np.append(false_indices, len(points_array) - 1)
 
 	if not false_indices.size:
 		return [points_list]  # No False values found
 
-	diffs = np.diff(false_indices)
-	split_indices = np.where(diffs != 1)[0] + 1
-	false_segments = [(seg[0], seg[-1]) for seg in np.split(false_indices, split_indices)]
+	# Determine diffs, length of removal spans
+	index_diffs = np.diff(false_indices)
+	end_indices = np.hstack((np.where(index_diffs != 1)[0], len(false_indices) - 1))
+	end_indices_diffs = np.hstack((0, np.diff(end_indices) - 1))
+	start_indices = end_indices - end_indices_diffs
+	remove_start, remove_end = false_indices[start_indices], false_indices[end_indices]
 
+	# Split in requisite points
 	segments = []
-	#Build true segs, don't include if only 1 point
-	if false_segments[0][0] > 1:
-		segments.append(points_list[0:false_segments[0][0]])
+	for i in range(len(remove_start)):
+		seg_start, seg_end = (remove_end[(i - 1) % len(remove_end)] + 1) % len(points_array), remove_start[i]
+		if seg_end == len(points_array) - 1: seg_end -= 1
+		if seg_end - seg_start > 0:
+			segments.append(points_array[seg_start:seg_end + 1])
+		elif seg_end < seg_start:
+			segments.append(np.vstack((points_array[seg_start:], points_array[:seg_end + 1])))
 
-	for f in range(len(false_segments) - 1):
-		if false_segments[f + 1][0] - false_segments[f][1] > 1:
-			segments.append(points_list[false_segments[f][1] + 1:false_segments[f + 1][0]])
-
-	if len(points_list) - 1 - false_segments[-1][-1] > 1:
-		segments.append(points_list[false_segments[-1][1] + 1:len(points_list) - 1])
-
+	inkex_parent.msg(f"remove starts: {remove_start} remove ends: {remove_end} false indices: {false_indices} points: {points_array[false_indices]} segments: {len(segments)}")
 	return segments
 
 

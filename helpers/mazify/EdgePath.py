@@ -7,10 +7,11 @@ import helpers.mazify.MazeSections as sections
 from helpers.Enums import NodeType
 
 class EdgePath:
-    def __init__(self, options, path_num, path_raw, maze_sections: sections.MazeSections, is_outer=False,
+    def __init__(self, parent_inkex, options, path_num, path_raw, maze_sections: sections.MazeSections, is_outer=False,
                  max_inner_contour_len=0, from_db=False, is_closed=None, custom_weight=None,
                  num_nodes=None):
         self.options = options
+        self.parent_inkex = parent_inkex
         if not from_db:
             self.path, self.num = [], path_num
             self.from_db_num_nodes = 0

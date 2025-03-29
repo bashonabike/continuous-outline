@@ -299,23 +299,23 @@ def build_level_1_scratch(parent_inkex, svg_images_with_paths, overall_images_di
     preview_group.set(inkex.addNS('lock', 'inkscape'), 'true')  # give the group an id so it can be found later.
 
 
-    for outer_cont in outer_contours:
+    for outer_cont in outer_contours_yx:
 
         # Scale & shift control points
         import numpy as np
-        shift_nd = np.array([advanced_crop_box['x'], advanced_crop_box['y']]) - np.array([objects['shift_y'], objects['shift_x']])
-        outer_cont_formed = (outer_cont / overall_images_dims_offsets['max_dpi']) + shift_nd
+        shift_nd = np.array([advanced_crop_box['y'], advanced_crop_box['x']]) - np.array([objects['shift_y'], objects['shift_x']])
+        outer_cont_formed = (np.array(outer_cont) / overall_images_dims_offsets['max_dpi']) + shift_nd
 
         commands = []
         for i, point in enumerate(outer_cont_formed):
             if i == 0:
-                commands.append(['M', point[0]])  # Move to the first point
+                commands.append(['M', point])  # Move to the first point
             else:
-                commands.append(['L', point[0]])  # Line to the next point
+                commands.append(['L', point])  # Line to the next point
             # self.msg(str(point))
         # commands.append(['Z'])  # Close path
         command_strings = [
-            f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
+            f"{cmd_type} {x},{y}" for cmd_type, (y, x) in commands
         ]
         commands_str = " ".join(command_strings)
 
@@ -329,22 +329,23 @@ def build_level_1_scratch(parent_inkex, svg_images_with_paths, overall_images_di
     ###TEMP####
     import inkex
 
-    for outer_cont in inner_contours:
-
+    for outer_cont in inner_contours_yx:
         # Scale & shift control points
         import numpy as np
-        shift_nd = np.array([advanced_crop_box['x'], advanced_crop_box['y']]) - np.array([objects['shift_y'], objects['shift_x']])
-        outer_cont_formed = (outer_cont / overall_images_dims_offsets['max_dpi']) + shift_nd
+        shift_nd = np.array([advanced_crop_box['y'], advanced_crop_box['x']]) - np.array(
+            [objects['shift_y'], objects['shift_x']])
+        outer_cont_formed = (np.array(outer_cont) / overall_images_dims_offsets['max_dpi']) + shift_nd
+
         commands = []
         for i, point in enumerate(outer_cont_formed):
             if i == 0:
-                commands.append(['M', point[0]])  # Move to the first point
+                commands.append(['M', point])  # Move to the first point
             else:
-                commands.append(['L', point[0]])  # Line to the next point
+                commands.append(['L', point])  # Line to the next point
             # self.msg(str(point))
         # commands.append(['Z'])  # Close path
         command_strings = [
-            f"{cmd_type} {x},{y}" for cmd_type, (x, y) in commands
+            f"{cmd_type} {x},{y}" for cmd_type, (y, x) in commands
         ]
         commands_str = " ".join(command_strings)
 
@@ -419,7 +420,7 @@ def build_level_3_scratch(parent_inkex, options, objects: dict, approx_normalize
     # for ctrl in approx_ctrl_points_nd.tolist():
     #     parent_inkex.msg(ctrl)
     #Trace n center
-    raw_path_coords_cropped, section_path, raw_points, node_trace_coord_path = (
+    raw_path_coords_cropped, section_path, raw_points, node_trace_coord_path, test_output_trace_coords = (
         objects['maze_agent'].run_round_trace_approx_path(parent_inkex, approx_ctrl_points_nd,
                                                           overall_images_dims_offsets['max_dpi']*options.max_magnet_lock_dist))
     if len(raw_path_coords_cropped) > 0:
@@ -457,6 +458,26 @@ def build_level_3_scratch(parent_inkex, options, objects: dict, approx_normalize
     path_element.set('d', commands_str)  # Set the path data
     path_element.style = {'stroke': 'grey', 'fill': 'none'}
     parent_inkex.svg.get_current_layer().add(path_element)
+
+    node_trace_coord_path_nd = np.array([p['pt'] for p in test_output_trace_coords])
+    shift_nd = np.array([advanced_crop_box['x'], advanced_crop_box['y']]) + np.array(
+        [objects['shift_y'], objects['shift_x']])
+    node_trace_coord_path_nd = (node_trace_coord_path_nd / overall_images_dims_offsets['max_dpi']) + shift_nd
+    node_trace_coord_path_test = node_trace_coord_path_nd.tolist()
+    labels = [p['sec_orig'] for p in test_output_trace_coords]
+
+    # TEMP#####
+    # for coord, label in zip(node_trace_coord_path_test, labels):
+    #     text_attribs = {
+    #         'x': str(coord[1]),
+    #         'y': str(coord[0]),
+    #         'text': label,
+    #         'style': "font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:192px;font-family:sans-serif;",
+    #     }
+    #
+    #     text_elem = inkex.etree.SubElement(parent_inkex.svg.get_current_layer(), inkex.addNS('text', 'svg'), text_attribs)
+    #
+
     # #######################################
 
     # parent_inkex.msg(raw_path)
