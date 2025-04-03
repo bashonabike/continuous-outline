@@ -470,14 +470,15 @@ class continuous_outline(inkex.EffectExtension):
             else:
                 raise inkex.AbortExtension("Only ellipses and rectangles are supported as bounds.")
         # Check if ellipse or rect
-        if crop_box.tag == inkex.addNS('rect', 'svg'):
-            # Get rectangle properties
-            img_focus_specs.append(str(float(crop_box.attrib.get('x', 0))))
-            img_focus_specs.append(str(float(crop_box.attrib.get('y', 0))))
-            img_focus_specs.append(str(float(crop_box.attrib.get('width', 0))))
-            img_focus_specs.append(str(float(crop_box.attrib.get('height', 0))))
-        else:
-            raise inkex.AbortExtension("Only rectangles are supported as crop box.")
+        if crop_box is not None:
+            if crop_box.tag == inkex.addNS('rect', 'svg'):
+                # Get rectangle properties
+                img_focus_specs.append(str(float(crop_box.attrib.get('x', 0))))
+                img_focus_specs.append(str(float(crop_box.attrib.get('y', 0))))
+                img_focus_specs.append(str(float(crop_box.attrib.get('width', 0))))
+                img_focus_specs.append(str(float(crop_box.attrib.get('height', 0))))
+            else:
+                raise inkex.AbortExtension("Only rectangles are supported as crop box.")
 
         #TODO: If only this changes level=3 once config setting up modify with ext input screen open
         img_focus_specs.append(str(approx_trace_path_string))

@@ -4,15 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Added double-burn support avoid weird double back loops, added 0 weight jumps for likely interesections">
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Misc fix-ups">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/build_objects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/build_objects.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Test SVGs/jack starter.svg" beforeDir="false" afterPath="$PROJECT_DIR$/Test SVGs/jack starter.svg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test_path_cleanup.py" beforeDir="false" afterPath="$PROJECT_DIR$/test_path_cleanup.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -50,23 +47,23 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.ProcessTestImages.executor": "Run",
-    "Python.SLIC-Segmentation.executor": "Debug",
-    "Python.Testing.executor": "Debug",
-    "Python.edge_detection.executor": "Run",
-    "Python.test_find_contours_raw.executor": "Run",
-    "Python.test_path_cleanup.executor": "Debug",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "com.codeium.enabled": "true",
-    "git-widget-placeholder": "master",
-    "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "C:/Users/liamc/Downloads/refact-6.2.0.zip",
-    "settings.editor.selected.configurable": "preferences.fileTypes"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.ProcessTestImages.executor&quot;: &quot;Run&quot;,
+    &quot;Python.SLIC-Segmentation.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Testing.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.edge_detection.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test_find_contours_raw.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test_path_cleanup.executor&quot;: &quot;Debug&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;com.codeium.enabled&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/liamc/Downloads/refact-6.2.0.zip&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.fileTypes&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\Trial-AI-Base-Images\bg_removed" />
@@ -223,14 +220,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1736210770875</updated>
-    </task>
-    <task id="LOCAL-00028" summary="Configured cropping for your efficiency">
-      <option name="closed" value="true" />
-      <created>1741297064923</created>
-      <option name="number" value="00028" />
-      <option name="presentableId" value="LOCAL-00028" />
-      <option name="project" value="LOCAL" />
-      <updated>1741297064923</updated>
     </task>
     <task id="LOCAL-00029" summary="Working!  ISh, still a bit rough but it's something">
       <option name="closed" value="true" />
@@ -616,7 +605,15 @@
       <option name="project" value="LOCAL" />
       <updated>1743095967571</updated>
     </task>
-    <option name="localTasksCounter" value="77" />
+    <task id="LOCAL-00077" summary="Misc fix-ups">
+      <option name="closed" value="true" />
+      <created>1743208300542</created>
+      <option name="number" value="00077" />
+      <option name="presentableId" value="LOCAL-00077" />
+      <option name="project" value="LOCAL" />
+      <updated>1743208300542</updated>
+    </task>
+    <option name="localTasksCounter" value="78" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -631,7 +628,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Object rebuilding from db all working woo!  Except raw &amp; formed" />
     <MESSAGE value="Object building all done" />
     <MESSAGE value="Workingon extension, got build objects from scratch func going" />
     <MESSAGE value="Finished coding extension wooo!!! now debug time, also params etc" />
@@ -656,7 +652,8 @@
     <MESSAGE value="Efficiency boost for intersection checking" />
     <MESSAGE value="Various fixups" />
     <MESSAGE value="Added double-burn support avoid weird double back loops, added 0 weight jumps for likely interesections" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added double-burn support avoid weird double back loops, added 0 weight jumps for likely interesections" />
+    <MESSAGE value="Misc fix-ups" />
+    <option name="LAST_COMMIT_MESSAGE" value="Misc fix-ups" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

@@ -375,7 +375,7 @@ def mask_boundary_edges(parent_inkex, options, img_unchanged, overall_images_dim
 	parent_inkex.msg(f"{len(final_contours)} final contours")
 
 	sub_in_contours = []
-	if options.mask_retain_inner_transparencies:
+	if options.mask_retain_inner_transparencies and len(final_contours) > 1:
 		#Switch smaller outers to inners
 		sub_in_contours = final_contours[1:]
 		final_contours = [final_contours[0]]
@@ -383,6 +383,8 @@ def mask_boundary_edges(parent_inkex, options, img_unchanged, overall_images_dim
 	return final_contours,sub_in_contours,  mask, complicated_background
 
 #C:\Users\liamc\PycharmProjects\continuous-outline\helpers\edge_detect\SLIC_Alg_Overview
+
+#TODO: Debug function without crop box
 
 def slic_image_boundary_edges(parent_inkex, options, im_float, mask, overall_images_dims_offsets, svg_image_with_path,
 							  num_segments:int =2, enforce_connectivity:bool = True):
