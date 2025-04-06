@@ -2,6 +2,7 @@ import time
 from logging import exception
 
 import inkex
+import simplestyle
 import os
 import urllib.parse as urllib_parse
 import urllib.request as urllib_request
@@ -71,6 +72,9 @@ class continuous_outline(inkex.EffectExtension):
                           help="No inner SLIC/Canny if background of mask is complicated (i.e. lots of holes)")
         pars.add_argument("--attempt_mask_jpeg", type=inkex.Boolean, default=False,
                           help="Attempt to mask outline of any JPEG (use Max transparency % considered background)")
+        pars.add_argument("--mask_from_line_colour", type=int, default=0,
+                          help="Mask out colours x values close to colour of approx trace line")
+
         pars.add_argument("--canny_hull", type=inkex.Boolean, default=False,
                           help="Use Canny instead of SLIC (works best when many sharp edges with minimal colour differences between regions)")
 
@@ -101,7 +105,7 @@ class continuous_outline(inkex.EffectExtension):
                           choices=["Overlay"],
                           help="Blend mode for multi image conjoined processing")
         pars.add_argument("--mask_retain_inner_transparencies", type=inkex.Boolean, default=False,
-                          help="Retain inner transparency contours")
+                          help="Retain inner transparency contours from mask (distinct from SLIC/Canny edges)")
         pars.add_argument("--transparancy_cutoff", type=float, default=0.1, help="max % transparent considered background")
         pars.add_argument("--mask_retain_inner_erosion", type=int, default=0,
                           help="Retaining inner transparency erosion (in pixels)")
@@ -651,10 +655,20 @@ class continuous_outline(inkex.EffectExtension):
             break
 
         approx_traces = []
+        mask_bg_colour = ""
         for id, node in self.svg.selected.items():
             # Check if the node is a path element
             if node.tag == inkex.addNS('path', 'svg'):
                 approx_traces.append(node)
+                if self.options.mask_from_line_colour > 0:
+                    style_str = node.get('style')
+                    if style_str:
+                        # Parse the style string
+                        style = simplestyle.parseStyle(style_str)
+
+                        # Get the stroke color
+                        mask_bg_colour = style.get('stroke')
+
         for child in approx_traces:
             self.msg(child)
 
@@ -783,7 +797,7 @@ class continuous_outline(inkex.EffectExtension):
                         #Levels 1-4 objects from scratch
                         buildscr.build_level_1_scratch(self, svg_images_with_paths, overall_images_dims_offsets,
                                                        normalized_focus_region_specs, advanced_crop_box,
-                                                       self.options, objects)
+                                                       self.options, objects, mask_bg_colour)
                         buildscr.build_level_2_scratch(self, self.options, objects)
                         start=time.time_ns()
                         buildscr.build_level_3_scratch(self, self.options, objects, formed_normalized_ctrl_points_nd,

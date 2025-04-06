@@ -16,6 +16,9 @@
                      <param name="attempt_mask_jpeg" type="bool"
                             gui-text="Attempt to mask outline of any JPEG (use Max transparency % considered background)">False
                     </param>
+                     <param name="mask_from_line_colour" type="int" min="0" max="255"
+                            gui-text="Mask out colours x values close to colour of approx trace line">0
+                    </param>
                     <param name="maze_sections_across" type="int" min="1" max="9999"
                            gui-text="Gridding density for approx path formation">70
                     </param>
@@ -82,7 +85,7 @@
                         <item value="Overlay">Overlay</item>
                       </param>
                     <param name="mask_retain_inner_transparencies" type="bool"
-                           gui-text="Retain inner transparency contours">False
+                           gui-text="Retain inner transparency contours from mask (distinct from SLIC/Canny edges)">False
                     </param>
                     <param name="mask_retain_inner_erosion" type="int" min="0" max="50"
                            gui-text="Retaining inner transparency erosion (in pixels)">0

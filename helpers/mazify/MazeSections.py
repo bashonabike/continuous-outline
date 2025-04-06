@@ -18,7 +18,7 @@ class MazeSections:
             self.sections, _, self.y_grade, self.x_grade = (
                 self.count_true_pixels_in_sections(outer_edge, m, n, req_details_mask))
             self.grid_lines =self.create_grid_paths(self.x_grade, self.y_grade, options.maze_sections_across)
-            self.path_graph = nx.Graph()
+            self.path_graph, self.outer_paths_graph = nx.Graph(), nx.Graph()
             self.set_section_blank_overs_in_graph()
         else:
             self.m, self.n = m, n

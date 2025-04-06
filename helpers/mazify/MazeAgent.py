@@ -163,12 +163,35 @@ class MazeAgent:
         # section_path.append(inflection_points[-1]['closest_graph_node'] +
         #                     (inflection_points[-1]['closest_node_idx_in_tracker'],))
 
-            path_segment = nxex.shortest_path(self.maze_sections.path_graph,
+            outer_path_segment = None
+            if (self.maze_sections.sections[inflection_points[t]['closest_sec_coords'][0],
+                                              inflection_points[t]['closest_sec_coords'][1]].dumb_req
+                    and self.maze_sections.sections[inflection_points[t + 1]['closest_sec_coords'][0],
+                    inflection_points[t + 1]['closest_sec_coords'][1]].dumb_req):
+                #NOTE: If no path possible, will return None
+                outer_path_segment = nxex.shortest_path(self.maze_sections.outer_paths_graph,
+                                                        tuple(inflection_points[t]['closest_graph_node'][0:2]),
+                                                        tuple(inflection_points[t + 1]['closest_graph_node'][0:2]),
+                                                        weight='weight', test_only=True)
+
+            explicit_outer_path_tried = False
+            if outer_path_segment is not None:
+                path_segment = []
+                if len(inflection_points[t]['closest_graph_node']) > 2:
+                    path_segment.append(inflection_points[t]['closest_graph_node'])
+                path_segment.extend(outer_path_segment)
+                if len(inflection_points[t + 1]['closest_graph_node']) > 2:
+                    path_segment.append(inflection_points[t + 1]['closest_graph_node'])
+                explicit_outer_path_tried = True
+            else:
+                path_segment = nxex.shortest_path(self.maze_sections.path_graph,
                                                    inflection_points[t]['closest_graph_node'],
                                                    inflection_points[t + 1]['closest_graph_node'],
                                                    weight='weight')
+
             retry_seg = False
-            if len(path_segment) > 2*(abs(inflection_points[t]['closest_graph_node'][0] -
+            length_cutoff = 3 if explicit_outer_path_tried else 2
+            if len(path_segment) > length_cutoff*(abs(inflection_points[t]['closest_graph_node'][0] -
                                           inflection_points[t + 1]['closest_graph_node'][0]) +
                                       abs(inflection_points[t]['closest_graph_node'][1] -
                                           inflection_points[t + 1]['closest_graph_node'][1])):
@@ -189,8 +212,13 @@ class MazeAgent:
                 if len(path_test) < len(path_segment):
                     nxex.burn_path(self.maze_sections.path_graph, path_test)
                     path_segment = path_test
+            elif explicit_outer_path_tried:
+                #Only burn in outer path if explicitly tried and successful
+                nxex.burn_path(self.maze_sections.path_graph, outer_path_segment)
+                nxex.burn_path(self.maze_sections.outer_paths_graph, outer_path_segment)
 
             section_path.extend(path_segment[:-1])
+            # parent_inkex.msg(f"start: {inflection_points[t]['closest_graph_node']} end: {inflection_points[t+1]['closest_graph_node']} path: {path_segment}")
         section_path.append(inflection_points[-1]['closest_graph_node'])
 
         # prev_sec, cur_sec = None, None
@@ -239,7 +267,6 @@ class MazeAgent:
         # section_path = processed_path
         #TODO: Reenable shortcuts??
 
-
         #Insert jump node where direct jump
         final_section_path = []
         insert_start = 0
@@ -252,6 +279,8 @@ class MazeAgent:
                 insert_start = i + 1
         if insert_start <= len(section_path) - 1:
             final_section_path.extend(section_path[insert_start:])
+
+        # parent_inkex.msg(final_section_path)
 
 
         # #Trim unneccessary blips

@@ -4,12 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Misc fix-ups">
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Fix None crop box PARIAL">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Test SVGs/jack starter.svg" beforeDir="false" afterPath="$PROJECT_DIR$/Test SVGs/jack starter.svg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/continuous-outline.inx" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.inx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/build_objects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/build_objects.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/NetworkxExtension.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/NetworkxExtension.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -60,8 +65,8 @@
     &quot;com.codeium.enabled&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;master&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/liamc/Downloads/refact-6.2.0.zip&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.fileTypes&quot;
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/liamc/Downloads/strawberry-pycharm-plugin.zip&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
   }
 }</component>
   <component name="RecentsManager">
@@ -77,7 +82,7 @@
       <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\Trial-AI-Base-Images\_TEMPPPP" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.test_path_cleanup">
+  <component name="RunManager" selected="Python.ProcessTestImages">
     <configuration name="ProcessTestImages" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="continuous-outline" />
       <option name="ENV_FILES" value="" />
@@ -189,16 +194,16 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Python.test_find_contours_raw" />
-      <item itemvalue="Python.test_path_cleanup" />
       <item itemvalue="Python.ProcessTestImages" />
       <item itemvalue="Python.SLIC_Segmentation" />
       <item itemvalue="Python.Testing" />
+      <item itemvalue="Python.test_find_contours_raw" />
+      <item itemvalue="Python.test_path_cleanup" />
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.test_path_cleanup" />
         <item itemvalue="Python.ProcessTestImages" />
+        <item itemvalue="Python.test_path_cleanup" />
         <item itemvalue="Python.test_find_contours_raw" />
         <item itemvalue="Python.Testing" />
         <item itemvalue="Python.SLIC_Segmentation" />
@@ -220,14 +225,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1736210770875</updated>
-    </task>
-    <task id="LOCAL-00029" summary="Working!  ISh, still a bit rough but it's something">
-      <option name="closed" value="true" />
-      <created>1741387866890</created>
-      <option name="number" value="00029" />
-      <option name="presentableId" value="LOCAL-00029" />
-      <option name="project" value="LOCAL" />
-      <updated>1741387866890</updated>
     </task>
     <task id="LOCAL-00030" summary="Started working on improved more eff set distances while running along paths, more accurate should be faster, still need to do conjoined dists">
       <option name="closed" value="true" />
@@ -613,7 +610,15 @@
       <option name="project" value="LOCAL" />
       <updated>1743208300542</updated>
     </task>
-    <option name="localTasksCounter" value="78" />
+    <task id="LOCAL-00078" summary="Fix None crop box PARIAL">
+      <option name="closed" value="true" />
+      <created>1743640829960</created>
+      <option name="number" value="00078" />
+      <option name="presentableId" value="LOCAL-00078" />
+      <option name="project" value="LOCAL" />
+      <updated>1743640829960</updated>
+    </task>
+    <option name="localTasksCounter" value="79" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -628,7 +633,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Object building all done" />
     <MESSAGE value="Workingon extension, got build objects from scratch func going" />
     <MESSAGE value="Finished coding extension wooo!!! now debug time, also params etc" />
     <MESSAGE value="Now actually i think got it done, test time next week" />
@@ -653,7 +657,8 @@
     <MESSAGE value="Various fixups" />
     <MESSAGE value="Added double-burn support avoid weird double back loops, added 0 weight jumps for likely interesections" />
     <MESSAGE value="Misc fix-ups" />
-    <option name="LAST_COMMIT_MESSAGE" value="Misc fix-ups" />
+    <MESSAGE value="Fix None crop box PARIAL" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fix None crop box PARIAL" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

@@ -271,7 +271,10 @@ def draw_and_flip_contours(inkex_parent, options, outer_contours, inner_contours
 
 
 	# Flip contours to yx to conform to cv standard
-	flipped_outer_contours, bounds_outer = flip_and_process_contours(outer_contours)
+	if len(outer_contours) > 0:
+		flipped_outer_contours, bounds_outer = flip_and_process_contours(outer_contours)
+	else:
+		flipped_outer_contours, bounds_outer = [], None
 	if len(inner_contours) > 0:
 		if inner_split is None:
 			flipped_inner_contours, bounds_inner = flip_and_process_contours(inner_contours, True)
@@ -284,29 +287,56 @@ def draw_and_flip_contours(inkex_parent, options, outer_contours, inner_contours
 	print(str((end - start) / 1e6) + " ms to draw n flip contours")
 	return outer_edges, inner_edges, flipped_outer_contours, flipped_inner_contours, bounds_outer, bounds_inner
 
-def mask_boundary_edges(parent_inkex, options, img_unchanged, overall_images_dims_offsets, svg_image_with_path):
+def mask_boundary_edges(parent_inkex, options, img_unchanged, overall_images_dims_offsets, svg_image_with_path,
+						mask_bg_colour=""):
 	from skimage.segmentation import mark_boundaries
 	import helpers.post_proc.smooth_path as smooth
 	start = time.time_ns()
 	#NOTE: only work PNG with transparent bg, or where background is all white
+
+	def mask_from_bg_colour(parent_inkex, img_unchanged, mask_bg_colour, tolerance):
+		# Convert hex color to BGR
+		hex_color = mask_bg_colour.lstrip('#')
+		bgr_color = tuple(int(hex_color[i:i + 2], 16) for i in (2, 1, 0))  # BGR order
+		parent_inkex.msg(f"Mask bg colour: {bgr_color}")
+
+		# Calculate lower and upper bounds for the color range
+		b, g, r = bgr_color
+		lower_bound = np.array([max(0, b - tolerance), max(0, g - tolerance), max(0, r - tolerance)])
+		upper_bound = np.array([min(255, b + tolerance), min(255, g + tolerance), min(255, r + tolerance)])
+		# Create the mask
+		mask = ~cv2.inRange(img_unchanged, lower_bound, upper_bound)
+
+		return mask
+
+
 	mask = None
 	if img_unchanged.shape[2] == 4:  # Check if it has an alpha channel
 		alpha = img_unchanged[:, :, 3]  # Get the alpha channel
 		max_alpha = np.max(alpha)
 		transparancy_cutoff = options.transparancy_cutoff * max_alpha
-		mask = np.where(alpha > transparancy_cutoff, 255, 0).astype(np.uint8)  # Create binary mask
+		mask = np.where(alpha > transparancy_cutoff, 255, 0) # Create binary mask
 	elif img_unchanged.shape[2] == 2:  # Check if it has an alpha channel
 		alpha = img_unchanged[:, :, 1]  # Get the alpha channel
 		max_alpha = np.max(alpha)
 		transparancy_cutoff = options.transparancy_cutoff * max_alpha
-		mask = np.where(alpha > transparancy_cutoff, 255, 0).astype(np.uint8)  # Create binary mask
+		mask = np.where(alpha > transparancy_cutoff, 255, 0) # Create binary mask
 	elif options.attempt_mask_jpeg:
 		# Image has no alpha channel, treat white as background
 		grey = cv2.cvtColor(img_unchanged, cv2.COLOR_BGR2GRAY)
 		_, inverted = cv2.threshold(grey, (1.0-options.transparancy_cutoff)*np.max(grey), 1, cv2.THRESH_BINARY)
-		mask = np.where(inverted == 0, 255, 0).astype(np.uint8)  # Create binary mask
-	else:
+		mask = np.where(inverted == 0, 255, 0)  # Create binary mask
+	elif not (mask_bg_colour is not None and mask_bg_colour != ""):
 		return [], [], None, False
+	if mask_bg_colour is not None and mask_bg_colour != "":
+		colour_mask = mask_from_bg_colour(parent_inkex, img_unchanged, mask_bg_colour,
+										  options.mask_from_line_colour)
+		parent_inkex.msg(f"Colour mask inside: {np.count_nonzero(colour_mask)} outside: {np.count_nonzero(np.logical_not(colour_mask))}")
+		if mask is not None:
+			mask = np.logical_and(mask, colour_mask)
+		else:
+			mask = colour_mask
+	mask = mask.astype(np.uint8)
 
 	if options.mask_retain_inner_transparencies:
 		if options.mask_retain_inner_erosion > 0:

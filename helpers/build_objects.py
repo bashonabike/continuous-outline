@@ -21,11 +21,15 @@ def shift_and_crop(parent_inkex, outer_edges, outer_contours_yx, bounds_outer,
     import numpy as np
 
     start = time.time_ns()
-    if bounds_inner is not None:
+    if bounds_inner is not None and bounds_outer is not None:
         crop = (tuple([min(o, c) for o, c in zip(bounds_outer[0], bounds_inner[0])]),
                 tuple([max(o, c) for o, c in zip(bounds_outer[1], bounds_inner[1])]))
-    else:
+    elif bounds_outer is not None:
         crop = bounds_outer
+    elif bounds_inner is not None:
+        crop = bounds_inner
+    else:
+        raise Exception("No bounds, likely no contours")
     parent_inkex.msg(f"crop: {crop}")
 
     shift_y, shift_x = (-1) * crop[0][0], (-1) * crop[0][1]
@@ -159,7 +163,7 @@ def objects_to_dict(obj_names):
 
 #region Builders
 def build_level_1_scratch(parent_inkex, svg_images_with_paths, overall_images_dims_offsets, focus_regions,
-                          advanced_crop_box, options, objects: dict):
+                          advanced_crop_box, options, objects: dict, mask_bg_colour=""):
     import cv2
     import numpy as np
     from skimage.util import img_as_float
@@ -202,9 +206,11 @@ def build_level_1_scratch(parent_inkex, svg_images_with_paths, overall_images_di
         # near_boudaries_contours, segments = slic.slic_image_test_boundaries(im_float, split_contours)
         # near_boudaries_contours, segments = slic.mask_test_boundaries(image_path, split_contours)
 
-        outer_contours_cur, sub_in_inner_contours_cur, mask, complicated_background = slic.mask_boundary_edges(parent_inkex, options, im_unch,
-                                                                                    overall_images_dims_offsets,
-                                                                                    svg_image_with_path)
+        (outer_contours_cur, sub_in_inner_contours_cur,
+        mask, complicated_background) = slic.mask_boundary_edges(parent_inkex, options, im_unch,
+                                                                 overall_images_dims_offsets, svg_image_with_path,
+                                                                 mask_bg_colour if options.mask_from_line_colour > 0
+                                                                         else None)
         outer_contours.extend(outer_contours_cur)
         start = time.time_ns()
         do_slic = False
