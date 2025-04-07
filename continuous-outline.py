@@ -78,7 +78,8 @@ class continuous_outline(inkex.EffectExtension):
         pars.add_argument("--canny_hull", type=inkex.Boolean, default=False,
                           help="Use Canny instead of SLIC (works best when many sharp edges with minimal colour differences between regions)")
 
-
+        pars.add_argument("--straight_contours", type=inkex.Boolean, default=False,
+                          help="Run contouring directly on base image (must have nice defined edges with minimal colour deviations)")
 
         pars.add_argument("--canny_quantize_bins", type=int, default=5,
                           help="Colour quantization bins for Canny (0 is natural)")

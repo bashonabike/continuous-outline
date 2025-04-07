@@ -219,16 +219,21 @@ def build_level_1_scratch(parent_inkex, svg_images_with_paths, overall_images_di
         if options.mask_only_when_complicated_background and complicated_background:
             do_slic = False
         if do_slic:
-            if not options.canny_hull:
+            if not options.canny_hull and not options.straight_contours:
                 inner_contours_cur, segments, num_segs = slic.slic_image_boundary_edges(parent_inkex, options, im_float, mask,
                                                                                         overall_images_dims_offsets,
                                                                                         svg_image_with_path,
                                                                                     num_segments=options.slic_regions,
                                                                                     enforce_connectivity=False)
-            else:
+            elif options.canny_hull:
                 inner_contours_cur, inner_contours_split_cur = (
                     slic.canny_image_boundary_edges(options, im_unch, overall_images_dims_offsets, svg_image_with_path))
                 inner_contours_split.extend(inner_contours_split_cur)
+            else:
+                inner_contours_cur, inner_contours_split_cur = (
+                    slic.straight_contour_image(options, im_unch, overall_images_dims_offsets, svg_image_with_path))
+                inner_contours_split.extend(inner_contours_split_cur)
+
             inner_contours.extend(inner_contours_cur)
         else:
             inner_contours.extend(sub_in_inner_contours_cur)

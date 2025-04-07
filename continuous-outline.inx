@@ -41,6 +41,10 @@
                            gui-text="Use Canny instead of SLIC (works best when many sharp edges with minimal colour differences between regions)">False
                     </param>
 
+                        <param name="straight_contours" type="bool"
+                           gui-text="Run contouring directly on base image (must have nice defined edges with minimal colour deviations)">False
+                    </param>
+
 
                     <param name="canny_quantize_bins" type="int" min="0" max="50"
                            gui-text="Colour quantization bins for Canny (0 is natural)">5

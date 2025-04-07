@@ -302,9 +302,14 @@ def mask_boundary_edges(parent_inkex, options, img_unchanged, overall_images_dim
 
 		# Calculate lower and upper bounds for the color range
 		b, g, r = bgr_color
-		lower_bound = np.array([max(0, b - tolerance), max(0, g - tolerance), max(0, r - tolerance)])
-		upper_bound = np.array([min(255, b + tolerance), min(255, g + tolerance), min(255, r + tolerance)])
+		if img_unchanged.shape[2] == 3:
+			lower_bound = np.array([max(0, b - tolerance), max(0, g - tolerance), max(0, r - tolerance)])
+			upper_bound = np.array([min(255, b + tolerance), min(255, g + tolerance), min(255, r + tolerance)])
+		else:
+			lower_bound = np.array([max(0, b - tolerance), max(0, g - tolerance), max(0, r - tolerance), 0])
+			upper_bound = np.array([min(255, b + tolerance), min(255, g + tolerance), min(255, r + tolerance), 255])
 		# Create the mask
+		parent_inkex.msg(f"Lower bound: {lower_bound}, upper bound: {upper_bound}, img shape: {img_unchanged.shape}")
 		mask = ~cv2.inRange(img_unchanged, lower_bound, upper_bound)
 
 		return mask
@@ -328,7 +333,7 @@ def mask_boundary_edges(parent_inkex, options, img_unchanged, overall_images_dim
 		mask = np.where(inverted == 0, 255, 0)  # Create binary mask
 	elif not (mask_bg_colour is not None and mask_bg_colour != ""):
 		return [], [], None, False
-	if mask_bg_colour is not None and mask_bg_colour != "":
+	if mask_bg_colour is not None and mask_bg_colour != "" and img_unchanged.shape[2] >= 3:
 		colour_mask = mask_from_bg_colour(parent_inkex, img_unchanged, mask_bg_colour,
 										  options.mask_from_line_colour)
 		parent_inkex.msg(f"Colour mask inside: {np.count_nonzero(colour_mask)} outside: {np.count_nonzero(np.logical_not(colour_mask))}")
@@ -615,6 +620,50 @@ def canny_image_boundary_edges(options, img_unchanged, overall_images_dims_offse
 	# 		final_contours.append(c)
 
 	#SPlit contours so not doing weird loopdy loops inside sections
+	split_contours = []
+	for c in contours:
+		split_contours.extend(split_contour_on_inflection_apex(c))
+
+	return contours, split_contours
+
+def straight_contour_image(options, img_unchanged, overall_images_dims_offsets, svg_image_with_path):
+	"""
+		Opens an image file using OpenCV, finds contours, and returns them.
+
+		Args:
+			image_path: The path to the image file.
+
+		Returns:
+			A list of contours found in the image, or None if an error occurs.
+		"""
+
+	# Convert to grayscale
+	gray = cv2.cvtColor(img_unchanged, cv2.COLOR_BGR2GRAY)
+	if img_unchanged.shape[2] == 4:  # Check if it has an alpha channel
+		gray[img_unchanged[:, :, 3] == 0] = 0
+
+	# Find contours
+	contours, _ = cv2.findContours(gray, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+	# NOTE: Mult by 2 since all contours dobule back on themselves
+	contours = [c for c in contours if len(c) >= 2 * options.canny_min_contour_length]
+
+	# Offset final contours by prescribed offset amount
+	max_dpi = overall_images_dims_offsets['max_dpi']
+	x_cv_crop_box_offset, y_cv_crop_box_offset = (
+		int(round(max_dpi * svg_image_with_path['x_crop_box_offset'], 0)),
+		int(round(max_dpi * svg_image_with_path['y_crop_box_offset'], 0)))
+	for contour in contours:
+		contour[:, :, 0] += x_cv_crop_box_offset
+		contour[:, :, 1] += y_cv_crop_box_offset
+	# for c in contours:
+	# 	contour = c[:,0,:]
+	# 	hull = cv2.convexHull(contour)
+	# 	area = cv2.contourArea(hull)
+	# 	perimeter = cv2.arcLength(hull, True)
+	# 	if area/perimeter > 10:
+	# 		final_contours.append(c)
+
+	# SPlit contours so not doing weird loopdy loops inside sections
 	split_contours = []
 	for c in contours:
 		split_contours.extend(split_contour_on_inflection_apex(c))
