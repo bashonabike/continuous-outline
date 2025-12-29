@@ -32,806 +32,976 @@ from sympy import false
 # plt.show()
 
 def try_edge_snap(parent_inkex, image_orig: np.ndarray, contours, downscale_ratio, options):
-	if downscale_ratio >= 1.0: return contours
-	if downscale_ratio <= 0.0: raise Exception("Invalid downsample ratio")
+    """Snap contour points to nearby edges in the image.
 
-	#Perform Laplacian edge detection & thresholding
-	image_orig_int = (image_orig*255).astype(np.uint8)
-	test = image_orig_int.max()
-	if image_orig.ndim > 2 and image_orig.shape[2] > 1:
-		img_gray = cv2.cvtColor(image_orig_int, cv2.COLOR_BGR2GRAY)
-	else:
-		img_gray = image_orig_int
+    Args:
+        parent_inkex: The parent inkex object for logging and options
+        image_orig: Original image as a numpy array
+        contours: List of contours to process
+        downscale_ratio: The ratio by which the image was downscaled
+        options: Configuration options object
 
-	img_blurred = cv2.GaussianBlur(img_gray, (5,5), 3)
-	laplaced = cv2.Laplacian(img_blurred, -1, ksize=5)
-	edges = laplaced
+    Returns:
+        List of contours with points snapped to nearby edges
+    """
+    if downscale_ratio >= 1.0: return contours
+    if downscale_ratio <= 0.0: raise Exception("Invalid downsample ratio")
 
-	# edges = cv2.Canny(img_gray, 100, 200)
+    # Perform Laplacian edge detection & thresholding
+    image_orig_int = (image_orig * 255).astype(np.uint8)
+    test = image_orig_int.max()
+    if image_orig.ndim > 2 and image_orig.shape[2] > 1:
+        img_gray = cv2.cvtColor(image_orig_int, cv2.COLOR_BGR2GRAY)
+    else:
+        img_gray = image_orig_int
 
-	_, thresholded = cv2.threshold(edges, 127, 255, cv2.THRESH_TOZERO)
-	thresholded = thresholded.astype(np.bool_)
+    img_blurred = cv2.GaussianBlur(img_gray, (5, 5), 3)
+    laplaced = cv2.Laplacian(img_blurred, -1, ksize=5)
+    edges = laplaced
 
-	#Determine distance threshold for snapping based on downscale ratio
-	distance_threshold = 5.0/downscale_ratio
+    # edges = cv2.Canny(img_gray, 100, 200)
 
-	#Iterate over contours, snapping where viable
-	contours_snapped = []
-	total_snapped = 0
-	for contour in contours:
-		contour_points = contour.reshape(-1, 2)  # Reshape to (n_points, 2)
-		min_x, max_x  = np.min(contour_points[:, 0]), np.max(contour_points[:, 0])
-		min_y, max_y = np.min(contour_points[:, 1]), np.max(contour_points[:, 1])
-		thresholded_area = thresholded[max(int(min_y - distance_threshold), 0):int(max_y + distance_threshold),
-						   max(int(min_x - distance_threshold), 0):int(max_x + distance_threshold)]  # Apply distance threshold:max_y, min_x:max_x]
-		true_coords = np.array(np.where(thresholded_area)).T[:, [1, 0]]  # Transpose for easier iteration, switch to x,y
-		if true_coords.shape[0] == 0:
-			contours_snapped.append(contour)
-			continue
+    _, thresholded = cv2.threshold(edges, 127, 255, cv2.THRESH_TOZERO)
+    thresholded = thresholded.astype(np.bool_)
 
-		# Calculate distances (vectorized)
-		distances = np.linalg.norm(true_coords - contour_points[:, np.newaxis], axis=2)
+    # Determine distance threshold for snapping based on downscale ratio
+    distance_threshold = 5.0 / downscale_ratio
 
-		# Find closest True pixels (vectorized)
-		nearest_indices = np.argmin(distances, axis=1)
-		nearest_distances = distances[np.arange(len(contour_points)), nearest_indices]
-		nearest_true_pixels = true_coords[nearest_indices]
+    # Iterate over contours, snapping where viable
+    contours_snapped = []
+    total_snapped = 0
+    for contour in contours:
+        contour_points = contour.reshape(-1, 2)  # Reshape to (n_points, 2)
+        min_x, max_x = np.min(contour_points[:, 0]), np.max(contour_points[:, 0])
+        min_y, max_y = np.min(contour_points[:, 1]), np.max(contour_points[:, 1])
+        thresholded_area = thresholded[max(int(min_y - distance_threshold), 0):int(max_y + distance_threshold),
+        max(int(min_x - distance_threshold), 0):int(
+            max_x + distance_threshold)]  # Apply distance threshold:max_y, min_x:max_x]
+        true_coords = np.array(np.where(thresholded_area)).T[:, [1, 0]]  # Transpose for easier iteration, switch to x,y
+        if true_coords.shape[0] == 0:
+            contours_snapped.append(contour)
+            continue
 
-		# Check distance threshold (vectorized)
-		within_threshold = nearest_distances <= distance_threshold
+        # Calculate distances (vectorized)
+        distances = np.linalg.norm(true_coords - contour_points[:, np.newaxis], axis=2)
 
-		total_snapped += np.sum(within_threshold)
+        # Find closest True pixels (vectorized)
+        nearest_indices = np.argmin(distances, axis=1)
+        nearest_distances = distances[np.arange(len(contour_points)), nearest_indices]
+        nearest_true_pixels = true_coords[nearest_indices]
 
-		# Replace contour points with nearest True pixels
-		contour_points[within_threshold] = nearest_true_pixels[within_threshold]
+        # Check distance threshold (vectorized)
+        within_threshold = nearest_distances <= distance_threshold
 
-		contours_snapped.append(contour_points.reshape(contour.shape))  # Reshape back to original contour shape
+        total_snapped += np.sum(within_threshold)
 
-	return contours_snapped
+        # Replace contour points with nearest True pixels
+        contour_points[within_threshold] = nearest_true_pixels[within_threshold]
+
+        contours_snapped.append(contour_points.reshape(contour.shape))  # Reshape back to original contour shape
+
+    return contours_snapped
+
 
 def try_downsample_mask(parent_inkex, mask: np.ndarray, options):
-	#Check if image needs to be downsampled
-	shape, downsample_ratio = mask.shape, 1.0
-	if shape[0] > options.slic_max_image_resolution:
-		downsample_ratio = options.slic_max_image_resolution / shape[0]
-	if shape[1] > options.slic_max_image_resolution and shape[1] > shape[0]:
-		downsample_ratio = options.slic_max_image_resolution / shape[1]
-	if downsample_ratio <= 0.0: raise Exception("Invalid downsample ratio")
-	if downsample_ratio >= 1.0: return mask, 1.0
+    """Downsample a binary mask if it exceeds maximum resolution.
 
-	#Downsample mask
-	#NOTE: dsize is width, height so shape[1], shape[0]
-	dsize = (int(round(mask.shape[1] * downsample_ratio, 0)), int(round(mask.shape[0] * downsample_ratio, 0)))
-	interpolation_technique = cv2.INTER_LANCZOS4 if parent_inkex.options.slic_lanczos else cv2.INTER_CUBIC
-	downsampled_mask = cv2.resize(mask, dsize, interpolation=interpolation_technique).astype(np.bool_)
+    Args:
+        parent_inkex: The parent inkex object for logging and options
+        mask: Binary mask to downsample
+        options: Configuration options containing max resolution settings
 
-	return downsampled_mask, downsample_ratio
+    Returns:
+        Tuple of (downsampled_mask, downsample_ratio)
+    """
+    # Check if image needs to be downsampled
+    shape, downsample_ratio = mask.shape, 1.0
+    if shape[0] > options.slic_max_image_resolution:
+        downsample_ratio = options.slic_max_image_resolution / shape[0]
+    if shape[1] > options.slic_max_image_resolution and shape[1] > shape[0]:
+        downsample_ratio = options.slic_max_image_resolution / shape[1]
+    if downsample_ratio <= 0.0: raise Exception("Invalid downsample ratio")
+    if downsample_ratio >= 1.0: return mask, 1.0
+
+    # Downsample mask
+    # NOTE: dsize is width, height so shape[1], shape[0]
+    dsize = (int(round(mask.shape[1] * downsample_ratio, 0)), int(round(mask.shape[0] * downsample_ratio, 0)))
+    interpolation_technique = cv2.INTER_LANCZOS4 if parent_inkex.options.slic_lanczos else cv2.INTER_CUBIC
+    downsampled_mask = cv2.resize(mask, dsize, interpolation=interpolation_technique).astype(np.bool_)
+
+    return downsampled_mask, downsample_ratio
+
 
 def try_downsample_and_smooth(parent_inkex, image: np.ndarray, options):
-	#Check if image needs to be downsampled
-	shape, downsample_ratio = image.shape, 1.0
-	if shape[0] > options.slic_max_image_resolution:
-		downsample_ratio = options.slic_max_image_resolution / shape[0]
-	if shape[1] > options.slic_max_image_resolution and shape[1] > shape[0]:
-		downsample_ratio = options.slic_max_image_resolution / shape[1]
-	if downsample_ratio >= 1.0: return image, 1.0
+    """Downsample and smooth an image if it exceeds maximum resolution.
 
-	#Downsample and smooth
-	#NOTE: dsize is width, height so shape[1], shape[0]
-	start=time.time_ns()
-	dsize = (int(round(shape[1] * downsample_ratio, 0)), int(round(shape[0] * downsample_ratio, 0)))
-	interpolation_technique = cv2.INTER_LANCZOS4 if options.slic_lanczos else cv2.INTER_CUBIC
-	downsampled_image = cv2.resize(image, dsize, interpolation=interpolation_technique)
-	end=time.time_ns()
-	print(str((end-start)/1e6) + " ms to downsample")
+    Args:
+        parent_inkex: The parent inkex object for logging and options
+        image: Image to process as numpy array
+        options: Configuration options containing processing parameters
 
-	start = time.time_ns()
-	# 2. Smoothing (Gaussian blur)
-	smoothed_image = cv2.GaussianBlur(downsampled_image, (5, 5), 0)  # Kernel size: 5x5, sigmaX=0
+    Returns:
+        Tuple of (processed_image, downsample_ratio)
+    """
+    # Check if image needs to be downsampled
+    shape, downsample_ratio = image.shape, 1.0
+    if shape[0] > options.slic_max_image_resolution:
+        downsample_ratio = options.slic_max_image_resolution / shape[0]
+    if shape[1] > options.slic_max_image_resolution and shape[1] > shape[0]:
+        downsample_ratio = options.slic_max_image_resolution / shape[1]
+    if downsample_ratio >= 1.0: return image, 1.0
 
-	# Or, smoothing (simple average blur)
-	# smoothed_image = cv2.blur(downsampled_image, (5, 5))
+    # Downsample and smooth
+    # NOTE: dsize is width, height so shape[1], shape[0]
+    start = time.time_ns()
+    dsize = (int(round(shape[1] * downsample_ratio, 0)), int(round(shape[0] * downsample_ratio, 0)))
+    interpolation_technique = cv2.INTER_LANCZOS4 if options.slic_lanczos else cv2.INTER_CUBIC
+    downsampled_image = cv2.resize(image, dsize, interpolation=interpolation_technique)
+    end = time.time_ns()
+    print(str((end - start) / 1e6) + " ms to downsample")
 
-	# Or, smoothing (median blur)
-	# smoothed_image = cv2.medianBlur(downsampled_image, 5)
-	end = time.time_ns()
-	print(str((end - start) / 1e6) + " ms to smooth downsampled image")
+    start = time.time_ns()
+    # 2. Smoothing (Gaussian blur)
+    smoothed_image = cv2.GaussianBlur(downsampled_image, (5, 5), 0)  # Kernel size: 5x5, sigmaX=0
 
-	return smoothed_image, downsample_ratio
+    # Or, smoothing (simple average blur)
+    # smoothed_image = cv2.blur(downsampled_image, (5, 5))
+
+    # Or, smoothing (median blur)
+    # smoothed_image = cv2.medianBlur(downsampled_image, 5)
+    end = time.time_ns()
+    print(str((end - start) / 1e6) + " ms to smooth downsampled image")
+
+    return smoothed_image, downsample_ratio
+
 
 def try_upscale_contours(parent_inkex, contours, upsample_ratio):
-	if upsample_ratio == 1.0: return contours
+    """Upscale contours by a given ratio.
 
-	#Upscale contours
-	scaled_contours = []
-	for contour in contours:
-		contour_float = contour.astype(np.float32)
-		contour_float *= upsample_ratio
-		scaled_contours.append(contour_float.astype(np.int32))
-	return scaled_contours
+    Args:
+        parent_inkex: The parent inkex object for logging
+        contours: List of contours to upscale
+        upsample_ratio: Ratio by which to upscale the contours
+
+    Returns:
+        List of upscaled contours
+    """
+    if upsample_ratio == 1.0: return contours
+
+    # Upscale contours
+    scaled_contours = []
+    for contour in contours:
+        contour_float = contour.astype(np.float32)
+        contour_float *= upsample_ratio
+        scaled_contours.append(contour_float.astype(np.int32))
+    return scaled_contours
+
 
 def find_transition_nodes(regioned_img: np.ndarray):
-	from scipy import signal
-	import math
-	num_regions = regioned_img.max()
-	#Encode each region in base 10 and run with ones 3x3
-	encoded_regions = np.pow(10, regioned_img - 1).astype(np.uint64)
-	kernel = np.ones((3, 3), np.uint64)
-	convolved = signal.convolve2d(encoded_regions, kernel, mode='same', boundary='fill')
+    """Find nodes where multiple regions meet in a segmented image.
 
-	#Break down to decode areas with 3 or more regions
-	transitions_map = np.zeros(regioned_img.shape, dtype=np.uint64)
-	regions_rem = convolved
-	for region_mux in range(num_regions):
-		region_div = int(math.floor(math.pow(10, (num_regions - 1) - region_mux)))
-		regions_rem_new = regions_rem % region_div
-		transitions_map += np.where(regions_rem_new != regions_rem, 1, 0).astype(np.uint64)
-		regions_rem = regions_rem_new
+    Args:
+        regioned_img: Segmented image where pixel values represent region IDs
 
-	#Identify regions where there are 3 or more regions
-	transition_nodes = np.where(transitions_map >= 3, True, False)
+    Returns:
+        Boolean mask where True indicates a transition node
+    """
+    from scipy import signal
+    import math
+    num_regions = regioned_img.max()
+    # Encode each region in base 10 and run with ones 3x3
+    encoded_regions = np.pow(10, regioned_img - 1).astype(np.uint64)
+    kernel = np.ones((3, 3), np.uint64)
+    convolved = signal.convolve2d(encoded_regions, kernel, mode='same', boundary='fill')
 
-	# Create a perimeter mask for 2 or more and edge pixel
-	perimeter_mask = np.zeros_like(transitions_map, dtype=bool)
-	perimeter_mask[0, :] = True  # Top row
-	perimeter_mask[-1, :] = True  # Bottom row
-	perimeter_mask[:, 0] = True  # Left column
-	perimeter_mask[:, -1] = True  # Right column
-	full_mask = (transitions_map >= 2) & perimeter_mask
+    # Break down to decode areas with 3 or more regions
+    transitions_map = np.zeros(regioned_img.shape, dtype=np.uint64)
+    regions_rem = convolved
+    for region_mux in range(num_regions):
+        region_div = int(math.floor(math.pow(10, (num_regions - 1) - region_mux)))
+        regions_rem_new = regions_rem % region_div
+        transitions_map += np.where(regions_rem_new != regions_rem, 1, 0).astype(np.uint64)
+        regions_rem = regions_rem_new
 
-	transition_nodes = transition_nodes | full_mask
-	return transition_nodes
+    # Identify regions where there are 3 or more regions
+    transition_nodes = np.where(transitions_map >= 3, True, False)
+
+    # Create a perimeter mask for 2 or more and edge pixel
+    perimeter_mask = np.zeros_like(transitions_map, dtype=bool)
+    perimeter_mask[0, :] = True  # Top row
+    perimeter_mask[-1, :] = True  # Bottom row
+    perimeter_mask[:, 0] = True  # Left column
+    perimeter_mask[:, -1] = True  # Right column
+    full_mask = (transitions_map >= 2) & perimeter_mask
+
+    transition_nodes = transition_nodes | full_mask
+    return transition_nodes
+
 
 def mask_test_boundaries(img_path, split_contours):
-	#NOTE: only work PNG with transparent bg, or where background is all white
-	img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
-	mask = None
-	if img.shape[2] == 4:  # Check if it has an alpha channel
-		alpha = img[:, :, 3]  # Get the alpha channel
-		mask = np.where(alpha > 0, 1, 0).astype(np.uint8)  # Create binary mask
-	else:
-		# Image has no alpha channel, treat white as background
-		grey = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-		_, inverted = cv2.threshold(grey, 0.9*np.max(grey), 1, cv2.THRESH_BINARY)
-		mask = np.where(inverted == 0, 1, 0).astype(np.uint8)  # Create binary mask
+    """Find contours near the boundaries of an image mask.
 
+    Args:
+        img_path: Path to the input image (supports transparent or white backgrounds)
+        split_contours: List of contours to test against boundaries
 
-	return find_contours_near_boundaries(split_contours, mask, tolerance=2), mask
+    Returns:
+        Tuple of (filtered_contours, mask) where filtered_contours are those near boundaries
+    """
+    # NOTE: only work PNG with transparent bg, or where background is all white
+    img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
+    mask = None
+    if img.shape[2] == 4:  # Check if it has an alpha channel
+        alpha = img[:, :, 3]  # Get the alpha channel
+        mask = np.where(alpha > 0, 1, 0).astype(np.uint8)  # Create binary mask
+    else:
+        # Image has no alpha channel, treat white as background
+        grey = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        _, inverted = cv2.threshold(grey, 0.9 * np.max(grey), 1, cv2.THRESH_BINARY)
+        mask = np.where(inverted == 0, 1, 0).astype(np.uint8)  # Create binary mask
+
+    return find_contours_near_boundaries(split_contours, mask, tolerance=2), mask
+
 
 def pixel_map_from_edge_contours(shape, contours, offset_idx):
-	edges_final = np.zeros(shape, dtype=np.uint16)
-	for contour_idx in range(len(contours)):
-		cv2.drawContours(edges_final, contours, contour_idx,
-						 (contour_idx + 1 + offset_idx, contour_idx + 1 + offset_idx,
-						  contour_idx + 1 + offset_idx))
-	return edges_final
+    """
+    Creates a pixel map from edge contours.
+
+    Args:
+        shape: The shape of the output image
+        contours: A list of contours to draw
+        offset_idx: The offset index to add to the contour index when drawing
+
+    Returns:
+        edges_final: A pixel map of the contours
+    """
+    edges_final = np.zeros(shape, dtype=np.uint16)
+    for contour_idx in range(len(contours)):
+        cv2.drawContours(edges_final, contours, contour_idx,
+                         (contour_idx + 1 + offset_idx, contour_idx + 1 + offset_idx,
+                          contour_idx + 1 + offset_idx))
+    return edges_final
 
 
 def draw_and_flip_contours(inkex_parent, options, outer_contours, inner_contours, overall_images_dims_offsets,
-						   advanced_crop_box, inner_split=None):
-	start = time.time_ns()
-	import helpers.post_proc.smooth_path as smooth
+                           advanced_crop_box, inner_split=None):
+    """
+    Draws contours on a canvas and flips them to the yx coordinate standard.
 
-	# outer_contours.sort(key=len, reverse=True)
-	# if len(inner_contours) > 0: inner_contours.sort(key=len, reverse=True)
-	outer_edges = np.zeros((int(round(overall_images_dims_offsets['max_dpi']*advanced_crop_box['height'], 0)),
-							int(round(overall_images_dims_offsets['max_dpi']*advanced_crop_box['width'], 0))),
-						   dtype=np.uint16)
-	inkex_parent.msg(f"Matte size: {outer_edges.shape}")
-	inner_edges = outer_edges.copy()
+    Args:
+        inkex_parent: The parent Inkscape object.
+        options: The options object.
+        outer_contours: A list of contours to draw as outer edges.
+        inner_contours: A list of contours to draw as inner edges.
+        overall_images_dims_offsets: A dictionary containing the max_dpi and the original image size.
+        advanced_crop_box: A dictionary containing the dimensions of the crop box.
+        inner_split: A list of contours to draw as inner edges if not None, else uses inner_contours.
 
-	#Build perimeter mask
-	perimeter_mask = np.zeros_like(outer_edges, dtype=bool)
-	perimeter_mask[0, :] = True  # Top row
-	perimeter_mask[-1, :] = True  # Bottom row
-	perimeter_mask[:, 0] = True  # Left column
-	perimeter_mask[:, -1] = True  # Right column
+    Returns:
+        outer_edges: A pixel map of the outer edges.
+        inner_edges: A pixel map of the inner edges.
+        flipped_outer_contours: A list of contours in yx coordinate standard of the outer edges.
+        flipped_inner_contours: A list of contours in yx coordinate standard of the inner edges.
+        bounds_outer: A tuple containing the minimum and maximum y and x coordinates of the outer edges.
+        bounds_inner: A tuple containing the minimum and maximum y and x coordinates of the inner edges.
+    """
+    start = time.time_ns()
+    import helpers.post_proc.smooth_path as smooth
 
-	#Draw on contours
-	for contour_idx in range(len(outer_contours)):
-		cv2.drawContours(outer_edges, outer_contours, contour_idx, (contour_idx + 1, contour_idx + 1,
-																	contour_idx + 1))
-	if len(inner_contours) > 0:
-		for contour_idx in range(len(outer_contours), len(outer_contours) + len(inner_contours)):
-			cv2.drawContours(inner_edges, inner_contours, contour_idx - len(outer_contours),
-							 (contour_idx + 1, contour_idx + 1, contour_idx + 1))
+    # outer_contours.sort(key=len, reverse=True)
+    # if len(inner_contours) > 0: inner_contours.sort(key=len, reverse=True)
+    outer_edges = np.zeros((int(round(overall_images_dims_offsets['max_dpi'] * advanced_crop_box['height'], 0)),
+                            int(round(overall_images_dims_offsets['max_dpi'] * advanced_crop_box['width'], 0))),
+                           dtype=np.uint16)
+    inkex_parent.msg(f"Matte size: {outer_edges.shape}")
+    inner_edges = outer_edges.copy()
 
-	# Wipe outside edge, false contours
-	outer_edges[perimeter_mask] = 0
-	if len(inner_contours) > 0: inner_edges[perimeter_mask] = 0
+    # Build perimeter mask
+    perimeter_mask = np.zeros_like(outer_edges, dtype=bool)
+    perimeter_mask[0, :] = True  # Top row
+    perimeter_mask[-1, :] = True  # Bottom row
+    perimeter_mask[:, 0] = True  # Left column
+    perimeter_mask[:, -1] = True  # Right column
 
-	def flip_and_process_contours(contours, inner=False):
-		min_y, min_x, max_y, max_x = 99999, 99999, -1, -1
-		flipped_contours = []
+    # Draw on contours
+    for contour_idx in range(len(outer_contours)):
+        cv2.drawContours(outer_edges, outer_contours, contour_idx, (contour_idx + 1, contour_idx + 1,
+                                                                    contour_idx + 1))
+    if len(inner_contours) > 0:
+        for contour_idx in range(len(outer_contours), len(outer_contours) + len(inner_contours)):
+            cv2.drawContours(inner_edges, inner_contours, contour_idx - len(outer_contours),
+                             (contour_idx + 1, contour_idx + 1, contour_idx + 1))
 
-		for c in contours:
-			if c[0].size == 1:
-				cur_contour = smooth.simplify_line([c[1], c[0]], tolerance=options.simplify_tolerance,
-												   preserve_topology=options.simplify_preserve_topology)
-			else:
-				cur_contour = smooth.simplify_line([[p[0][1], p[0][0]] for p in c],
-												   tolerance=options.simplify_tolerance,
-												   preserve_topology=options.simplify_preserve_topology)
+    # Wipe outside edge, false contours
+    outer_edges[perimeter_mask] = 0
+    if len(inner_contours) > 0: inner_edges[perimeter_mask] = 0
 
-			ys, xs = zip(*cur_contour)
-			min_y, min_x = int(min(min_y, min(ys))), int(min(min_x, min(xs)))
-			max_y, max_x = int(max(max_y, max(ys))), int(max(max_x, max(xs)))
+    def flip_and_process_contours(contours, inner=False):
+        """
+        Flips and processes contours by simplifying them, removing perimeter ghosting, and finding bounds.
 
-			# if inner:
-				# Remove portion of contours along perimeter
-			processed_contours = remove_perimeter_ghosting(inkex_parent, options.max_inner_path_seg_manhatten_length, cur_contour)
-			# else:
-			# 	processed_contours = [cur_contour]
+        Args:
+            contours (list): A list of contours to process.
+            inner (bool): Whether to remove perimeter ghosting (True) or not (False).
 
-			flipped_contours.extend(processed_contours)
+        Returns:
+            flipped_contours (list): A list of contours after processing.
+            bounds (tuple): A tuple containing the minimum and maximum y and x coordinates of the contours.
+        """
+        min_y, min_x, max_y, max_x = 99999, 99999, -1, -1
+        flipped_contours = []
 
-		bounds = ((min_y, min_x), (max_y, max_x))
+        for c in contours:
+            if c[0].size == 1:
+                cur_contour = smooth.simplify_line([c[1], c[0]], tolerance=options.simplify_tolerance,
+                                                   preserve_topology=options.simplify_preserve_topology)
+            else:
+                cur_contour = smooth.simplify_line([[p[0][1], p[0][0]] for p in c],
+                                                   tolerance=options.simplify_tolerance,
+                                                   preserve_topology=options.simplify_preserve_topology)
 
-		return flipped_contours, bounds
+            ys, xs = zip(*cur_contour)
+            min_y, min_x = int(min(min_y, min(ys))), int(min(min_x, min(xs)))
+            max_y, max_x = int(max(max_y, max(ys))), int(max(max_x, max(xs)))
 
+            # if inner:
+            # Remove portion of contours along perimeter
+            processed_contours = remove_perimeter_ghosting(inkex_parent, options.max_inner_path_seg_manhatten_length,
+                                                           cur_contour)
+            # else:
+            # 	processed_contours = [cur_contour]
 
-	# Flip contours to yx to conform to cv standard
-	if len(outer_contours) > 0:
-		flipped_outer_contours, bounds_outer = flip_and_process_contours(outer_contours)
-	else:
-		flipped_outer_contours, bounds_outer = [], None
-	if len(inner_contours) > 0:
-		if inner_split is None:
-			flipped_inner_contours, bounds_inner = flip_and_process_contours(inner_contours, True)
-		else:
-			flipped_inner_contours, bounds_inner = flip_and_process_contours(inner_split, True)
-	else:
-		flipped_inner_contours, bounds_inner = [], None
+            flipped_contours.extend(processed_contours)
 
-	end = time.time_ns()
-	print(str((end - start) / 1e6) + " ms to draw n flip contours")
-	return outer_edges, inner_edges, flipped_outer_contours, flipped_inner_contours, bounds_outer, bounds_inner
+        bounds = ((min_y, min_x), (max_y, max_x))
+
+        return flipped_contours, bounds
+
+    # Flip contours to yx to conform to cv standard
+    if len(outer_contours) > 0:
+        flipped_outer_contours, bounds_outer = flip_and_process_contours(outer_contours)
+    else:
+        flipped_outer_contours, bounds_outer = [], None
+    if len(inner_contours) > 0:
+        if inner_split is None:
+            flipped_inner_contours, bounds_inner = flip_and_process_contours(inner_contours, True)
+        else:
+            flipped_inner_contours, bounds_inner = flip_and_process_contours(inner_split, True)
+    else:
+        flipped_inner_contours, bounds_inner = [], None
+
+    end = time.time_ns()
+    print(str((end - start) / 1e6) + " ms to draw n flip contours")
+    return outer_edges, inner_edges, flipped_outer_contours, flipped_inner_contours, bounds_outer, bounds_inner
+
 
 def mask_boundary_edges(parent_inkex, options, img_unchanged, overall_images_dims_offsets, svg_image_with_path,
-						mask_bg_colour=""):
-	from skimage.segmentation import mark_boundaries
-	import helpers.post_proc.smooth_path as smooth
-	start = time.time_ns()
-	#NOTE: only work PNG with transparent bg, or where background is all white
+                        mask_bg_colour=""):
+    """
+    Mask an image based on its background color.
 
-	def mask_from_bg_colour(parent_inkex, img_unchanged, mask_bg_colour, tolerance):
-		# Convert hex color to BGR
-		hex_color = mask_bg_colour.lstrip('#')
-		bgr_color = tuple(int(hex_color[i:i + 2], 16) for i in (2, 1, 0))  # BGR order
-		parent_inkex.msg(f"Mask bg colour: {bgr_color}")
+    Args:
+        parent_inkex (inkex.InkExtension): The extension object.
+    options (dict): Options for this function.
+    img_unchanged (numpy.ndarray): The image to mask.
+    overall_images_dims_offsets (dict): Dimensions and offsets of all the images.
+    svg_image_with_path (dict): The svg image with the path.
+    mask_bg_colour (str): The hex colour of the background to mask.
 
-		# Calculate lower and upper bounds for the color range
-		b, g, r = bgr_color
-		if img_unchanged.shape[2] == 3:
-			lower_bound = np.array([max(0, b - tolerance), max(0, g - tolerance), max(0, r - tolerance)])
-			upper_bound = np.array([min(255, b + tolerance), min(255, g + tolerance), min(255, r + tolerance)])
-		else:
-			lower_bound = np.array([max(0, b - tolerance), max(0, g - tolerance), max(0, r - tolerance), 0])
-			upper_bound = np.array([min(255, b + tolerance), min(255, g + tolerance), min(255, r + tolerance), 255])
-		# Create the mask
-		parent_inkex.msg(f"Lower bound: {lower_bound}, upper bound: {upper_bound}, img shape: {img_unchanged.shape}")
-		mask = ~cv2.inRange(img_unchanged, lower_bound, upper_bound)
+    Returns:
+    final_contours (list): A list of contours of the mask.
+    sub_in_contours (list): A list of contours of the mask that are inside the outer contours.
+    mask (numpy.ndarray): The mask of the image.
+    complicated_background (bool): Whether the background is complicated (i.e. has holes).
+    """
+    from skimage.segmentation import mark_boundaries
+    import helpers.post_proc.smooth_path as smooth
+    start = time.time_ns()
 
-		return mask
+    # NOTE: only work PNG with transparent bg, or where background is all white
+
+    def mask_from_bg_colour(parent_inkex, img_unchanged, mask_bg_colour, tolerance):
+        # Convert hex color to BGR
+        """
+        Mask an image based on its background color.
+
+        Args:
+            parent_inkex (inkex.InkExtension): The extension object.
+            img_unchanged (numpy.ndarray): The image to mask.
+            mask_bg_colour (str): The hex colour of the background to mask.
+            tolerance (int): The tolerance for the colour range.
+
+        Returns:
+            mask (numpy.ndarray): The mask of the image.
+        """
+        hex_color = mask_bg_colour.lstrip('#')
+        bgr_color = tuple(int(hex_color[i:i + 2], 16) for i in (2, 1, 0))  # BGR order
+        parent_inkex.msg(f"Mask bg colour: {bgr_color}")
+
+        # Calculate lower and upper bounds for the color range
+        b, g, r = bgr_color
+        if img_unchanged.shape[2] == 3:
+            lower_bound = np.array([max(0, b - tolerance), max(0, g - tolerance), max(0, r - tolerance)])
+            upper_bound = np.array([min(255, b + tolerance), min(255, g + tolerance), min(255, r + tolerance)])
+        else:
+            lower_bound = np.array([max(0, b - tolerance), max(0, g - tolerance), max(0, r - tolerance), 0])
+            upper_bound = np.array([min(255, b + tolerance), min(255, g + tolerance), min(255, r + tolerance), 255])
+        # Create the mask
+        parent_inkex.msg(f"Lower bound: {lower_bound}, upper bound: {upper_bound}, img shape: {img_unchanged.shape}")
+        mask = ~cv2.inRange(img_unchanged, lower_bound, upper_bound)
+
+        return mask
+
+    mask = None
+    if img_unchanged.shape[2] == 4:  # Check if it has an alpha channel
+        alpha = img_unchanged[:, :, 3]  # Get the alpha channel
+        max_alpha = np.max(alpha)
+        transparancy_cutoff = options.transparancy_cutoff * max_alpha
+        mask = np.where(alpha > transparancy_cutoff, 255, 0)  # Create binary mask
+    elif img_unchanged.shape[2] == 2:  # Check if it has an alpha channel
+        alpha = img_unchanged[:, :, 1]  # Get the alpha channel
+        max_alpha = np.max(alpha)
+        transparancy_cutoff = options.transparancy_cutoff * max_alpha
+        mask = np.where(alpha > transparancy_cutoff, 255, 0)  # Create binary mask
+    elif options.attempt_mask_jpeg:
+        # Image has no alpha channel, treat white as background
+        grey = cv2.cvtColor(img_unchanged, cv2.COLOR_BGR2GRAY)
+        _, inverted = cv2.threshold(grey, (1.0 - options.transparancy_cutoff) * np.max(grey), 1, cv2.THRESH_BINARY)
+        mask = np.where(inverted == 0, 255, 0)  # Create binary mask
+    elif not (mask_bg_colour is not None and mask_bg_colour != ""):
+        return [], [], None, False
+    if mask_bg_colour is not None and mask_bg_colour != "" and img_unchanged.shape[2] >= 3:
+        colour_mask = mask_from_bg_colour(parent_inkex, img_unchanged, mask_bg_colour,
+                                          options.mask_from_line_colour)
+        parent_inkex.msg(
+            f"Colour mask inside: {np.count_nonzero(colour_mask)} outside: {np.count_nonzero(np.logical_not(colour_mask))}")
+        if mask is not None:
+            mask = np.logical_and(mask, colour_mask)
+        else:
+            mask = colour_mask
+    mask = mask.astype(np.uint8)
+
+    if options.mask_retain_inner_transparencies:
+        if options.mask_retain_inner_erosion > 0:
+            erosion_ksize = 2 * ((options.mask_retain_inner_erosion - 1) // 2) + 1
+            erode_kernel = np.ones((erosion_ksize, erosion_ksize), np.uint8)
+            eroded_edges = cv2.erode(mask, erode_kernel, iterations=1) * 255
+            all_contours, _ = cv2.findContours(eroded_edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        else:
+            all_contours, _ = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+
+        parent_inkex.msg("num mask contours: " + str(len(all_contours)))
+    else:
+        # Blur n rebinarize n find edges
+        mask_blurred = cv2.GaussianBlur(mask, (9, 9), 8)
+        _, edges_binary = cv2.threshold(mask_blurred, 10, 1, cv2.THRESH_BINARY)
+        erode_kernel = np.ones((5, 5), np.uint8)
+        eroded_edges = cv2.erode(edges_binary, erode_kernel, iterations=1) * 255
+        fill_contours, _ = cv2.findContours(eroded_edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        filled_mask = eroded_edges.copy()
+        # Fill contours (holes)
+        # for cnt in fill_contours:
+        cv2.drawContours(filled_mask, fill_contours, -1, (255, 255, 255), thickness=cv2.FILLED)  # -1 fills the contour
+        blank = np.zeros(img_unchanged.shape, dtype=np.uint8)
+        edges = mark_boundaries(blank, filled_mask, color=tuple([255 for d in range(img_unchanged.shape[2])]),
+                                mode='outer').astype(np.uint8)[:, :, 0]
+
+        # _, edges_binary = cv2.threshold(edges, 127, 1, cv2.THRESH_BINARY)
+        # edges_bool = edges_binary.astype(bool)
+
+        # Set final contours contours on blank coded for reference
+        all_contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    start = time.time_ns()
+    # Check length for removal
+    final_contours_with_len = []
+    for contour in all_contours:
+        points = contour.reshape(-1, 2)
+        diffs = np.diff(points, axis=0)
+        distances = np.linalg.norm(diffs, axis=1)
+        total_length = np.sum(distances)
+        if total_length >= options.outer_contour_length_cutoff * svg_image_with_path['img_dpi']:
+            final_contours_with_len.append({"contour": contour, "length": total_length})
+
+    final_contours = [c['contour'] for c in sorted(final_contours_with_len,
+                                                   key=lambda contour: contour['length'], reverse=True)]
+
+    complicated_background = len(final_contours) > 4
+
+    end = time.time_ns()
+    parent_inkex.msg("TIMING: " + str((end - start) / 1e6) + " ms to remove too short outer contours")
+
+    # Scale up to matte and offset final contours by prescribed offset amount
+    max_dpi = overall_images_dims_offsets['max_dpi']
+    scale = max_dpi / svg_image_with_path['img_dpi']
+    x_cv_crop_box_offset, y_cv_crop_box_offset = (int(round(max_dpi * svg_image_with_path['x_crop_box_offset'], 0)),
+                                                  int(round(max_dpi * svg_image_with_path['y_crop_box_offset'], 0)))
+    for contour in final_contours:
+        contour[:, :, 0] = np.round(scale * contour[:, :, 0]).astype(np.int32) + x_cv_crop_box_offset
+        contour[:, :, 1] = np.round(scale * contour[:, :, 1]).astype(np.int32) + y_cv_crop_box_offset
+        parent_inkex.msg(
+            f"Max contour  x: {np.max(contour[:, :, 0])} y: {np.max(contour[:, :, 1])} for dpi {svg_image_with_path['img_dpi']}")
+
+    parent_inkex.msg(f"{len(final_contours)} final contours")
+
+    sub_in_contours = []
+    if options.mask_retain_inner_transparencies and len(final_contours) > 1:
+        # Switch smaller outers to inners
+        sub_in_contours = final_contours[1:]
+        final_contours = [final_contours[0]]
+
+    return final_contours, sub_in_contours, mask, complicated_background
 
 
-	mask = None
-	if img_unchanged.shape[2] == 4:  # Check if it has an alpha channel
-		alpha = img_unchanged[:, :, 3]  # Get the alpha channel
-		max_alpha = np.max(alpha)
-		transparancy_cutoff = options.transparancy_cutoff * max_alpha
-		mask = np.where(alpha > transparancy_cutoff, 255, 0) # Create binary mask
-	elif img_unchanged.shape[2] == 2:  # Check if it has an alpha channel
-		alpha = img_unchanged[:, :, 1]  # Get the alpha channel
-		max_alpha = np.max(alpha)
-		transparancy_cutoff = options.transparancy_cutoff * max_alpha
-		mask = np.where(alpha > transparancy_cutoff, 255, 0) # Create binary mask
-	elif options.attempt_mask_jpeg:
-		# Image has no alpha channel, treat white as background
-		grey = cv2.cvtColor(img_unchanged, cv2.COLOR_BGR2GRAY)
-		_, inverted = cv2.threshold(grey, (1.0-options.transparancy_cutoff)*np.max(grey), 1, cv2.THRESH_BINARY)
-		mask = np.where(inverted == 0, 255, 0)  # Create binary mask
-	elif not (mask_bg_colour is not None and mask_bg_colour != ""):
-		return [], [], None, False
-	if mask_bg_colour is not None and mask_bg_colour != "" and img_unchanged.shape[2] >= 3:
-		colour_mask = mask_from_bg_colour(parent_inkex, img_unchanged, mask_bg_colour,
-										  options.mask_from_line_colour)
-		parent_inkex.msg(f"Colour mask inside: {np.count_nonzero(colour_mask)} outside: {np.count_nonzero(np.logical_not(colour_mask))}")
-		if mask is not None:
-			mask = np.logical_and(mask, colour_mask)
-		else:
-			mask = colour_mask
-	mask = mask.astype(np.uint8)
+# C:\Users\liamc\PycharmProjects\continuous-outline\helpers\edge_detect\SLIC_Alg_Overview
 
-	if options.mask_retain_inner_transparencies:
-		if options.mask_retain_inner_erosion > 0:
-			erosion_ksize = 2*((options.mask_retain_inner_erosion - 1)//2) + 1
-			erode_kernel = np.ones((erosion_ksize, erosion_ksize), np.uint8)
-			eroded_edges = cv2.erode(mask, erode_kernel, iterations=1)*255
-			all_contours, _ = cv2.findContours(eroded_edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-		else:
-			all_contours, _ = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-
-		parent_inkex.msg("num mask contours: " + str(len(all_contours)))
-	else:
-		#Blur n rebinarize n find edges
-		mask_blurred = cv2.GaussianBlur(mask, (9,9), 8)
-		_, edges_binary = cv2.threshold(mask_blurred, 10, 1, cv2.THRESH_BINARY)
-		erode_kernel = np.ones((5, 5), np.uint8)
-		eroded_edges = cv2.erode(edges_binary, erode_kernel, iterations=1)*255
-		fill_contours, _ = cv2.findContours(eroded_edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-		filled_mask = eroded_edges.copy()
-		# Fill contours (holes)
-		# for cnt in fill_contours:
-		cv2.drawContours(filled_mask, fill_contours, -1, (255,255,255), thickness=cv2.FILLED)  # -1 fills the contour
-		blank = np.zeros(img_unchanged.shape, dtype=np.uint8)
-		edges = mark_boundaries(blank, filled_mask, color=tuple([255 for d in range(img_unchanged.shape[2])]),
-								mode='outer').astype(np.uint8)[:,:,0]
-
-
-
-		# _, edges_binary = cv2.threshold(edges, 127, 1, cv2.THRESH_BINARY)
-		# edges_bool = edges_binary.astype(bool)
-
-		#Set final contours contours on blank coded for reference
-		all_contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-	start = time.time_ns()
-	#Check length for removal
-	final_contours_with_len = []
-	for contour in all_contours:
-		points = contour.reshape(-1, 2)
-		diffs = np.diff(points, axis=0)
-		distances = np.linalg.norm(diffs, axis=1)
-		total_length = np.sum(distances)
-		if total_length >= options.outer_contour_length_cutoff*svg_image_with_path['img_dpi']:
-			final_contours_with_len.append({"contour":contour, "length":total_length})
-
-	final_contours = [c['contour'] for c in sorted(final_contours_with_len,
-												   key = lambda contour: contour['length'], reverse=True)]
-
-	complicated_background = len(final_contours) > 4
-
-
-	end = time.time_ns()
-	parent_inkex.msg("TIMING: " + str((end - start) / 1e6) + " ms to remove too short outer contours")
-
-	#Scale up to matte and offset final contours by prescribed offset amount
-	max_dpi = overall_images_dims_offsets['max_dpi']
-	scale = max_dpi/svg_image_with_path['img_dpi']
-	x_cv_crop_box_offset, y_cv_crop_box_offset = (int(round(max_dpi*svg_image_with_path['x_crop_box_offset'],0)),
-												  int(round(max_dpi*svg_image_with_path['y_crop_box_offset'],0)))
-	for contour in final_contours:
-		contour[:, :, 0] = np.round(scale*contour[:, :, 0]).astype(np.int32) + x_cv_crop_box_offset
-		contour[:, :, 1] = np.round(scale*contour[:, :, 1]).astype(np.int32) + y_cv_crop_box_offset
-		parent_inkex.msg(f"Max contour  x: {np.max(contour[:, :, 0])} y: {np.max(contour[:, :, 1])} for dpi {svg_image_with_path['img_dpi']}")
-
-	parent_inkex.msg(f"{len(final_contours)} final contours")
-
-	sub_in_contours = []
-	if options.mask_retain_inner_transparencies and len(final_contours) > 1:
-		#Switch smaller outers to inners
-		sub_in_contours = final_contours[1:]
-		final_contours = [final_contours[0]]
-
-	return final_contours,sub_in_contours,  mask, complicated_background
-
-#C:\Users\liamc\PycharmProjects\continuous-outline\helpers\edge_detect\SLIC_Alg_Overview
-
-#TODO: Debug function without crop box
+# TODO: Debug function without crop box
 
 def slic_image_boundary_edges(parent_inkex, options, im_float, mask, overall_images_dims_offsets, svg_image_with_path,
-							  num_segments:int =2, enforce_connectivity:bool = True):
-	if options.cuda_slic:
-		from cuda_slic.slic import slic
-	else:
-		from skimage.segmentation import slic
-	import helpers.post_proc.smooth_path as smooth
-	segments = None
-	num_segs_actual = -1
-	start = time.time_ns()
-	time_pre_updates = 0
-	im_downscaled, downscale_ratio = try_downsample_and_smooth(parent_inkex, im_float, options)
-	is_multichannel = im_downscaled.ndim > 2 and im_downscaled.shape[2] > 1
-	for num_segs in range(num_segments, num_segments+20):
-		if parent_inkex is not None: parent_inkex.msg("Trying " + str(num_segs) + " segments")
-		if options.cuda_slic:
-			segments_trial, time_pre_updates = slic(im_downscaled, max_iter=20, compactness=5, convert2lab=options.slic_lab,
-													n_segments=num_segs, enforce_connectivity=enforce_connectivity,
-													multichannel=is_multichannel)
-		else:
-			segments_trial, time_pre_updates = slic(im_downscaled,max_num_iter=20, compactness=5,
-													convert2lab=options.slic_lab, n_segments=num_segs,
-													sigma=5, enforce_connectivity=enforce_connectivity,
-													channel_axis=-1 if is_multichannel else None)
-		if np.max(segments_trial) > 1:
-			segments = segments_trial
-			num_segs_actual = num_segs
-			break
-	if segments is None: raise Exception("Segmentation failed, image too disparate for outlining")
-	end = time.time_ns()
-	if parent_inkex is not None: parent_inkex.msg(str((end - start)/1e6) + " ms to segment image with " + str(num_segs_actual) + " segments")
+                              num_segments: int = 2, enforce_connectivity: bool = True):
+    """
+    Segment an image into its contours using SLIC algorithm.
 
-	if parent_inkex is not None: parent_inkex.msg(str(time_pre_updates) + " ms to do pre-cython prep of image slic")
+    Args:
+        parent_inkex: The parent inkex object for logging
+        options: Options for the SLIC algorithm
+        im_float: The image to segment
+        mask: The mask to constrain the SLIC algorithm
+        overall_images_dims_offsets: A dictionary of overall images dimensions and offsets
+        svg_image_with_path: A dictionary of the svg image with its path
+        num_segments: The number of segments to try
+        enforce_connectivity: Whether to enforce connectivity of the segments
 
+    Returns:
+        contours: A list of contours found in the image
+        segments: The segmented image
+        num_segs_actual: The actual number of segments found
+    """
+    if options.cuda_slic:
+        from cuda_slic.slic import slic
+    else:
+        from skimage.segmentation import slic
+    import helpers.post_proc.smooth_path as smooth
+    segments = None
+    num_segs_actual = -1
+    start = time.time_ns()
+    time_pre_updates = 0
+    im_downscaled, downscale_ratio = try_downsample_and_smooth(parent_inkex, im_float, options)
+    is_multichannel = im_downscaled.ndim > 2 and im_downscaled.shape[2] > 1
+    for num_segs in range(num_segments, num_segments + 20):
+        if parent_inkex is not None: parent_inkex.msg("Trying " + str(num_segs) + " segments")
+        if options.cuda_slic:
+            segments_trial, time_pre_updates = slic(im_downscaled, max_iter=20, compactness=5,
+                                                    convert2lab=options.slic_lab,
+                                                    n_segments=num_segs, enforce_connectivity=enforce_connectivity,
+                                                    multichannel=is_multichannel)
+        else:
+            segments_trial, time_pre_updates = slic(im_downscaled, max_num_iter=20, compactness=5,
+                                                    convert2lab=options.slic_lab, n_segments=num_segs,
+                                                    sigma=5, enforce_connectivity=enforce_connectivity,
+                                                    channel_axis=-1 if is_multichannel else None)
+        if np.max(segments_trial) > 1:
+            segments = segments_trial
+            num_segs_actual = num_segs
+            break
+    if segments is None: raise Exception("Segmentation failed, image too disparate for outlining")
+    end = time.time_ns()
+    if parent_inkex is not None: parent_inkex.msg(
+        str((end - start) / 1e6) + " ms to segment image with " + str(num_segs_actual) + " segments")
 
-	if mask is not None and options.constrain_slic_within_mask:
-		#Blank outside of mask
-		downsampled_mask, _ = try_downsample_mask(parent_inkex, mask, options)
-		parent_inkex.msg(f"downsampled mask max: {downsampled_mask.max()} min: {downsampled_mask.min()}")
-		segments[~downsampled_mask] = 0
+    if parent_inkex is not None: parent_inkex.msg(str(time_pre_updates) + " ms to do pre-cython prep of image slic")
 
-	#Determine contours
-	start = time.time_ns()
-	contours = []
-	#NOTE: Should have already thrown exception if downscale_ratio <= 0
-	upscale_ratio = (1.0/downscale_ratio)*(overall_images_dims_offsets['max_dpi']/svg_image_with_path['img_dpi'])
-	for segment_val in range(1, np.max(segments)+1):
-		finder = np.where(segments == segment_val, 255, 0).astype(np.uint8)
-		partial_contours, _ = cv2.findContours(finder, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-		partial_contours_scaled = try_upscale_contours(parent_inkex, partial_contours, upscale_ratio)
-		if options.slic_snap_edges:
-			partial_contours_scaled = try_edge_snap(parent_inkex, im_float, partial_contours, downscale_ratio, options)
-		contours.extend(partial_contours_scaled)
+    if mask is not None and options.constrain_slic_within_mask:
+        # Blank outside of mask
+        downsampled_mask, _ = try_downsample_mask(parent_inkex, mask, options)
+        parent_inkex.msg(f"downsampled mask max: {downsampled_mask.max()} min: {downsampled_mask.min()}")
+        segments[~downsampled_mask] = 0
 
-	#Check length for removal
-	final_contours_with_len = []
-	for contour in contours:
-		points = contour.reshape(-1, 2)
-		diffs = np.diff(points, axis=0)
-		distances = np.linalg.norm(diffs, axis=1)
-		total_length = np.sum(distances)
-		#NOTE: Scale by max_dpi since contours already scaled up to max
-		if total_length >= options.inner_contour_length_cutoff*overall_images_dims_offsets['max_dpi']:
-			final_contours_with_len.append({"contour":contour, "length":total_length})
+    # Determine contours
+    start = time.time_ns()
+    contours = []
+    # NOTE: Should have already thrown exception if downscale_ratio <= 0
+    upscale_ratio = (1.0 / downscale_ratio) * (overall_images_dims_offsets['max_dpi'] / svg_image_with_path['img_dpi'])
+    for segment_val in range(1, np.max(segments) + 1):
+        finder = np.where(segments == segment_val, 255, 0).astype(np.uint8)
+        partial_contours, _ = cv2.findContours(finder, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        partial_contours_scaled = try_upscale_contours(parent_inkex, partial_contours, upscale_ratio)
+        if options.slic_snap_edges:
+            partial_contours_scaled = try_edge_snap(parent_inkex, im_float, partial_contours, downscale_ratio, options)
+        contours.extend(partial_contours_scaled)
 
-	final_contours = [c['contour'] for c in sorted(final_contours_with_len,
-												   key = lambda contour: contour['length'], reverse=True)]
+    # Check length for removal
+    final_contours_with_len = []
+    for contour in contours:
+        points = contour.reshape(-1, 2)
+        diffs = np.diff(points, axis=0)
+        distances = np.linalg.norm(diffs, axis=1)
+        total_length = np.sum(distances)
+        # NOTE: Scale by max_dpi since contours already scaled up to max
+        if total_length >= options.inner_contour_length_cutoff * overall_images_dims_offsets['max_dpi']:
+            final_contours_with_len.append({"contour": contour, "length": total_length})
 
-	#Offset final contours by prescribed offset amount
-	max_dpi = overall_images_dims_offsets['max_dpi']
-	x_cv_crop_box_offset, y_cv_crop_box_offset = (int(round(max_dpi*svg_image_with_path['x_crop_box_offset'],0)),
-												  int(round(max_dpi*svg_image_with_path['y_crop_box_offset'],0)))
-	for contour in final_contours:
-		contour[:, :, 0] += x_cv_crop_box_offset
-		contour[:, :, 1] += y_cv_crop_box_offset
+    final_contours = [c['contour'] for c in sorted(final_contours_with_len,
+                                                   key=lambda contour: contour['length'], reverse=True)]
 
-	return final_contours, segments, num_segs_actual
+    # Offset final contours by prescribed offset amount
+    max_dpi = overall_images_dims_offsets['max_dpi']
+    x_cv_crop_box_offset, y_cv_crop_box_offset = (int(round(max_dpi * svg_image_with_path['x_crop_box_offset'], 0)),
+                                                  int(round(max_dpi * svg_image_with_path['y_crop_box_offset'], 0)))
+    for contour in final_contours:
+        contour[:, :, 0] += x_cv_crop_box_offset
+        contour[:, :, 1] += y_cv_crop_box_offset
+
+    return final_contours, segments, num_segs_actual
+
 
 def split_contour_on_inflection_apex(contour):
-	if len(contour) <= 2:
-		return [contour]  # Need at least 2 points for differences
+    """Split a contour at points of maximum curvature (inflection points).
 
-	#Check if contour is closed
-	closed = np.linalg.norm(contour[0,:,:] - contour[-1,:,:]) < 20
+    Args:
+        contour: Input contour as numpy array
 
-	#Determine normalized gradients
-	next_points = np.roll(contour, -1, axis=0)  # Shift points to get next points
-	gradients = next_points - contour
-	mags = np.linalg.norm(gradients, axis=2, keepdims=True)
-	grad_norm = np.where(mags == 0, gradients, gradients / mags)
+    Returns:
+        List of split contours
+    """
+    if len(contour) <= 2:
+        return [contour]  # Need at least 2 points for differences
 
-	#Find instances of turnaround
-	roll_fwd, roll_back = np.roll(grad_norm, 1, axis=0), np.roll(grad_norm, -1, axis=0)
-	apex_negation = np.linalg.norm(roll_back + grad_norm, axis=2)
-	bridge_negation = np.linalg.norm(roll_fwd + roll_back, axis=2)
-	turnarounds = np.where(np.logical_or(apex_negation < 0.5, bridge_negation < 0.5))[0]
-	apex_indices = turnarounds
+    # Check if contour is closed
+    closed = np.linalg.norm(contour[0, :, :] - contour[-1, :, :]) < 20
 
-	#
-	#
-	# #Convolve with 1 wide kernel to find bridge loop points
-	# kernel_11 = np.ones(11)
-	# if closed:
-	#     #Pad for wrapping around
-	#     padded_grads = np.vstack((gradients[-5:,:], gradients, gradients[:5,:]))
-	#     summed_bridge_x = np.convolve(padded_grads[:,0,0], kernel_11, mode='valid')
-	#     summed_bridge_y = np.convolve(padded_grads[:,0,1], kernel_11, mode='valid')
-	# else:
-	#     summed_bridge_x = np.convolve(gradients[:,0,0], kernel_11, mode='same')
-	#     summed_bridge_y = np.convolve(gradients[:,0,1], kernel_11, mode='same')
-	#
-	# #Add 12th point for apex loop points
-	# grads_12th = np.roll(gradients, -6, axis=0)
-	# summed_apex_x = summed_bridge_x + grads_12th[:,0,0]
-	# summed_apex_y = summed_bridge_y + grads_12th[:,0,1]
-	#
-	# #Find points where path converges on itself
-	# bridge_points = np.logical_and(summed_bridge_x == 0, summed_bridge_y == 0)
-	# apex_points = np.logical_and(summed_apex_x == 0, summed_apex_y == 0)
-	# apex_indices = np.where(np.logical_or(bridge_points, apex_points))[0]
-	# if apex_indices.size == 0:
-	#     return [contour]
+    # Determine normalized gradients
+    next_points = np.roll(contour, -1, axis=0)  # Shift points to get next points
+    gradients = next_points - contour
+    mags = np.linalg.norm(gradients, axis=2, keepdims=True)
+    grad_norm = np.where(mags == 0, gradients, gradients / mags)
 
-	# mags = np.linalg.norm(gradients, axis=2, keepdims=True)
-	# grad_norm = np.where(mags == 0, gradients, gradients / mags)
-	#
-	# #Determine laplacians and inflection points (sign changes)
-	# laplacians = np.roll(grad_norm, -1, axis=0) - grad_norm
-	# inflection_points = np.sum(np.roll(laplacians, -1, axis=0)*laplacians, axis=2)[:,0] < 0
-	# sharp_turns = np.linalg.norm(laplacians, axis=2)[:,0] >= 2
-	#
-	# #Find likely apexes and split on them
-	# apex_indices = np.where(np.logical_and(inflection_points, sharp_turns))[0]
-	final_contours = []
-	for i in range(len(apex_indices)):
-		if closed:
-			i_nx = (i + 1) % len(apex_indices)
-			if apex_indices[i_nx] > apex_indices[i] and apex_indices[i_nx] - apex_indices[i] > 0 :
-				final_contours.append(contour[apex_indices[i]:apex_indices[i_nx] + 1])
-			else:
-				#Loop around
-				split_contour = np.vstack((contour[apex_indices[i]:], contour[:apex_indices[i_nx] + 1]))
-				if len(split_contour) > 1:
-					final_contours.append(split_contour)
-		else:
-			if i >= len(apex_indices) - 1 or apex_indices[i] < 1 or apex_indices[i] >= len(contour) - 1:
-				continue #Ignore last point since not wrapping around
-			i_nx = i + 1
-			if apex_indices[i_nx] - apex_indices[i] > 0:
-				final_contours.append(contour[apex_indices[i]:apex_indices[i_nx] + 1])
+    # Find instances of turnaround
+    roll_fwd, roll_back = np.roll(grad_norm, 1, axis=0), np.roll(grad_norm, -1, axis=0)
+    apex_negation = np.linalg.norm(roll_back + grad_norm, axis=2)
+    bridge_negation = np.linalg.norm(roll_fwd + roll_back, axis=2)
+    turnarounds = np.where(np.logical_or(apex_negation < 0.5, bridge_negation < 0.5))[0]
+    apex_indices = turnarounds
 
-	return final_contours
+    #
+    #
+    # #Convolve with 1 wide kernel to find bridge loop points
+    # kernel_11 = np.ones(11)
+    # if closed:
+    #     #Pad for wrapping around
+    #     padded_grads = np.vstack((gradients[-5:,:], gradients, gradients[:5,:]))
+    #     summed_bridge_x = np.convolve(padded_grads[:,0,0], kernel_11, mode='valid')
+    #     summed_bridge_y = np.convolve(padded_grads[:,0,1], kernel_11, mode='valid')
+    # else:
+    #     summed_bridge_x = np.convolve(gradients[:,0,0], kernel_11, mode='same')
+    #     summed_bridge_y = np.convolve(gradients[:,0,1], kernel_11, mode='same')
+    #
+    # #Add 12th point for apex loop points
+    # grads_12th = np.roll(gradients, -6, axis=0)
+    # summed_apex_x = summed_bridge_x + grads_12th[:,0,0]
+    # summed_apex_y = summed_bridge_y + grads_12th[:,0,1]
+    #
+    # #Find points where path converges on itself
+    # bridge_points = np.logical_and(summed_bridge_x == 0, summed_bridge_y == 0)
+    # apex_points = np.logical_and(summed_apex_x == 0, summed_apex_y == 0)
+    # apex_indices = np.where(np.logical_or(bridge_points, apex_points))[0]
+    # if apex_indices.size == 0:
+    #     return [contour]
+
+    # mags = np.linalg.norm(gradients, axis=2, keepdims=True)
+    # grad_norm = np.where(mags == 0, gradients, gradients / mags)
+    #
+    # #Determine laplacians and inflection points (sign changes)
+    # laplacians = np.roll(grad_norm, -1, axis=0) - grad_norm
+    # inflection_points = np.sum(np.roll(laplacians, -1, axis=0)*laplacians, axis=2)[:,0] < 0
+    # sharp_turns = np.linalg.norm(laplacians, axis=2)[:,0] >= 2
+    #
+    # #Find likely apexes and split on them
+    # apex_indices = np.where(np.logical_and(inflection_points, sharp_turns))[0]
+    final_contours = []
+    for i in range(len(apex_indices)):
+        if closed:
+            i_nx = (i + 1) % len(apex_indices)
+            if apex_indices[i_nx] > apex_indices[i] and apex_indices[i_nx] - apex_indices[i] > 0:
+                final_contours.append(contour[apex_indices[i]:apex_indices[i_nx] + 1])
+            else:
+                # Loop around
+                split_contour = np.vstack((contour[apex_indices[i]:], contour[:apex_indices[i_nx] + 1]))
+                if len(split_contour) > 1:
+                    final_contours.append(split_contour)
+        else:
+            if i >= len(apex_indices) - 1 or apex_indices[i] < 1 or apex_indices[i] >= len(contour) - 1:
+                continue  # Ignore last point since not wrapping around
+            i_nx = i + 1
+            if apex_indices[i_nx] - apex_indices[i] > 0:
+                final_contours.append(contour[apex_indices[i]:apex_indices[i_nx] + 1])
+
+    return final_contours
+
 
 def canny_image_boundary_edges(options, img_unchanged, overall_images_dims_offsets, svg_image_with_path):
-	"""
-	Opens an image file using OpenCV, finds contours, and returns them.
+    """
+    Opens an image file using OpenCV, finds contours, and returns them.
 
-	Args:
-		image_path: The path to the image file.
+    Args:
+        image_path: The path to the image file.
 
-	Returns:
-		A list of contours found in the image, or None if an error occurs.
-	"""
+    Returns:
+        A list of contours found in the image, or None if an error occurs.
+    """
 
-	# Convert to grayscale
-	gray = cv2.cvtColor(img_unchanged, cv2.COLOR_BGR2GRAY)
-	if img_unchanged.shape[2] == 4:  # Check if it has an alpha channel
-		gray[img_unchanged[:,:,3] == 0] = 0
-	if options.canny_quantize_bins > 0:
-		min_grade, max_grade = np.min(gray), np.max(gray)
-		downscale = int(round((max_grade - min_grade) / options.canny_quantize_bins, 0))
-		gray -= min_grade
-		gray = downscale*(gray//downscale)
+    # Convert to grayscale
+    gray = cv2.cvtColor(img_unchanged, cv2.COLOR_BGR2GRAY)
+    if img_unchanged.shape[2] == 4:  # Check if it has an alpha channel
+        gray[img_unchanged[:, :, 3] == 0] = 0
+    if options.canny_quantize_bins > 0:
+        min_grade, max_grade = np.min(gray), np.max(gray)
+        downscale = int(round((max_grade - min_grade) / options.canny_quantize_bins, 0))
+        gray -= min_grade
+        gray = downscale * (gray // downscale)
 
-	# # Apply thresholding (you might need to adjust the threshold value)
-	# _, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
-	edges = cv2.Canny(gray, 100, 200)
-	# Find contours
-	contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-	#NOTE: Mult by 2 since all contours dobule back on themselves
-	contours = [c for c in contours if len(c) >= 2*options.canny_min_contour_length]
+    # # Apply thresholding (you might need to adjust the threshold value)
+    # _, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+    edges = cv2.Canny(gray, 100, 200)
+    # Find contours
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # NOTE: Mult by 2 since all contours dobule back on themselves
+    contours = [c for c in contours if len(c) >= 2 * options.canny_min_contour_length]
 
-	# Offset final contours by prescribed offset amount
-	max_dpi = overall_images_dims_offsets['max_dpi']
-	x_cv_crop_box_offset, y_cv_crop_box_offset = (
-	int(round(max_dpi * svg_image_with_path['x_crop_box_offset'], 0)),
-	int(round(max_dpi * svg_image_with_path['y_crop_box_offset'], 0)))
-	for contour in contours:
-		contour[:, :, 0] += x_cv_crop_box_offset
-		contour[:, :, 1] += y_cv_crop_box_offset
-	# for c in contours:
-	# 	contour = c[:,0,:]
-	# 	hull = cv2.convexHull(contour)
-	# 	area = cv2.contourArea(hull)
-	# 	perimeter = cv2.arcLength(hull, True)
-	# 	if area/perimeter > 10:
-	# 		final_contours.append(c)
+    # Offset final contours by prescribed offset amount
+    max_dpi = overall_images_dims_offsets['max_dpi']
+    x_cv_crop_box_offset, y_cv_crop_box_offset = (
+        int(round(max_dpi * svg_image_with_path['x_crop_box_offset'], 0)),
+        int(round(max_dpi * svg_image_with_path['y_crop_box_offset'], 0)))
+    for contour in contours:
+        contour[:, :, 0] += x_cv_crop_box_offset
+        contour[:, :, 1] += y_cv_crop_box_offset
+    # for c in contours:
+    # 	contour = c[:,0,:]
+    # 	hull = cv2.convexHull(contour)
+    # 	area = cv2.contourArea(hull)
+    # 	perimeter = cv2.arcLength(hull, True)
+    # 	if area/perimeter > 10:
+    # 		final_contours.append(c)
 
-	#SPlit contours so not doing weird loopdy loops inside sections
-	split_contours = []
-	for c in contours:
-		split_contours.extend(split_contour_on_inflection_apex(c))
+    # SPlit contours so not doing weird loopdy loops inside sections
+    split_contours = []
+    for c in contours:
+        split_contours.extend(split_contour_on_inflection_apex(c))
 
-	return contours, split_contours
+    return contours, split_contours
+
 
 def straight_contour_image(options, img_unchanged, overall_images_dims_offsets, svg_image_with_path):
-	"""
-		Opens an image file using OpenCV, finds contours, and returns them.
+    """
+        Opens an image file using OpenCV, finds contours, and returns them.
 
-		Args:
-			image_path: The path to the image file.
+        Args:
+            image_path: The path to the image file.
 
-		Returns:
-			A list of contours found in the image, or None if an error occurs.
-		"""
+        Returns:
+            A list of contours found in the image, or None if an error occurs.
+        """
 
-	# Convert to grayscale
-	gray = cv2.cvtColor(img_unchanged, cv2.COLOR_BGR2GRAY)
-	if img_unchanged.shape[2] == 4:  # Check if it has an alpha channel
-		gray[img_unchanged[:, :, 3] == 0] = 0
+    # Convert to grayscale
+    gray = cv2.cvtColor(img_unchanged, cv2.COLOR_BGR2GRAY)
+    if img_unchanged.shape[2] == 4:  # Check if it has an alpha channel
+        gray[img_unchanged[:, :, 3] == 0] = 0
 
-	# Find contours
-	contours, _ = cv2.findContours(gray, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-	# NOTE: Mult by 2 since all contours dobule back on themselves
-	contours = [c for c in contours if len(c) >= 2 * options.canny_min_contour_length]
+    # Find contours
+    contours, _ = cv2.findContours(gray, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    # NOTE: Mult by 2 since all contours dobule back on themselves
+    contours = [c for c in contours if len(c) >= 2 * options.canny_min_contour_length]
 
-	# Offset final contours by prescribed offset amount
-	max_dpi = overall_images_dims_offsets['max_dpi']
-	x_cv_crop_box_offset, y_cv_crop_box_offset = (
-		int(round(max_dpi * svg_image_with_path['x_crop_box_offset'], 0)),
-		int(round(max_dpi * svg_image_with_path['y_crop_box_offset'], 0)))
-	for contour in contours:
-		contour[:, :, 0] += x_cv_crop_box_offset
-		contour[:, :, 1] += y_cv_crop_box_offset
-	# for c in contours:
-	# 	contour = c[:,0,:]
-	# 	hull = cv2.convexHull(contour)
-	# 	area = cv2.contourArea(hull)
-	# 	perimeter = cv2.arcLength(hull, True)
-	# 	if area/perimeter > 10:
-	# 		final_contours.append(c)
+    # Offset final contours by prescribed offset amount
+    max_dpi = overall_images_dims_offsets['max_dpi']
+    x_cv_crop_box_offset, y_cv_crop_box_offset = (
+        int(round(max_dpi * svg_image_with_path['x_crop_box_offset'], 0)),
+        int(round(max_dpi * svg_image_with_path['y_crop_box_offset'], 0)))
+    for contour in contours:
+        contour[:, :, 0] += x_cv_crop_box_offset
+        contour[:, :, 1] += y_cv_crop_box_offset
+    # for c in contours:
+    # 	contour = c[:,0,:]
+    # 	hull = cv2.convexHull(contour)
+    # 	area = cv2.contourArea(hull)
+    # 	perimeter = cv2.arcLength(hull, True)
+    # 	if area/perimeter > 10:
+    # 		final_contours.append(c)
 
-	# SPlit contours so not doing weird loopdy loops inside sections
-	split_contours = []
-	for c in contours:
-		split_contours.extend(split_contour_on_inflection_apex(c))
+    # SPlit contours so not doing weird loopdy loops inside sections
+    split_contours = []
+    for c in contours:
+        split_contours.extend(split_contour_on_inflection_apex(c))
 
-	return contours, split_contours
+    return contours, split_contours
+
 
 def remove_perimeter_ghosting(inkex_parent, max_path_len, points_list):
-	"""
-	Eliminates points where x or y is 0 or 1023 from a NumPy array.
+    """
+    Eliminates points where x or y is 0 or 1023 from a NumPy array.
 
-	Args:
-		points_array: A 2D NumPy array of (y, x) points.
+    Args:
+        points_array: A 2D NumPy array of (y, x) points.
 
-	Returns:
-		A new NumPy array containing the filtered points.
-	"""
-	# points_array = np.array(points_list)
-	# y_coords = points_array[:, 0]
-	# x_coords = points_array[:, 1]
-	#
-	# # Create boolean masks
-	# y_mask = np.logical_and(y_coords != 0, y_coords != max_y)
-	# x_mask = np.logical_and(x_coords != 0, x_coords != max_x)
-	#
-	# # Combine masks
-	# combined_mask = np.logical_and(y_mask, x_mask)
-	#
-	# # Apply the mask
-	# filtered_points = points_array[combined_mask]
+    Returns:
+        A new NumPy array containing the filtered points.
+    """
+    # points_array = np.array(points_list)
+    # y_coords = points_array[:, 0]
+    # x_coords = points_array[:, 1]
+    #
+    # # Create boolean masks
+    # y_mask = np.logical_and(y_coords != 0, y_coords != max_y)
+    # x_mask = np.logical_and(x_coords != 0, x_coords != max_x)
+    #
+    # # Combine masks
+    # combined_mask = np.logical_and(y_mask, x_mask)
+    #
+    # # Apply the mask
+    # filtered_points = points_array[combined_mask]
 
-	points_array = np.array(points_list)
+    points_array = np.array(points_list)
 
-	#Check for long flat stretches, may be ghosting
-	#Pad with first point so distance array shape conforms
-	diffs = np.abs(np.diff(np.vstack((points_array, points_array[0])), axis=0))
-	# Calculate the Manhattan distances and ratio
-	# inkex_parent.msg((1 + diffs[:, 0]) / (1 + diffs[:, 1]))
+    # Check for long flat stretches, may be ghosting
+    # Pad with first point so distance array shape conforms
+    diffs = np.abs(np.diff(np.vstack((points_array, points_array[0])), axis=0))
+    # Calculate the Manhattan distances and ratio
+    # inkex_parent.msg((1 + diffs[:, 0]) / (1 + diffs[:, 1]))
 
-	distances = np.maximum((1 + diffs[:,0])/(1 + diffs[:,1]), (1 + diffs[:,1])/(1 + diffs[:,0]))
-	valid_distances_mask = distances <= max_path_len
-	#If just last one fails, assume unclosed negate
-	# if not valid_distances_mask[-1] and valid_distances_mask[-2]: valid_distances_mask[-1] = True
+    distances = np.maximum((1 + diffs[:, 0]) / (1 + diffs[:, 1]), (1 + diffs[:, 1]) / (1 + diffs[:, 0]))
+    valid_distances_mask = distances <= max_path_len
+    # If just last one fails, assume unclosed negate
+    # if not valid_distances_mask[-1] and valid_distances_mask[-2]: valid_distances_mask[-1] = True
 
-	#Find splits in contour, pad with last diff if not closed contour
-	false_indices = np.where(valid_distances_mask == False)[0]
-	if len(false_indices) == 0: return [points_array]
-	if (np.linalg.norm(diffs[-1]) > max_path_len and
-			(len(false_indices) == 0 or false_indices[-1] != len(points_array) - 1)):
-		false_indices = np.append(false_indices, len(points_array) - 1)
+    # Find splits in contour, pad with last diff if not closed contour
+    false_indices = np.where(valid_distances_mask == False)[0]
+    if len(false_indices) == 0: return [points_array]
+    if (np.linalg.norm(diffs[-1]) > max_path_len and
+            (len(false_indices) == 0 or false_indices[-1] != len(points_array) - 1)):
+        false_indices = np.append(false_indices, len(points_array) - 1)
 
-	if not false_indices.size:
-		return [points_list]  # No False values found
+    if not false_indices.size:
+        return [points_list]  # No False values found
 
-	# Determine diffs, length of removal spans
-	index_diffs = np.diff(false_indices)
-	end_indices = np.hstack((np.where(index_diffs != 1)[0], len(false_indices) - 1))
-	end_indices_diffs = np.hstack((0, np.diff(end_indices) - 1))
-	start_indices = end_indices - end_indices_diffs
-	remove_start, remove_end = false_indices[start_indices], false_indices[end_indices]
+    # Determine diffs, length of removal spans
+    index_diffs = np.diff(false_indices)
+    end_indices = np.hstack((np.where(index_diffs != 1)[0], len(false_indices) - 1))
+    end_indices_diffs = np.hstack((0, np.diff(end_indices) - 1))
+    start_indices = end_indices - end_indices_diffs
+    remove_start, remove_end = false_indices[start_indices], false_indices[end_indices]
 
-	# Split in requisite points
-	segments = []
-	for i in range(len(remove_start)):
-		seg_start, seg_end = (remove_end[(i - 1) % len(remove_end)] + 1) % len(points_array), remove_start[i]
-		if seg_end == len(points_array) - 1: seg_end -= 1
-		if seg_end - seg_start > 0:
-			segments.append(points_array[seg_start:seg_end + 1])
-		elif seg_end < seg_start:
-			segments.append(np.vstack((points_array[seg_start:], points_array[:seg_end + 1])))
+    # Split in requisite points
+    segments = []
+    for i in range(len(remove_start)):
+        seg_start, seg_end = (remove_end[(i - 1) % len(remove_end)] + 1) % len(points_array), remove_start[i]
+        if seg_end == len(points_array) - 1: seg_end -= 1
+        if seg_end - seg_start > 0:
+            segments.append(points_array[seg_start:seg_end + 1])
+        elif seg_end < seg_start:
+            segments.append(np.vstack((points_array[seg_start:], points_array[:seg_end + 1])))
 
-	inkex_parent.msg(f"remove starts: {remove_start} remove ends: {remove_end} false indices: {false_indices} points: {points_array[false_indices]} segments: {len(segments)}")
-	return segments
+    inkex_parent.msg(
+        f"remove starts: {remove_start} remove ends: {remove_end} false indices: {false_indices} points: {points_array[false_indices]} segments: {len(segments)}")
+    return segments
 
 
 def is_contour_near_segment_boundary(contour: np.ndarray, segments: np.ndarray, tolerance: int = 10,
-									 min_nodes_prox_pct = 0.1, min_nodes_in_row = 5) -> bool:
-	"""
-	Checks if a contour is near a segment boundary in a segmented image.
+                                     min_nodes_prox_pct=0.1, min_nodes_in_row=5) -> bool:
+    """
+    Checks if a contour is near a segment boundary in a segmented image.
 
-	Args:
-		contour: A NumPy array of shape (N, 1, 2) representing the contour points.
-		segments: A NumPy array representing the segmented image (e.g., from slic).
-		tolerance: The maximum distance (in pixels) for a contour point to be
-				   considered near a boundary.
+    Args:
+        contour: A NumPy array of shape (N, 1, 2) representing the contour points.
+        segments: A NumPy array representing the segmented image (e.g., from slic).
+        tolerance: The maximum distance (in pixels) for a contour point to be
+                   considered near a boundary.
 
-	Returns:
-		True if the contour is near a boundary, False otherwise.
-	"""
-	nodes_prox, nodes_tot = 0, len(contour.reshape(-1, 2))
-	node_run_length, nodes_row_hit = 0, False
-	for point in contour.reshape(-1, 2):  # Iterate through the contour points
-		x, y = point
-		x = int(x)  # Ensure that x and y are ints to index the segment array
-		y = int(y)
-		if x < 0 or x >= segments.shape[1] or y < 0 or y >= segments.shape[0]:
-			continue  # Check that the point is within the segment array bounds
+    Returns:
+        True if the contour is near a boundary, False otherwise.
+    """
+    nodes_prox, nodes_tot = 0, len(contour.reshape(-1, 2))
+    node_run_length, nodes_row_hit = 0, False
+    for point in contour.reshape(-1, 2):  # Iterate through the contour points
+        x, y = point
+        x = int(x)  # Ensure that x and y are ints to index the segment array
+        y = int(y)
+        if x < 0 or x >= segments.shape[1] or y < 0 or y >= segments.shape[0]:
+            continue  # Check that the point is within the segment array bounds
 
-		seg_min, seg_max = 9999, -1
+        seg_min, seg_max = 9999, -1
 
-		#search in grid centered around point
-		x_min, x_max = x - tolerance, x + tolerance
-		if x_min < 0: x_min = 0
-		if x_max >= segments.shape[1]: x_max = segments.shape[1] - 1
-		y_min, y_max = y - tolerance, y + tolerance
-		if y_min < 0: y_min = 0
-		if y_max >= segments.shape[0]: y_max = segments.shape[0] - 1
-		#Find min and max segment values
-		for nx in range(x_min, x_max + 1):
-			for ny in range(y_min, y_max + 1):
-				cur_seg = segments[ny, nx]
-				if cur_seg < seg_min: seg_min = cur_seg
-				if cur_seg > seg_max: seg_max = cur_seg
+        # search in grid centered around point
+        x_min, x_max = x - tolerance, x + tolerance
+        if x_min < 0: x_min = 0
+        if x_max >= segments.shape[1]: x_max = segments.shape[1] - 1
+        y_min, y_max = y - tolerance, y + tolerance
+        if y_min < 0: y_min = 0
+        if y_max >= segments.shape[0]: y_max = segments.shape[0] - 1
+        # Find min and max segment values
+        for nx in range(x_min, x_max + 1):
+            for ny in range(y_min, y_max + 1):
+                cur_seg = segments[ny, nx]
+                if cur_seg < seg_min: seg_min = cur_seg
+                if cur_seg > seg_max: seg_max = cur_seg
 
-		#If boundary crossing found, return true
-		if seg_min != seg_max:
-			nodes_prox += 1
-			node_run_length += 1
-		else:
-			node_run_length = 0
-		if node_run_length >= min_nodes_in_row: nodes_row_hit = True
+        # If boundary crossing found, return true
+        if seg_min != seg_max:
+            nodes_prox += 1
+            node_run_length += 1
+        else:
+            node_run_length = 0
+        if node_run_length >= min_nodes_in_row: nodes_row_hit = True
 
-	return float(nodes_prox) / nodes_tot >= min_nodes_prox_pct and nodes_row_hit
+    return float(nodes_prox) / nodes_tot >= min_nodes_prox_pct and nodes_row_hit
+
 
 def find_contours_near_boundaries(contours: list[np.ndarray], segments: np.ndarray, tolerance: int = 2) -> list[
-	np.ndarray]:
-	"""Finds contours near segment boundaries in a segmented image.
+    np.ndarray]:
+    """Finds contours near segment boundaries in a segmented image.
 
-	  Args:
-		  contours: A list of NumPy arrays, where each array represents a contour.
-		  segments: A NumPy array representing the segmented image.
-		  tolerance: The maximum distance (in pixels) for a contour point to be
-					 considered near a boundary.
+      Args:
+          contours: A list of NumPy arrays, where each array represents a contour.
+          segments: A NumPy array representing the segmented image.
+          tolerance: The maximum distance (in pixels) for a contour point to be
+                     considered near a boundary.
 
-	  Returns:
-		  A list of contours that are near segment boundaries.
-	"""
+      Returns:
+          A list of contours that are near segment boundaries.
+    """
 
-	#TODO: extend this to more than 2 segment types??
-	#Maybe convolve
-	# #Determine flat averaging sum of each pixel to see if it is near a boundary
-	# yrtyrt = segments.astype(np.uint8)
-	# edges_slic = cv2.Sobel(segments.astype(np.uint8), cv2.CV_8U, 0, 0, ksize=3)
-	# test_canny = cv2.Canny(yrtyrt, 350, 400)
-	# kernel = np.ones((tolerance*2+1, tolerance*2+1), dtype=np.float32)
-	#
-	# # Perform the convolution (using 'same' padding to keep output size the same)
-	# convolved_image = scipy.signal.convolve2d(segments, kernel, mode='same', boundary='fill')
-	# segment_in_region = np.zeros((segments.shape[0], segments.shape[1]), dtype=np.uint8)
-	# for nx in range(convolved_image.shape[1]):
-	# 	for ny in range(convolved_image.shape[0]):
-	# 		window_pixels = min(nx + 1, tolerance*2+1)*min(ny + 1, tolerance*2+1)
-	# 		if convolved_image[ny, nx]%window_pixels != 0: segment_in_region[ny, nx] = 1
+    # TODO: extend this to more than 2 segment types??
+    # Maybe convolve
+    # #Determine flat averaging sum of each pixel to see if it is near a boundary
+    # yrtyrt = segments.astype(np.uint8)
+    # edges_slic = cv2.Sobel(segments.astype(np.uint8), cv2.CV_8U, 0, 0, ksize=3)
+    # test_canny = cv2.Canny(yrtyrt, 350, 400)
+    # kernel = np.ones((tolerance*2+1, tolerance*2+1), dtype=np.float32)
+    #
+    # # Perform the convolution (using 'same' padding to keep output size the same)
+    # convolved_image = scipy.signal.convolve2d(segments, kernel, mode='same', boundary='fill')
+    # segment_in_region = np.zeros((segments.shape[0], segments.shape[1]), dtype=np.uint8)
+    # for nx in range(convolved_image.shape[1]):
+    # 	for ny in range(convolved_image.shape[0]):
+    # 		window_pixels = min(nx + 1, tolerance*2+1)*min(ny + 1, tolerance*2+1)
+    # 		if convolved_image[ny, nx]%window_pixels != 0: segment_in_region[ny, nx] = 1
 
+    near_boundary_contours = []
+    for contour in contours:
+        if is_contour_near_segment_boundary(contour, segments, tolerance):
+            near_boundary_contours.append(contour)
+    return near_boundary_contours
 
-	near_boundary_contours = []
-	for contour in contours:
-		if is_contour_near_segment_boundary(contour, segments, tolerance):
-			near_boundary_contours.append(contour)
-	return near_boundary_contours
 
 def shift_contours(contours: list, shift_x: int, shift_y: int) -> list:
-	contours_shifted = []
-	for contour in contours:
-		contour_nd = np.array(contour)
-		contour_nd[:, 0] += shift_x
-		contour_nd[:, 1] += shift_y
-		contours_shifted.append(contour_nd.tolist())
-	return contours_shifted
+    contours_shifted = []
+    for contour in contours:
+        contour_nd = np.array(contour)
+        contour_nd[:, 0] += shift_x
+        contour_nd[:, 1] += shift_y
+        contours_shifted.append(contour_nd.tolist())
+    return contours_shifted
 
 # def simplify_path_rdp(points, tolerance=1.0):
 # 	"""Simplifies a path using the Ramer-Douglas-Peucker algorithm."""

@@ -1,17 +1,16 @@
-import os
-import re
 import cv2
 import numpy as np
 from collections import deque
 
-#TODO: rewrite so node based should be o(n) examine each link only 1x
-#each pixel is a node
-#cursor thru each examing all neighbours from 5pi/4 to 0 in pi/4 increments
-#if that pixel is part of glob object, add self to that glob object
-#else new glob object with both pixels
-#if wind up bridging globs, merge globs
-#keep track of size of each glob
-#at end, sort globs by size, delete globs within bounds for removal
+
+# TODO: rewrite so node based should be o(n) examine each link only 1x
+# each pixel is a node
+# cursor thru each examing all neighbours from 5pi/4 to 0 in pi/4 increments
+# if that pixel is part of glob object, add self to that glob object
+# else new glob object with both pixels
+# if wind up bridging globs, merge globs
+# keep track of size of each glob
+# at end, sort globs by size, delete globs within bounds for removal
 
 class StrayPixelRemover:
 

@@ -2,6 +2,7 @@
 from shapely.geometry import LineString, Point
 import numpy as np
 
+
 def simplify_line(coords, tolerance=1.0, preserve_topology=False):
     """
     Simplifies a line defined by a list of (y, x) tuples using Shapely.
@@ -25,7 +26,23 @@ def simplify_line(coords, tolerance=1.0, preserve_topology=False):
 
     return simplified_coords
 
+
 def intelligent_simplify_line(parent_inkex, coords, straitening_cutoff_length, test_tolerance):
+    """
+    Intelligently simplifies a line defined by a list of (y, x) tuples using Shapely.
+
+    Simplification is done by testing the line for straight sections longer than
+    `straitening_cutoff_length` and then reinserting the original points in those sections.
+    The remaining points are then tested for proximity and collapsed if necessary.
+
+    Args:
+        coords: A list of (y, x) tuples representing the line.
+        straitening_cutoff_length: The length of straight sections to look for in the line.
+        test_tolerance: The simplification tolerance (higher = more simplification).
+
+    Returns:
+        A list of (y, x) tuples representing the simplified line.
+    """
     # Shapely uses (x, y) coordinates, so we need to swap
     swapped_coords = [(x, y) for y, x in coords]
 
@@ -38,13 +55,13 @@ def intelligent_simplify_line(parent_inkex, coords, straitening_cutoff_length, t
     if len(test_simplified_coords) < 2:
         return coords
 
-    #Convert to numpy array, test for straight sections
+    # Convert to numpy array, test for straight sections
     simplified_np = np.array(test_simplified_coords)
     diffs = np.diff(simplified_np, axis=0)
     distances = np.linalg.norm(diffs, axis=1)
     long_stretch_indices = np.where(distances > straitening_cutoff_length)[0]
 
-    #Determine stretches
+    # Determine stretches
     diffs = np.diff(long_stretch_indices)
     split_indices = np.where(diffs != 1)[0] + 1  # Find where ranges break
 
@@ -52,10 +69,10 @@ def intelligent_simplify_line(parent_inkex, coords, straitening_cutoff_length, t
         return [(long_stretch_indices[0], long_stretch_indices[-1])]
 
     long_stretch_ranges, long_stretch_lowers, long_stretch_uppers = [], [], []
-    lower_bounds  = np.concatenate(([0], split_indices))
-    upper_bounds  = np.concatenate((split_indices - 1, [len(long_stretch_indices) - 1]))
+    lower_bounds = np.concatenate(([0], split_indices))
+    upper_bounds = np.concatenate((split_indices - 1, [len(long_stretch_indices) - 1]))
 
-    for lower, upper in zip(lower_bounds , upper_bounds ):
+    for lower, upper in zip(lower_bounds, upper_bounds):
         long_stretch_ranges.append((long_stretch_indices[lower], long_stretch_indices[upper] + 1))
         long_stretch_lowers.append(long_stretch_indices[lower])
         long_stretch_uppers.append(long_stretch_indices[upper] + 1)
@@ -85,7 +102,7 @@ def intelligent_simplify_line(parent_inkex, coords, straitening_cutoff_length, t
                 return incr_start_idx + min_index
         return None  # Or any other value to indicate no indices found
 
-    #Determine link-up likely points
+    # Determine link-up likely points
     final_path, orig_path_ctr = [], 0
     orig_nd = np.array(coords)
     for i in range(len(long_stretch_ranges)):
@@ -93,7 +110,7 @@ def intelligent_simplify_line(parent_inkex, coords, straitening_cutoff_length, t
         orig_exit_pt = get_lowest_index_within_tolerance_norm(parent_inkex, lower_nd, orig_nd, orig_path_ctr,
                                                               test_tolerance)
         if orig_exit_pt is not None:
-            orig_entry_pt = get_lowest_index_within_tolerance_norm(parent_inkex, upper_nd, orig_nd ,orig_path_ctr + 1,
+            orig_entry_pt = get_lowest_index_within_tolerance_norm(parent_inkex, upper_nd, orig_nd, orig_path_ctr + 1,
                                                                    test_tolerance)
             if orig_entry_pt is not None:
                 final_path.extend(coords[orig_path_ctr:orig_exit_pt + 1])

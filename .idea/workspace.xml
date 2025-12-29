@@ -5,12 +5,50 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Built in default to outer if possible">
+      <change beforePath="$PROJECT_DIR$/.idea/continuous-outline.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/continuous-outline.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/continuous-outline.inx" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.inx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/112CB3DB.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/169F3319.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/2B0980E4.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/3F516420.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/3FF956C2.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/4D6AD893.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/57921A85.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/633E36AF.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/784B1C1F.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/7DB84729.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/81916C92.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/882D636C.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/8CBA4957.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/8F1A6395.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/91E28E46.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/A4481C8.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/A7129178.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/A96AD85A.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/AA0E8A70.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/AD20B5E7.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/B577147D.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/C1B6F316.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/D3CFFF2E.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/D5F309FE.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/EA55A82A.tmp" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/Enums.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/Enums.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/build_objects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/build_objects.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/StrayPixelRemover.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/StrayPixelRemover.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/bg_rem.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/bg_rem.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/edge_detection.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/edge_detection.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/ftlib.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/ftlib.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgeNode.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgeNode.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/NetworkxExtension.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/NetworkxExtension.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/post_proc/post_effects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/post_proc/post_effects.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/post_proc/smooth_path.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/post_proc/smooth_path.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,7 +81,6 @@
   &quot;associatedIndex&quot;: 6
 }</component>
   <component name="ProjectId" id="2rHKswcRe0nRzaHTRaX0RsSTuLt" />
-  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -92,6 +129,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/ProcessTestImages.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -114,6 +152,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="C:\Users\liamc\PycharmProjects\continuous-outline\helpers\edge-detect\SLIC_Segmentation.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -136,6 +175,7 @@
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Testing.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -158,6 +198,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test_find_contours_raw.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -180,6 +221,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test_path_cleanup.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -660,11 +702,6 @@
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/edge_detect/edge_detection.py</url>
-          <line>212</line>
-          <option name="timeStamp" value="14" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Testing.py</url>
           <line>404</line>
           <option name="timeStamp" value="268" />
@@ -678,6 +715,11 @@
           <url>file://$PROJECT_DIR$/test_path_cleanup.py</url>
           <line>73</line>
           <option name="timeStamp" value="365" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py</url>
+          <line>2</line>
+          <option name="timeStamp" value="366" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

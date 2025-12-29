@@ -18,23 +18,28 @@ import helpers.caching.DataRetrieval as dataret
 """
 Extension for InkScape 1.X
 Features
- - will vectorize your beautiful image into a more beautiful SVG trace with separated infills(break apart into single surfaces like a puzzle)
+ - Elegant continuous line drawing outline of image for pleasant contouring artful border, to use as underlay or overlay
  
-Author: Mario Voigt / FabLab Chemnitz
-Mail: mario.voigt@stadtfabrikanten.org
-Date: 18.08.2020
-Last patch: 24.04.2021
-License: GNU GPL v3
-
-Used version of imagetracerjs: https://github.com/jankovicsandras/imagetracerjs/commit/4d0f429efbb936db1a43db80815007a2cb113b34
+Author: Liam Cline
+Mail: liamcline@gmail.com
 
 """
 
-#TODO: Support transformed images?? Maybe find some existing code for this
-#TODO: Neural net randomize assortment opt and req sections. Maybe can then do straight line approx randomized slic each edge from one part section to other side, build into random blobs
+
+# TODO: Support transformed images?? Maybe find some existing code for this
+# TODO: Neural net randomize assortment opt and req sections. Maybe can then do straight line approx randomized slic each edge from one part section to other side, build into random blobs
 
 class continuous_outline(inkex.EffectExtension):
     def checkImagePath(self, element):
+        """
+        Check if the image path is valid, resolve relative paths, and check if image exists at resolved path.
+
+        Args:
+            element: The SVG element containing the xlink:href attribute
+
+        Returns:
+            str: The resolved path of the image if it exists, otherwise None
+        """
         xlink = element.get('xlink:href')
         if xlink and xlink[:5] == 'data:':
             # No need, data already embedded
@@ -42,7 +47,6 @@ class continuous_outline(inkex.EffectExtension):
 
         url = urllib_parse.urlparse(xlink)
         href = urllib_request.url2pathname(url.path)
-
 
         # Primary location always the filename itself.
         path = self.absolute_href(href)
@@ -65,6 +69,15 @@ class continuous_outline(inkex.EffectExtension):
             return path
 
     def add_arguments(self, pars):
+        """
+        Add arguments to the argument parser for the effect.
+
+        Args:
+            pars: ArgumentParser
+
+        Returns:
+            None
+        """
         pars.add_argument("--tab")
         pars.add_argument("--mask_only", type=inkex.Boolean, default=False,
                           help="No inner SLIC")
@@ -107,10 +120,12 @@ class continuous_outline(inkex.EffectExtension):
                           help="Blend mode for multi image conjoined processing")
         pars.add_argument("--mask_retain_inner_transparencies", type=inkex.Boolean, default=False,
                           help="Retain inner transparency contours from mask (distinct from SLIC/Canny edges)")
-        pars.add_argument("--transparancy_cutoff", type=float, default=0.1, help="max % transparent considered background")
+        pars.add_argument("--transparancy_cutoff", type=float, default=0.1,
+                          help="max % transparent considered background")
         pars.add_argument("--mask_retain_inner_erosion", type=int, default=0,
                           help="Retaining inner transparency erosion (in pixels)")
-        pars.add_argument("--maze_sections_across", type=int, default=70, help="Gridding density for approx path formation")
+        pars.add_argument("--maze_sections_across", type=int, default=70,
+                          help="Gridding density for approx path formation")
         pars.add_argument("--constrain_slic_within_mask", type=inkex.Boolean, default=False,
                           help="Omit lines outside of mask")
 
@@ -118,7 +133,6 @@ class continuous_outline(inkex.EffectExtension):
                           help="Max distance for magnet locking onto edges")
         pars.add_argument("--prefer_outer_contours_locking", type=inkex.Boolean, default=True,
                           help="Prefer outer contours for locking onto edges")
-
 
         pars.add_argument("--dumb_node_optional_weight", type=int, default=1, help="Weight for optional dumb nodes")
         pars.add_argument("--dumb_node_optional_max_variable_weight", type=int, default=6,
@@ -157,13 +171,38 @@ class continuous_outline(inkex.EffectExtension):
         pars.add_argument("--dither", type=int, default=0,
                           help="Add periodic dither to line for texture")
 
-        #TODO: More sophisticated jumping, so don't need to simplify in inkscape which washes out desired features (goal!)
-
+        # TODO: More sophisticated jumping, so don't need to simplify in inkscape which washes out desired features (goal!)
 
         pars.add_argument("--preview", type=inkex.Boolean, default=True, help="Preview before committing")
 
+    def _tokenize_path(self, pathdef, COMMAND_RE, COMMANDS, FLOAT_RE):
+        """
+        Tokenizes a path definition string into individual path commands and their corresponding coordinates.
 
-    def _tokenize_path(self, pathdef,COMMAND_RE,  COMMANDS, FLOAT_RE):
+        Args:
+            pathdef (str): The path definition string to tokenize.
+            COMMAND_RE (re.Pattern): Regular expression pattern to split the path definition string by path commands.
+            COMMANDS (set): Set of path commands to look out for.
+            FLOAT_RE (re.Pattern): Regular expression pattern to match floating-point numbers in the path definition string.
+
+        Yields:
+            str: Individual path commands and their corresponding coordinates.
+
+        Example:
+            >>> pathdef = "M 100 100 L 200 200 Z"
+            >>> COMMAND_RE = re.compile(r"[A-Z]")
+            >>> COMMANDS = set("M Z L H V C S Q T A")
+            >>> FLOAT_RE = re.compile(r"[\d\.]+")
+            >>> for token in _tokenize_path(pathdef, COMMAND_RE, COMMANDS, FLOAT_RE):
+            ...     print(token)
+            M
+            100
+            100
+            L
+            200
+            200
+            Z
+        """
         for x in COMMAND_RE.split(pathdef):
             if x in COMMANDS:
                 yield x
@@ -172,17 +211,30 @@ class continuous_outline(inkex.EffectExtension):
 
     def _parse_path(self, pathdef, current_pos=0j, tree_element=None):
 
+        """
+        Parse a path definition string into a list of coordinates.
+
+        Args:
+            pathdef (str): The path definition string to parse.
+            current_pos (complex): The current position in the path. Defaults to 0j.
+            tree_element (Element): The tree element associated with the path. Defaults to None.
+
+        Returns:
+            list: List of (x, y) tuples representing the coordinates of the path.
+
+        This method is used by the SVG parser to parse the d attribute of path elements.
+        """
         COMMANDS = set('MmZzLlHhVvCcSsQqTtAa')
         UPPERCASE = set('MZLHVCSQTA')
 
         COMMAND_RE = re.compile(r"([MmZzLlHhVvCcSsQqTtAa])")
         FLOAT_RE = re.compile(r"[-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?")
-        #PULLED FROM SVGPATHTOOLS (thanks!!)
+        # PULLED FROM SVGPATHTOOLS (thanks!!)
         # In the SVG specs, initial movetos are absolute, even if
         # specified as 'm'. This is the default behavior here as well.
         # But if you pass in a current_pos variable, the initial moveto
         # will be relative to that current_pos. This is useful.
-        elements = list(self._tokenize_path(pathdef,COMMAND_RE,  COMMANDS, FLOAT_RE))
+        elements = list(self._tokenize_path(pathdef, COMMAND_RE, COMMANDS, FLOAT_RE))
         # Reverse for easy use of .pop()
         elements.reverse()
         start_pos = None
@@ -354,19 +406,28 @@ class continuous_outline(inkex.EffectExtension):
                     # as lines (see "examples/zero-radius-arcs.svg").
                     # Thus zero radius arcs are substituted for lines here.
                     self.msg('Replacing degenerate (zero radius) Arc with a Line: '
-                         'Arc(start={}, radius={}, rotation={}, large_arc={}, '
-                         'sweep={}, end={})'.format(
+                             'Arc(start={}, radius={}, rotation={}, large_arc={}, '
+                             'sweep={}, end={})'.format(
                         current_pos, radius, rotation, arc, sweep, end) +
-                         ' --> Line(start={}, end={})'
-                         ''.format(current_pos, end))
+                             ' --> Line(start={}, end={})'
+                             ''.format(current_pos, end))
                     coord_points.append((end.real, end.imag))
                 else:
                     coord_points.append((end.real, end.imag))
                 current_pos = end
         return coord_points
 
-    def check_level_to_update(self, data_ret:dataret.DataRetrieval):
+    def check_level_to_update(self, data_ret: dataret.DataRetrieval):
         # Collect parameter names and values into a list of dictionaries
+        """
+        Checks if the parameters need to be updated in the database.
+
+        Args:
+            data_ret (dataret.DataRetrieval): The data retrieval object.
+
+        Returns:
+            int: The level of update, or 0 if no update is required.
+        """
         param_data = []
         for param_name, param_value in vars(self.options).items():
             param_data.append({'param_name': str(param_name), 'param_val': str(param_value)})
@@ -375,8 +436,17 @@ class continuous_outline(inkex.EffectExtension):
         params_df = pd.DataFrame(param_data)
         return data_ret.level_of_update(self, params_df)
 
-    def set_params_into_db(self, data_ret:dataret.DataRetrieval):
+    def set_params_into_db(self, data_ret: dataret.DataRetrieval):
         # Collect parameter names and values into a list of dictionaries
+        """
+        Sets the parameters into the database.
+
+        Args:
+            data_ret (dataret.DataRetrieval): The data retrieval object.
+
+        Returns:
+            None
+        """
         param_data = []
         for param_name, param_value in vars(self.options).items():
             param_data.append({'param_name': param_name, 'param_val': param_value})
@@ -385,11 +455,26 @@ class continuous_outline(inkex.EffectExtension):
         params_df = pd.DataFrame(param_data)
         params_df = params_df.map(str)
 
-        #Set into db
+        # Set into db
         data_ret.clear_and_set_single_table("ParamsVals", params_df)
 
     def get_image_offsets(self, svg_image):
         # Determine image offsets
+        """
+        Determine the image offsets (position of the image within the SVG document) of
+        the given SVG image.
+
+        Args:
+            svg_image (svg.Image): The SVG image element.
+
+        Returns:
+            tuple: A tuple containing the x and y image offsets.
+
+        Notes:
+            If the image element has a transform attribute, the offsets are relative to the
+            transformed position of the image element. Otherwise, the offsets are relative to the
+            original position of the image element.
+        """
         parent = svg_image.getparent()
         x, y = svg_image.get('x'), svg_image.get('y')
         if x is None: x = 0
@@ -407,14 +492,23 @@ class continuous_outline(inkex.EffectExtension):
         return (x_offset, y_offset)
 
     def get_max_dpi(self, svg_images_with_paths):
-        max_dpi = 0 #NOTE: The "i" is a stand-in, this functions for any base svg measurement system
+        max_dpi = 0  # NOTE: The "i" is a stand-in, this functions for any base svg measurement system
         for svg_image_with_path in svg_images_with_paths:
             max_dpi = max(max_dpi, svg_image_with_path['img_dpi'])
 
         return {"max_dpi": max_dpi}
 
-
     def get_overall_images_dims_offsets(self, svg_images_with_paths):
+        """
+        Calculate the overall dimensions of the given SVG images.
+
+        Args:
+            svg_images_with_paths (list): A list of SVG images with their paths.
+
+        Returns:
+            dict: A dictionary containing the overall dimensions of the given SVG images.
+                The keys of the dictionary are: 'x', 'y', 'width', 'height'.
+        """
         x_min, x_max, y_min, y_max = 99999.0, -99999.0, 99999.0, -99999.0
         for svg_image_with_path in svg_images_with_paths:
             x_cur_min, x_cur_max = (float(svg_image_with_path['x']),
@@ -454,6 +548,18 @@ class continuous_outline(inkex.EffectExtension):
     #     return {"x_cv": x, "y_cv": y, "width_cv": width, "height_cv": height, "max_dpi":max_dpi}
 
     def det_img_and_focus_specs(self, svg_images_with_paths, detail_bounds, approx_trace_path_string, crop_box):
+        """
+        Determine the image and focus specifications of the given SVG images and detail bounds.
+
+        Args:
+            svg_images_with_paths (list): A list of SVG images with their paths.
+            detail_bounds (list): A list of detail bounds.
+            approx_trace_path_string (str): The approximate string of the trace path.
+            crop_box (svg.Element): The crop box element.
+
+        Returns:
+            pandas.DataFrame: A DataFrame containing the image and focus specifications.
+        """
         img_focus_specs = []
         for svg_image_with_path in svg_images_with_paths:
             img_focus_specs.append(str(svg_image_with_path['image_path']))
@@ -485,7 +591,7 @@ class continuous_outline(inkex.EffectExtension):
             else:
                 raise inkex.AbortExtension("Only rectangles are supported as crop box.")
 
-        #TODO: If only this changes level=3 once config setting up modify with ext input screen open
+        # TODO: If only this changes level=3 once config setting up modify with ext input screen open
         img_focus_specs.append(str(approx_trace_path_string))
 
         selection_info_df = pd.DataFrame(img_focus_specs, columns=['selection_info'])
@@ -498,11 +604,22 @@ class continuous_outline(inkex.EffectExtension):
 
         return selection_info_df
 
-    def form_approx_control_points_normalized(self, approx_ctrl_points:list, overall_images_dims_offsets, crop_box):
-        #Convert ctrl points to img yx format
+    def form_approx_control_points_normalized(self, approx_ctrl_points: list, overall_images_dims_offsets, crop_box):
+        # Convert ctrl points to img yx format
+        """
+        Convert the approximate control points to normalized points based on the given image offsets and crop box.
+
+        Args:
+            approx_ctrl_points (list): A list of approximate control points.
+            overall_images_dims_offsets (dict): A dictionary containing the overall dimensions of the given SVG images.
+            crop_box (svg.Element): The crop box element.
+
+        Returns:
+            numpy.array: A numpy array containing the normalized points.
+        """
         approx_ctrl_points_nd = np.array([(p[1], p[0]) for p in approx_ctrl_points])
 
-        #Determine image offsets
+        # Determine image offsets
         if crop_box is None:
             offsets_nd = np.array((overall_images_dims_offsets['y'], overall_images_dims_offsets['x']))
             norms = np.array((float(overall_images_dims_offsets['height']),
@@ -512,18 +629,28 @@ class continuous_outline(inkex.EffectExtension):
             norms = np.array((float(crop_box.get('height')),
                               float(crop_box.get('width'))))
 
-        #Determined shifted and normalized points
-        formed_points_nd = (approx_ctrl_points_nd - offsets_nd)/norms
+        # Determined shifted and normalized points
+        formed_points_nd = (approx_ctrl_points_nd - offsets_nd) / norms
         return formed_points_nd
 
-
     def form_focus_region_specs_normalized(self, detail_bounds, overall_images_dims_offsets):
-        #Determine image offsets
+        """
+        Convert the given detail bounds to normalized points based on the given image offsets and crop box.
+
+        Args:
+            detail_bounds (list): A list of detail bounds.
+            overall_images_dims_offsets (dict): A dictionary containing the overall dimensions of the given SVG images.
+            crop_box (svg.Element): The crop box element.
+
+        Returns:
+            list: A list of dictionaries containing the normalized points.
+        """
+        # Determine image offsets
         (x_offset, y_offset) = (overall_images_dims_offsets['x'], overall_images_dims_offsets['y'])
         (x_norm, y_norm) = (overall_images_dims_offsets['width'], overall_images_dims_offsets['height'])
         bounds_out = []
 
-        #Determined shifted and normalized bounds
+        # Determined shifted and normalized bounds
         for bounds in detail_bounds:
             # Check if ellipse or rect
             if bounds.tag == inkex.addNS('rect', 'svg'):
@@ -546,8 +673,21 @@ class continuous_outline(inkex.EffectExtension):
         return bounds_out
 
     def form_crop_box_advanced(self, crop_box, overall_images_dims_offsets):
+        """
+        Form the advanced crop box based on the given SVG image and crop box.
+
+        If the crop box is None, it sets the points to the overall images dims.
+        Otherwise, it gets the crop box properties and sets the points accordingly.
+
+        Args:
+            crop_box (svg.Element): The crop box element.
+            overall_images_dims_offsets (dict): A dictionary containing the overall dimensions of the given SVG images.
+
+        Returns:
+            dict: A dictionary containing the advanced crop box points.
+        """
         if crop_box is None:
-            #Set points to overall images dims
+            # Set points to overall images dims
             x_raw, y_raw, width_raw, height_raw = (overall_images_dims_offsets['x'], overall_images_dims_offsets['y'],
                                                    overall_images_dims_offsets['width'],
                                                    overall_images_dims_offsets['height'])
@@ -557,7 +697,7 @@ class continuous_outline(inkex.EffectExtension):
 
             x_raw, y_raw = 0.0 if x_raw is None else float(x_raw), 0.0 if y_raw is None else float(y_raw)
 
-        #Set in svg crop-box dims
+        # Set in svg crop-box dims
         adv_bound_points = {'x': x_raw, 'y': y_raw, 'width': width_raw, 'height': height_raw}
         adv_bound_points.update({'x_min': x_raw, 'y_min': y_raw,
                                  'x_max': x_raw + width_raw, 'y_max': y_raw + height_raw})
@@ -583,43 +723,61 @@ class continuous_outline(inkex.EffectExtension):
         return adv_bound_points
 
     def crop_svg_images(self, svg_images_with_paths, advanced_crop_box):
+        """
+        Crop SVG images according to the given advanced crop box.
+
+        Args:
+            svg_images_with_paths (list): A list of SVG images with their paths.
+            advanced_crop_box (dict): A dictionary containing the advanced crop box.
+
+        Returns:
+            list: A list of SVG images with their paths, cropped according to the advanced crop box.
+        """
         for svg_image_with_path in svg_images_with_paths:
-            #Determine svg crop points if appl
+            # Determine svg crop points if appl
             svg_image_with_path['x_crop_min'] = max(advanced_crop_box['x_min'] - svg_image_with_path['x'], 0)
             svg_image_with_path['x_crop_max'] = min(advanced_crop_box['x_max'] - svg_image_with_path['x'],
-                                                       svg_image_with_path['width'])
+                                                    svg_image_with_path['width'])
             svg_image_with_path['y_crop_min'] = max(advanced_crop_box['y_min'] - svg_image_with_path['y'], 0)
             svg_image_with_path['y_crop_max'] = min(advanced_crop_box['y_max'] - svg_image_with_path['y'],
-                                                       svg_image_with_path['height'])
+                                                    svg_image_with_path['height'])
             if (svg_image_with_path['y_crop_max'] - svg_image_with_path['y_crop_min'] <= 0
-                or svg_image_with_path['x_crop_max'] - svg_image_with_path['x_crop_min'] <= 0):
+                    or svg_image_with_path['x_crop_max'] - svg_image_with_path['x_crop_min'] <= 0):
                 svg_image_with_path['include'] = False
             else:
                 svg_image_with_path['include'] = True
 
-                x_min_cv, x_max_cv = (int(round(svg_image_with_path['img_dpi']*svg_image_with_path['x_crop_min'],0)),
-                                      int(round(svg_image_with_path['img_dpi']*svg_image_with_path['x_crop_max'],0)))
-                y_min_cv, y_max_cv = (int(round(svg_image_with_path['img_dpi']*svg_image_with_path['y_crop_min'],0)),
-                                      int(round(svg_image_with_path['img_dpi']*svg_image_with_path['y_crop_max'],0)))
+                x_min_cv, x_max_cv = (int(round(svg_image_with_path['img_dpi'] * svg_image_with_path['x_crop_min'], 0)),
+                                      int(round(svg_image_with_path['img_dpi'] * svg_image_with_path['x_crop_max'], 0)))
+                y_min_cv, y_max_cv = (int(round(svg_image_with_path['img_dpi'] * svg_image_with_path['y_crop_min'], 0)),
+                                      int(round(svg_image_with_path['img_dpi'] * svg_image_with_path['y_crop_max'], 0)))
                 self.msg(f"width_cv {svg_image_with_path['width_cv']}, height_cv {svg_image_with_path['height_cv']}")
                 self.msg(f"xmincv {x_min_cv}, xmaxcv {x_max_cv}"
                          f"ymincv {y_min_cv}, ymaxcv {y_max_cv}")
                 svg_image_with_path['img_cv_cropped'] = svg_image_with_path['img_cv'][y_min_cv:y_max_cv,
-                                                        x_min_cv:x_max_cv]
+                x_min_cv:x_max_cv]
                 self.msg("Crop dims: " + str(svg_image_with_path['img_cv_cropped'].shape))
                 self.msg("DPI: " + str(svg_image_with_path['img_dpi']))
 
-                #Amount to offset cropped image to edge of crop box (if at all)
+                # Amount to offset cropped image to edge of crop box (if at all)
                 svg_image_with_path['x_crop_box_offset'] = (max(advanced_crop_box['x_min'], svg_image_with_path['x'])
-                                                           - advanced_crop_box['x_min'])
+                                                            - advanced_crop_box['x_min'])
                 svg_image_with_path['y_crop_box_offset'] = (max(advanced_crop_box['y_min'], svg_image_with_path['y'])
-                                                           - advanced_crop_box['y_min'])
+                                                            - advanced_crop_box['y_min'])
 
         svg_images_with_paths = [s for s in svg_images_with_paths if s['include']]
         return svg_images_with_paths
 
     def get_straight_line_points(self, path_string):
-        """Extracts points from a straight line path string without using re."""
+        """
+        Get the points of a given path string.
+
+        Args:
+            path_string (str): A string representing an SVG path.
+
+        Returns:
+            list: A list of points representing the path.
+        """
         path_coords = self._parse_path(path_string)
         # for i, coord in enumerate(path_coords):
         #     self.msg(f"Coord {i}: {coord}")
@@ -642,7 +800,7 @@ class continuous_outline(inkex.EffectExtension):
         if len(self.svg.selected) == 0:
             self.svg.selection = self.svg.descendants().filter(*self.select_all)
         svg_images = self.svg.selection.filter(inkex.Image).values()
-        detail_bounds= self.svg.selection.filter(inkex.Ellipse).values()
+        detail_bounds = self.svg.selection.filter(inkex.Ellipse).values()
         crop_boxes = self.svg.selection.filter(inkex.Rectangle).values()
 
         if len(crop_boxes) > 1:
@@ -673,7 +831,7 @@ class continuous_outline(inkex.EffectExtension):
         for child in approx_traces:
             self.msg(child)
 
-        match(len(approx_traces)):
+        match (len(approx_traces)):
             case 0:
                 self.msg("Please build an approx trace line")
                 data_ret.close_connection()
@@ -706,7 +864,7 @@ class continuous_outline(inkex.EffectExtension):
                                                   "width": float(svg_image.get('width')),
                                                   "x": offsets_xy[0], "y": offsets_xy[1]})
 
-                #Check to verify selection/doc/params haven't changed since last run
+                # Check to verify selection/doc/params haven't changed since last run
                 approx_trace = None
                 for path in approx_traces:
                     approx_trace = path
@@ -720,26 +878,26 @@ class continuous_outline(inkex.EffectExtension):
                 self.msg("post-get selection match update level: " + str(update_level))
 
                 if update_level > 0:
-                    #If selection matches, check if params have changed
+                    # If selection matches, check if params have changed
                     update_level = min(self.check_level_to_update(data_ret), update_level)
 
                 self.msg("update level: " + str(update_level))
-                #TODO: Get object creation working maybe, might not be worth it???
+                # TODO: Get object creation working maybe, might not be worth it???
                 if update_level == 3: update_level = 2
 
-                #Determine overall offsets and dims:
+                # Determine overall offsets and dims:
                 overall_images_dims_offsets = self.get_overall_images_dims_offsets(svg_images_with_paths)
 
-                #Get approx control points for final path
+                # Get approx control points for final path
                 approx_ctrl_points = self.get_straight_line_points(approx_trace_path_string)
                 formed_normalized_ctrl_points_nd = self.form_approx_control_points_normalized(approx_ctrl_points,
-                                                                                             overall_images_dims_offsets,
+                                                                                              overall_images_dims_offsets,
                                                                                               crop_box)
 
                 self.msg("Constrain: " + str(self.options.constrain_slic_within_mask))
 
-                #Build up image data
-                #TODO: Push this back into level 1, cache?
+                # Build up image data
+                # TODO: Push this back into level 1, cache?
                 start = time.time_ns()
                 import cv2
                 for svg_image_with_paths in svg_images_with_paths:
@@ -759,7 +917,7 @@ class continuous_outline(inkex.EffectExtension):
                         img_cv = {'img_cv': cv2.imread(svg_image_with_paths['image_path'], cv2.IMREAD_UNCHANGED)}
 
                     img_cv['height_cv'], img_cv['width_cv'] = img_cv['img_cv'].shape[0], img_cv['img_cv'].shape[1]
-                    img_cv['img_dpi'] = img_cv['width_cv']/svg_image_with_paths['width']
+                    img_cv['img_dpi'] = img_cv['width_cv'] / svg_image_with_paths['width']
                     # img_cv['y_cv']= int(round(((svg_image_with_paths['y'] - overall_images_dims_offsets['y'])
                     #                  *(float(img_cv['height_cv'])/svg_image_with_paths['height'])), 0))
                     # img_cv['x_cv'] = int(round(((svg_image_with_paths['x'] - overall_images_dims_offsets['x'])
@@ -771,49 +929,49 @@ class continuous_outline(inkex.EffectExtension):
 
                 start = time.time_ns()
 
-                #Find dpi of working matte
+                # Find dpi of working matte
                 overall_images_dims_offsets.update(self.get_max_dpi(svg_images_with_paths))
 
-                #Form up normalized focus regions
-                normalized_focus_region_specs =\
+                # Form up normalized focus regions
+                normalized_focus_region_specs = \
                     self.form_focus_region_specs_normalized(detail_bounds, overall_images_dims_offsets)
 
-                #Build crop bounding box and crop images
+                # Build crop bounding box and crop images
                 advanced_crop_box = self.form_crop_box_advanced(crop_box, overall_images_dims_offsets)
                 svg_images_with_paths = self.crop_svg_images(svg_images_with_paths, advanced_crop_box)
 
                 end = time.time_ns()
                 self.msg("SVG shapes processing time: " + str((end - start) / 1000000) + " ms")
 
-                #Retrieve or calculate data as needed
+                # Retrieve or calculate data as needed
                 objects = {}
                 match update_level:
                     case 0 | 1:
                         import helpers.build_objects as buildscr
                         import helpers.caching.set_data_by_level as setdb
 
-                        #Retrieve Level 1 objects from db
+                        # Retrieve Level 1 objects from db
                         _, dataframes = data_ret.retrieve_and_wipe_data(0)
 
-                        #Levels 1-4 objects from scratch
+                        # Levels 1-4 objects from scratch
                         buildscr.build_level_1_scratch(self, svg_images_with_paths, overall_images_dims_offsets,
                                                        normalized_focus_region_specs, advanced_crop_box,
                                                        self.options, objects, mask_bg_colour)
                         buildscr.build_level_2_scratch(self, self.options, objects)
-                        start=time.time_ns()
+                        start = time.time_ns()
                         buildscr.build_level_3_scratch(self, self.options, objects, formed_normalized_ctrl_points_nd,
-                          overall_images_dims_offsets, advanced_crop_box)
+                                                       overall_images_dims_offsets, advanced_crop_box)
                         end = time.time_ns()
                         self.msg("TIMER: Level 3 processing time: " + str((end - start) / 1000000) + " ms")
                         buildscr.build_level_4_scratch(self, self.options, objects, overall_images_dims_offsets)
                         if self.options.preview:
-                            #Build Level 1-4 data into dataframes
+                            # Build Level 1-4 data into dataframes
                             setdb.set_level_1_data(dataframes, objects)
                             setdb.set_level_2_data(dataframes, objects)
                             setdb.set_level_3_data(dataframes, objects)
                             setdb.set_level_4_data(dataframes, objects)
 
-                            #Set data into db
+                            # Set data into db
                             data_ret.set_data(dataframes, min_level=0)
                             # self.msg(str(update_level))
 
@@ -822,95 +980,95 @@ class continuous_outline(inkex.EffectExtension):
                         import helpers.build_objects as buildscr
                         import helpers.caching.set_data_by_level as setdb
 
-                        #Retrieve Level 1 objects from db
+                        # Retrieve Level 1 objects from db
                         retrieved, dataframes = data_ret.retrieve_and_wipe_data(1)
                         builddb.build_level_1_data(self.options, retrieved, objects)
 
-                        #Levels 2-4 objects from scratch
+                        # Levels 2-4 objects from scratch
                         buildscr.build_level_2_scratch(self, self.options, objects)
                         buildscr.build_level_3_scratch(self, self.options, objects, formed_normalized_ctrl_points_nd,
-                          overall_images_dims_offsets, advanced_crop_box)
+                                                       overall_images_dims_offsets, advanced_crop_box)
                         buildscr.build_level_4_scratch(self, self.options, objects, overall_images_dims_offsets)
 
                         if self.options.preview:
-                            #Build Level 2-4 data into dataframes
+                            # Build Level 2-4 data into dataframes
                             setdb.set_level_2_data(dataframes, objects)
                             setdb.set_level_3_data(dataframes, objects)
                             setdb.set_level_4_data(dataframes, objects)
 
-                            #Set data into db
+                            # Set data into db
                             data_ret.set_data(dataframes, min_level=2)
                     case 3:
                         import helpers.caching.build_objects_from_db as builddb
                         import helpers.build_objects as buildscr
                         import helpers.caching.set_data_by_level as setdb
 
-                        #Retrieve Level 1-2 objects from db
+                        # Retrieve Level 1-2 objects from db
                         retrieved, dataframes = data_ret.retrieve_and_wipe_data(2)
                         builddb.build_level_1_data(self.options, retrieved, objects)
                         builddb.build_level_2_data(self.options, retrieved, objects)
 
-                        #Levels 3-4 objects from scratch
+                        # Levels 3-4 objects from scratch
                         buildscr.build_level_3_scratch(self, self.options, objects, formed_normalized_ctrl_points_nd,
-                          overall_images_dims_offsets, advanced_crop_box)
-                        buildscr.build_level_4_scratch(self, self.options, objects ,overall_images_dims_offsets)
+                                                       overall_images_dims_offsets, advanced_crop_box)
+                        buildscr.build_level_4_scratch(self, self.options, objects, overall_images_dims_offsets)
 
                         if self.options.preview:
-                            #Build Level 3-4 data into dataframes
+                            # Build Level 3-4 data into dataframes
                             setdb.set_level_3_data(dataframes, objects)
                             setdb.set_level_4_data(dataframes, objects)
 
-                            #Set data into db
+                            # Set data into db
                             data_ret.set_data(dataframes, min_level=3)
                     case 4:
                         import helpers.caching.build_objects_from_db as builddb
                         import helpers.build_objects as buildscr
                         import helpers.caching.set_data_by_level as setdb
 
-                        #Retrieve img height and width (since cannot retrieve direct from non-existent Sections object)
+                        # Retrieve img height and width (since cannot retrieve direct from non-existent Sections object)
                         sections_df = data_ret.read_sql_table("Sections", data_ret.conn)
                         objects["img_height"], objects["img_width"] = (sections_df.at[0, 'img_height'],
                                                                        sections_df.at[0, 'img_width'])
 
-                        #Retrieve Level 3 objects from db
-                        #NOTE: we dont need earlier since this is just forming up from raw path
+                        # Retrieve Level 3 objects from db
+                        # NOTE: we dont need earlier since this is just forming up from raw path
                         retrieved, dataframes = data_ret.retrieve_and_wipe_data(3)
-                        #TODO: Only retrieve from raw table, wipe formed
+                        # TODO: Only retrieve from raw table, wipe formed
                         builddb.build_level_3_data(self.options, retrieved, objects)
 
-                        #Levels 4 objects from scratch
+                        # Levels 4 objects from scratch
                         buildscr.build_level_4_scratch(self, self.options, objects, overall_images_dims_offsets)
 
                         if self.options.preview:
-                            #Build Level 4 data into dataframes
+                            # Build Level 4 data into dataframes
                             setdb.set_level_4_data(dataframes, objects)
 
-                            #Set data into db
+                            # Set data into db
                             data_ret.set_data(dataframes, min_level=4)
                     case _:
                         import helpers.caching.build_objects_from_db as builddb
 
-                        #Retrieve Level 4 objects (no setting required)
+                        # Retrieve Level 4 objects (no setting required)
                         retrieved = {}
                         retrieved['FormedPath'] = data_ret.read_sql_table('FormedPath', data_ret.conn)
                         builddb.build_level_4_data(self.options, retrieved, objects)
 
-                        #Retrieve img height and width (since cannot retrieve direct from non-existent Sections object)
+                        # Retrieve img height and width (since cannot retrieve direct from non-existent Sections object)
                         sections_df = data_ret.read_sql_table("Sections", data_ret.conn)
                         objects["img_height"], objects["img_width"] = (sections_df.at[0, 'img_height'],
                                                                        sections_df.at[0, 'img_width'])
                 attributes = vars(self.options)
                 # for key, value in attributes.items():
                 #     self.msg(f"{key}: {value}")
-                #Format output curve to fit into doc
-                #NOTE: Going from y, x to x, y
+                # Format output curve to fit into doc
+                # NOTE: Going from y, x to x, y
                 if len(objects['formed_path']) == 0:
                     self.msg("No path was possible, please change up settings/bounding rects/ellipses and try again")
                     if self.options.preview:
                         # Set updated params into db
                         self.set_params_into_db(data_ret)
                     else:
-                        #Clear the database
+                        # Clear the database
                         data_ret.wipe_data()
                 else:
                     command_strs = []
@@ -920,18 +1078,18 @@ class continuous_outline(inkex.EffectExtension):
                         # formed_path_nd = np.array(objects['formed_path'])
                         formed_path_xy = formed_path_nd[:, [1, 0]]
 
-                        #Determine scaling & shifting
+                        # Determine scaling & shifting
                         size_cv = (int(round(overall_images_dims_offsets['max_dpi'] * advanced_crop_box['width'], 0)),
-                         int(round(overall_images_dims_offsets['max_dpi'] * advanced_crop_box['height'], 0)))
+                                   int(round(overall_images_dims_offsets['max_dpi'] * advanced_crop_box['height'], 0)))
                         x_scale = size_cv[0] / float(advanced_crop_box['width'])
                         y_scale = size_cv[1] / float(advanced_crop_box['height'])
                         scale_nd = np.array([x_scale, y_scale])
                         shift_nd = np.array([advanced_crop_box['x'], advanced_crop_box['y']])
 
-                        #Offset main contour to line up with crop box on svg
-                        formed_path_shifted = (formed_path_xy/scale_nd + shift_nd).tolist()
+                        # Offset main contour to line up with crop box on svg
+                        formed_path_shifted = (formed_path_xy / scale_nd + shift_nd).tolist()
 
-                        #Build the path commands
+                        # Build the path commands
                         commands = []
                         for i, point in enumerate(formed_path_shifted):
                             if i == 0:
@@ -949,7 +1107,7 @@ class continuous_outline(inkex.EffectExtension):
                     if self.options.preview:
                         # Create a temporary layer & group for the preview
                         preview_layer = inkex.etree.Element(inkex.addNS('g', 'svg'),
-                                                      None, nsmap=inkex.NSS)
+                                                            None, nsmap=inkex.NSS)
                         preview_layer.set(inkex.addNS('groupmode', 'inkscape'), 'layer')
                         preview_layer.set(inkex.addNS('label', 'inkscape'), 'Preview')
                         preview_layer.set(inkex.addNS('lock', 'inkscape'), 'true')
@@ -957,7 +1115,8 @@ class continuous_outline(inkex.EffectExtension):
 
                         preview_group = inkex.etree.SubElement(preview_layer, inkex.addNS('g', 'svg'))
                         preview_group.set('id', 'preview_group')  # give the group an id so it can be found later.
-                        preview_group.set(inkex.addNS('lock', 'inkscape'), 'true')  # give the group an id so it can be found later.
+                        preview_group.set(inkex.addNS('lock', 'inkscape'),
+                                          'true')  # give the group an id so it can be found later.
 
                         # Create the path element
                         path_element = inkex.etree.SubElement(preview_group, inkex.addNS('path', 'svg'))
@@ -970,7 +1129,7 @@ class continuous_outline(inkex.EffectExtension):
                         # Set updated params into db
                         self.set_params_into_db(data_ret)
                     else:
-                        for i,  command_str in enumerate(command_strs):
+                        for i, command_str in enumerate(command_strs):
                             # Add a new path element to the SVG
                             path_element = inkex.PathElement()
                             path_element.set('d', command_str)  # Set the path data
@@ -980,10 +1139,11 @@ class continuous_outline(inkex.EffectExtension):
                                 path_element.style = {'stroke': 'black', 'fill': 'none', 'stroke-width': '7'}
                             self.svg.get_current_layer().add(path_element)
 
-                        #Clear the database
+                        # Clear the database
                         data_ret.wipe_data()
 
         data_ret.close_connection()
+
 
 if __name__ == '__main__':
     try:

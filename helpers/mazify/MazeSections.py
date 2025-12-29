@@ -10,6 +10,24 @@ from helpers.Enums import NodeType
 class MazeSections:
     def __init__(self, options, outer_edge, m, n, req_details_mask, from_db=False, focus_region_sections=None,
                  sections=None, y_grade=None, x_grade=None, img_height=None, img_width=None, path_graph=None):
+        """
+        Initialize the MazeSections class which manages the division of the maze into sections.
+        
+        Args:
+            options: Configuration options for the maze.
+            outer_edge: 2D numpy array representing the outer edge of the maze.
+            m: Number of rows in the grid.
+            n: Number of columns in the grid.
+            req_details_mask: List of masks for focus regions.
+            from_db: Whether to load from database. Defaults to False.
+            focus_region_sections: List of focus region sections. Defaults to None.
+            sections: Predefined sections. Defaults to None.
+            y_grade: Vertical spacing between sections. Defaults to None.
+            x_grade: Horizontal spacing between sections. Defaults to None.
+            img_height: Height of the image. Defaults to None.
+            img_width: Width of the image. Defaults to None.
+            path_graph: NetworkX graph representing the path. Defaults to None.
+        """
         self.m, self.n = m, n
         self.options = options
         if not from_db:
@@ -31,6 +49,24 @@ class MazeSections:
     @classmethod
     def from_df(cls, options, m, n, focus_region_sections:list, sections:np.ndarray,
                  y_grade, x_grade, img_height, img_width, path_graph: nx.Graph):
+        """
+        Create a MazeSections instance from a DataFrame.
+        
+        Args:
+            options: Configuration options for the maze.
+            m: Number of rows in the grid.
+            n: Number of columns in the grid.
+            focus_region_sections: List of focus region sections.
+            sections: Numpy array of sections.
+            y_grade: Vertical spacing between sections.
+            x_grade: Horizontal spacing between sections.
+            img_height: Height of the image.
+            img_width: Width of the image.
+            path_graph: NetworkX graph representing the path.
+            
+        Returns:
+            A new instance of MazeSections initialized from the given parameters.
+        """
         return cls(options, None, m, n, None, from_db=True, focus_region_sections=focus_region_sections,
                    sections=sections, y_grade=y_grade, x_grade=x_grade, img_height=img_height, img_width=img_width,
                    path_graph=path_graph)
@@ -65,6 +101,10 @@ class MazeSections:
         return grid_paths
 
     def set_section_blank_overs_in_graph(self):
+        """
+        Initialize the path graph with nodes for each section and connect them with edges.
+        Each section is connected to its eight neighboring sections with a default weight.
+        """
         #Set sections as nodes into graph
         for i in range(self.m):
             for j in range(self.n):
@@ -89,6 +129,12 @@ class MazeSections:
                                                      weight=self.options.dumb_node_blank_weight)
 
     def set_direct_jump_close_nodes(self, parent_inkex):
+        """
+        Add direct jump edges between close nodes in the graph to enable shortcuts.
+        
+        Args:
+            parent_inkex: Reference to the parent Inkex object for logging.
+        """
         def manhatten_dist_nodes(node1, node2):
             return abs(node1.point[0] - node2.point[0]) + abs(node1.point[1] - node2.point[1])
 
@@ -138,6 +184,11 @@ class MazeSections:
 
 
     def set_section_node_cats(self):
+        """
+        Set the category for each node in the path graph based on section properties.
+        Categories can be 'section_req', 'section_opt', or 'section_blank'.
+        Also updates focus_region_sections to only include non-None sections that are either required or optional.
+        """
         for i in range(self.m):
             for j in range(self.n):
                 if self.sections[i, j].dumb_req:
@@ -207,14 +258,49 @@ class MazeSections:
         return sections, section_indices_list, section_height, section_width
 
     def get_section_from_coords(self, y, x):
+        """
+        Get the section containing the given coordinates.
+        
+        Args:
+            y: Y-coordinate (row).
+            x: X-coordinate (column).
+            
+        Returns:
+            The MazeSection containing the given coordinates.
+        """
         return self.sections[min(y // self.y_grade, self.m - 1), min(x // self.x_grade, self.n - 1)]
 
     def get_section_indices_from_coords(self, y, x):
+        """
+        Get the section indices (i,j) for the given coordinates.
+        
+        Args:
+            y: Y-coordinate (row).
+            x: X-coordinate (column).
+            
+        Returns:
+            A tuple (i,j) representing the section indices.
+        """
         return min(y // self.y_grade, self.m - 1), min(x // self.x_grade, self.n - 1)
 
 class MazeSection:
     def __init__(self, options, bounds, edge_pixels, y_sec, x_sec, focus_region, focus_region_nums=None, from_df=False,
                  dumb_req=False, dumb_opt=False):
+        """
+        Initialize a MazeSection representing a section of the maze.
+        
+        Args:
+            options: Configuration options for the maze.
+            bounds: Tuple of (ymin, ymax, xmin, xmax) defining the section boundaries.
+            edge_pixels: Number of edge pixels in this section.
+            y_sec: Y-index of this section in the grid.
+            x_sec: X-index of this section in the grid.
+            focus_region: Whether this section is in a focus region.
+            focus_region_nums: List of focus region indices this section belongs to. Defaults to None.
+            from_db: Whether this section is being loaded from a database. Defaults to False.
+            dumb_req: Whether this section is required. Defaults to False.
+            dumb_opt: Whether this section is optional. Defaults to False.
+        """
         self.options = options
         (self.ymin, self.ymax, self.xmin, self.xmax) = bounds
         self.y_sec, self.x_sec = y_sec, x_sec
@@ -233,6 +319,26 @@ class MazeSection:
     def from_df(cls, options, y_start, y_end, x_start, x_end, num_edge_pixels, y_sec, x_sec,
                 is_focus_region, focus_region_nums,
                 dumb_req, dumb_opt):
+        """
+        Create a MazeSection instance from DataFrame data.
+        
+        Args:
+            options: Configuration options for the maze.
+            y_start: Starting Y-coordinate of the section.
+            y_end: Ending Y-coordinate of the section.
+            x_start: Starting X-coordinate of the section.
+            x_end: Ending X-coordinate of the section.
+            num_edge_pixels: Number of edge pixels in the section.
+            y_sec: Y-index of the section in the grid.
+            x_sec: X-index of the section in the grid.
+            is_focus_region: Whether this section is in a focus region.
+            focus_region_nums: Comma-separated string of focus region indices.
+            dumb_req: Whether this section is required.
+            dumb_opt: Whether this section is optional.
+            
+        Returns:
+            A new MazeSection instance.
+        """
         if len(focus_region_nums) > 0:
             focus_region_nums = [int(n) for n in focus_region_nums.split(",")]
         else:
@@ -243,10 +349,26 @@ class MazeSection:
 
 
     def bulk_add_nodes_from_df(self, nodes:list[EdgeNode], outer_nodes:list[EdgeNode]):
+        """
+        Add multiple nodes to this section from a DataFrame.
+        
+        Args:
+            nodes: List of all nodes to add.
+            outer_nodes: List of nodes that are on the outer boundary.
+        """
         self.nodes = nodes
         self.outer_nodes = outer_nodes
 
     def add_node(self, node: EdgeNode):
+        """
+        Add a single node to this section.
+        
+        Args:
+            node: The EdgeNode to add.
+            
+        Note:
+            Updates section properties (dumb_req, dumb_opt) based on the node's properties.
+        """
         self.nodes.append(node)
         if node.outer:
             self.outer_nodes.append(node)
@@ -258,9 +380,28 @@ class MazeSection:
 
 
     def get_nodes_by_edge_number(self, path_number):
+        """
+        Get all nodes in this section that belong to a specific path.
+        
+        Args:
+            path_number: The path number to filter nodes by.
+            
+        Returns:
+            List of nodes belonging to the specified path.
+        """
         return [node for node in self.nodes if node.path_num == path_number]
 
     def get_surrounding_nodes_by_edge__number(self, parent:MazeSections, path_number):
+        """
+        Get nodes from this section and its 8-connected neighbors that belong to a specific path.
+        
+        Args:
+            parent: The parent MazeSections instance.
+            path_number: The path number to filter nodes by.
+            
+        Returns:
+            List of nodes from this section and its neighbors belonging to the specified path.
+        """
         nodes = []
         for y_sec in range(max(0, self.y_sec - 1), min(parent.m, self.y_sec + 2)):
             for x_sec in range(max(0, self.x_sec - 1), min(parent.n, self.x_sec + 2)):
@@ -272,6 +413,21 @@ class MazeSectionTracker:
     def __init__(self, options, section:MazeSection, in_node:EdgeNode=None, tracker_num:int=None,
                  prev_tracker=None, next_tracker=None, out_node:EdgeNode=None, from_db=False, path_num=None,
                  from_db_num_nodes=None):
+        """
+        Initialize a MazeSectionTracker that tracks a path through a section.
+        
+        Args:
+            options: Configuration options for the maze.
+            section: The MazeSection being tracked.
+            in_node: The entry node for this section. Defaults to None.
+            tracker_num: The tracker number. Defaults to None.
+            prev_tracker: Reference to the previous tracker. Defaults to None.
+            next_tracker: Reference to the next tracker. Defaults to None.
+            out_node: The exit node for this section. Defaults to None.
+            from_db: Whether this tracker is being loaded from a database. Defaults to False.
+            path_num: The path number if loading from database. Defaults to None.
+            from_db_num_nodes: Number of nodes if loading from database. Defaults to None.
+        """
         self.options = options
         self.section = section
         self.tracker_num = tracker_num
@@ -297,10 +453,31 @@ class MazeSectionTracker:
 
     @classmethod
     def from_df(cls, options, section:MazeSection, tracker_num:int, path_num:int, num_nodes):
+        """
+        Create a MazeSectionTracker instance from DataFrame data.
+        
+        Args:
+            options: Configuration options for the maze.
+            section: The MazeSection being tracked.
+            tracker_num: The tracker number.
+            path_num: The path number this tracker belongs to.
+            num_nodes: Number of nodes in this tracker.
+            
+        Returns:
+            A new MazeSectionTracker instance.
+        """
         return cls(options, section, from_db=True, tracker_num=tracker_num, path_num=path_num,
                    from_db_num_nodes=num_nodes)
 
     def set_nodes_and_neighbours(self, nodes:list, prev_tracker, next_tracker):
+        """
+        Set the nodes and neighbor trackers for this section tracker.
+        
+        Args:
+            nodes: List of nodes in this tracker.
+            prev_tracker: Reference to the previous tracker.
+            next_tracker: Reference to the next tracker.
+        """
         self.nodes = nodes
         self.in_node = nodes[0]
         self.out_node = nodes[-1]
@@ -354,18 +531,45 @@ class MazeSectionTracker:
         return self.tracker_num > other.tracker_num
 
     def get_next_tracker(self, reverse=False):
+        """
+        Get the next or previous tracker in the path.
+        
+        Args:
+            reverse: If True, return the previous tracker instead of the next one. Defaults to False.
+            
+        Returns:
+            The next or previous MazeSectionTracker.
+        """
         if reverse:
             return self.prev_tracker
         else:
             return self.next_tracker
 
     def get_in_node(self, reverse=False):
+        """
+        Get the entry or exit node for this section.
+        
+        Args:
+            reverse: If True, return the exit node instead of the entry node. Defaults to False.
+            
+        Returns:
+            The entry or exit EdgeNode.
+        """
         if reverse:
             return self.rev_in_node
         else:
             return self.in_node
 
     def get_out_node(self, reverse=False):
+        """
+        Get the exit or entry node for this section.
+        
+        Args:
+            reverse: If True, return the entry node instead of the exit node. Defaults to False.
+            
+        Returns:
+            The exit or entry EdgeNode.
+        """
         if reverse:
             return self.rev_out_node
         else:

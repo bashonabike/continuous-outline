@@ -1,8 +1,6 @@
 import numpy as np
 import cv2
 import copy as cp
-# import vtracer as vt
-# import autotrace as aut
 from sklearn.cluster import KMeans
 from svgpathtools import Path, Line, wsvg, CubicBezier
 from svgpathtools import svg2paths2
@@ -52,6 +50,10 @@ def split_contour_by_accumulated_deflection(contour, angle_threshold=270):
                 else:
                     angle = 0
 
+                # #Reset if angle deviates
+                # if math.copysign(1, angle) != math.copysign(1, accumulated_angle):
+                #     accumulated_angle = 0
+
                 # Accumulate deflection
                 if angle < 0 or angle > 180:
                     angle_pos = True
@@ -59,13 +61,13 @@ def split_contour_by_accumulated_deflection(contour, angle_threshold=270):
                     angle_pos = False
 
                 if angle_pos != angle_prev_pos: angle_same_dir = 0
-                angle_same_dir += (angle + 180)%360-180
+                angle_same_dir += (angle + 180) % 360 - 180
 
-                accumulated_angle = 0.8*accumulated_angle + 0.2*angle
+                accumulated_angle = 0.8 * accumulated_angle + 0.2 * angle
 
                 # Check for deflection threshold
                 if (abs(accumulated_angle) >= angle_threshold or
-                         abs(angle_same_dir) > 0.7*angle_threshold ):
+                        abs(angle_same_dir) > 0.7 * angle_threshold):
                     sub_contours.append(np.array(current_sub_contour))
                     current_sub_contour = [[prev_pt]]
                     accumulated_angle = 0  # Reset accumulated angle
@@ -78,42 +80,45 @@ def split_contour_by_accumulated_deflection(contour, angle_threshold=270):
             sub_contours.append(np.array(current_sub_contour))
 
     return sub_contours
+
+
 def extract_y_channel_manual(img):
-  """
-  Extracts the Y' channel from an RGB image manually.
-  Should be more efficient than doign full YUV conversion
+    """
+    Extracts the Y' channel from an RGB image manually.
+    Should be more efficient than doign full YUV conversion
 
-  Args:
-    img: The input RGB image as a NumPy array.
+    Args:
+      img: The input RGB image as a NumPy array.
 
-  Returns:
-    A NumPy array representing the Y' channel.
-  """
+    Returns:
+      A NumPy array representing the Y' channel.
+    """
 
-  # # Get image dimensions
-  # height, width, _ = img.shape
-  #
-  # # Create an empty array to store the Y' channel
-  # y_channel = np.zeros((height, width), dtype=np.uint8)
-  #
-  # # Define the Y' calculation coefficients (ITU-R BT.601)
-  # r_coeff = 0.299
-  # g_coeff = 0.587
-  # b_coeff = 0.114
-  #
-  # # Calculate Y' for each pixel
-  # for i in range(height):
-  #   for j in range(width):
-  #     r, g, b = img[i, j]
-  #     y_channel[i, j] = int(r * r_coeff + g * g_coeff + b * b_coeff)
+    # # Get image dimensions
+    # height, width, _ = img.shape
+    #
+    # # Create an empty array to store the Y' channel
+    # y_channel = np.zeros((height, width), dtype=np.uint8)
+    #
+    # # Define the Y' calculation coefficients (ITU-R BT.601)
+    # r_coeff = 0.299
+    # g_coeff = 0.587
+    # b_coeff = 0.114
+    #
+    # # Calculate Y' for each pixel
+    # for i in range(height):
+    #   for j in range(width):
+    #     r, g, b = img[i, j]
+    #     y_channel[i, j] = int(r * r_coeff + g * g_coeff + b * b_coeff)
 
-  # TODO: speed test cmpr with
-  img_yuv = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
-  # Extract the Y' channel
-  y_channel = img_yuv[:, :, 0]
-  return y_channel
+    # TODO: speed test cmpr with
+    img_yuv = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
+    # Extract the Y' channel
+    y_channel = img_yuv[:, :, 0]
+    return y_channel
 
-def split_path_by_deflection(path, deflection_threshold=270, distance_threshold=5, max_path_nodes = 500):
+
+def split_path_by_deflection(path, deflection_threshold=270, distance_threshold=5, max_path_nodes=500):
     """
     Splits an SVG path into multiple paths if the accumulated angle of deflection
     exceeds the threshold within a specified distance.
@@ -151,7 +156,7 @@ def split_path_by_deflection(path, deflection_threshold=270, distance_threshold=
                 try:
                     angle = math.acos(dot_product / (abs(tangent) * abs(prev_tangent)))
                 except:
-                    angle=math.pi
+                    angle = math.pi
             else:
                 angle = 0
             deflection = angle * 180 / math.pi
@@ -177,6 +182,7 @@ def split_path_by_deflection(path, deflection_threshold=270, distance_threshold=
         split_paths.append(current_path)
 
     return split_paths
+
 
 def split_svg_file(input_file_path, output_file_path,
                    deflection_threshold=270, distance_threshold=5):
@@ -204,49 +210,55 @@ def split_svg_file(input_file_path, output_file_path,
     # Write the split paths to the output file
     wsvg(split_paths_list, attributes=attributes, filename=output_file_path)
 
+
 def remove_short_edges(image, min_length=10):
-  """
-  Removes edges from a grayscale image that are shorter than the specified minimum length.
+    """
+    Removes edges from a grayscale image that are shorter than the specified minimum length.
 
-  Args:
-    image: The input grayscale image as a NumPy array.
-    min_length: The minimum length of an edge to be kept (in pixels).
+    Args:
+      image: The input grayscale image as a NumPy array.
+      min_length: The minimum length of an edge to be kept (in pixels).
 
-  Returns:
-    A new image with short edges removed.
-  """
+    Returns:
+      A new image with short edges removed.
+    """
 
-  # Find contours in the image
-  contours, _ = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # Find contours in the image
+    contours, _ = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-  # Create a mask image
-  mask = np.zeros_like(image)
+    # Create a mask image
+    mask = np.zeros_like(image)
 
-  # Draw the longer contours onto the mask
-  for contour in contours:
-    if cv2.arcLength(contour, closed=True) >= min_length:
-      cv2.drawContours(mask, [contour], -1, 255, thickness=cv2.FILLED)
+    # Draw the longer contours onto the mask
+    for contour in contours:
+        if cv2.arcLength(contour, closed=True) >= min_length:
+            cv2.drawContours(mask, [contour], -1, 255, thickness=cv2.FILLED)
 
-  # Apply the mask to the original image
-  result = cv2.bitwise_and(image, mask)
+    # Apply the mask to the original image
+    result = cv2.bitwise_and(image, mask)
 
-  return result
+    return result
+
 
 def detect_edges(image_path):
     """
-    Detects edges in an image using Laplacian of Gaussian (LoG) algorithm.
+    Detect edges in an image.
 
-    Args:
-        image_path: The path to the input image file.
+    Read an image, apply a Gaussian filter to remove noise,
+    then apply the Laplacian operator to detect edges.
+
+    Parameters:
+        image_path (str): Path to the image file.
 
     Returns:
-        A tuple containing two NumPy arrays. The first array represents the edges detected in the image, and the second array represents the contours of the edges.
+        postedge (numpy.ndarray): The image with detected edges.
+        split_contours (list): A list of contours detected in the image.
     """
     # Read image
     img = cv2.imread(image_path, cv2.IMREAD_COLOR)
 
-    #option greyscale vs y channel
-    #Result seems basically the same
+    # option greyscale vs y channel
+    # Result seems basically the same
     img_y = extract_y_channel_manual(img)
     img_g = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img_LAB = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
@@ -255,22 +267,21 @@ def detect_edges(image_path):
 
     # for channel in [l_channel, a_channel, b_channel]:
     for channel in [img_g]:
-
         # Remove noise by blurring with a Gaussian filter
-        #TODO: play with sigma and kernal size
-        #TODO: guassian blur before or after flattening to single channel
-        img_blurred = cv2.GaussianBlur(channel, (5,5), 3)
+        # TODO: play with sigma and kernal size
+        # TODO: guassian blur before or after flattening to single channel
+        img_blurred = cv2.GaussianBlur(channel, (5, 5), 3)
 
         # cannyd = cv2.Canny(img_y, 350, 400)
 
-        #TODO: Play with params
-        #src	Source image.
-    # dst	Destination image of the same size and the same number of channels as src .
-    # ddepth	Desired depth of the destination image, see combinations.
-    # ksize	Aperture size used to compute the second-derivative filters. See getDerivKernels for details. The size must be positive and odd.
-    # scale	Optional scale factor for the computed Laplacian values. By default, no scaling is applied. See getDerivKernels for details.
-    # delta	Optional delta value that is added to the results prior to storing them in dst .
-    # borderType	Pixel extrapolation method, see BorderTypes. BORDER_WRAP is not supported.
+        # TODO: Play with params
+        # src	Source image.
+        # dst	Destination image of the same size and the same number of channels as src .
+        # ddepth	Desired depth of the destination image, see combinations.
+        # ksize	Aperture size used to compute the second-derivative filters. See getDerivKernels for details. The size must be positive and odd.
+        # scale	Optional scale factor for the computed Laplacian values. By default, no scaling is applied. See getDerivKernels for details.
+        # delta	Optional delta value that is added to the results prior to storing them in dst .
+        # borderType	Pixel extrapolation method, see BorderTypes. BORDER_WRAP is not supported.
         laplaced = cv2.Laplacian(img_blurred, -1, ksize=5)
 
         _, thresholded = cv2.threshold(laplaced, 127, 255, cv2.THRESH_TOZERO)
@@ -279,9 +290,7 @@ def detect_edges(image_path):
         zeros_idx = binary_orig != 0
         edges_post_laplace[zeros_idx] = binary_orig[zeros_idx]
 
-
     postedge = edges_post_laplace
-
 
     #
     # if np.mean(laplaced) > 170:
@@ -330,8 +339,6 @@ def detect_edges(image_path):
     # Write SVG file
     wsvg(svg_paths, filename='test2.svg')
 
-
-
     # Detect contours
     # contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     # Draw contours on a blank image
@@ -354,20 +361,21 @@ def detect_edges(image_path):
     #     contours2, _ = cv2.findContours(binary2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     #     contoursall = contoursall + contours2
 
-    return postedge,split_contours
+    return postedge, split_contours
+
 
 def k_means_clustering(image_path):
     """
-    Performs K-means clustering on an image.
+    Performs k-means clustering on an image.
 
-    Args:
-        image_path: The path to the image file to be clustered.
+    Takes an image path as input, reads the image, reshapes it into a 2D array, and then performs k-means clustering on it. The resulting clusters are then reshaped back into the original image shape and saved as a new image.
+
+    Parameters:
+        image_path (str): The path to the image file to be clustered.
 
     Returns:
         None
 
-    Notes:
-        This function writes a clustered image to a file named 'clustered.png'.
     """
     pic = plt.imread(image_path)
     pic_n = pic.reshape(pic.shape[0] * pic.shape[1], pic.shape[2])
@@ -377,4 +385,4 @@ def k_means_clustering(image_path):
     cluster_pic = pic2show.reshape(pic.shape[0], pic.shape[1], pic.shape[2])
     plt.imsave('clustered.png', cluster_pic)
 
-    #TODO: maybe try to fill in the clusters, segment as object?
+    # TODO: maybe try to fill in the clusters, segment as object?

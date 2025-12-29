@@ -2,21 +2,50 @@ from PIL import Image
 import torch
 import numpy as np
 from transparent_background import Remover
-from tqdm import tqdm
-import os
 import pathlib
 
 
 # Tensor to PIL
 def tensor2pil(image):
+    """
+    Convert a PyTorch tensor to a PIL Image.
+
+    Args:
+        image (torch.Tensor): Input tensor to be converted, expected to be in range [0, 1].
+
+    Returns:
+        PIL.Image: The converted image in RGB mode.
+    """
     return Image.fromarray(np.clip(255. * image.cpu().numpy().squeeze(), 0, 255).astype(np.uint8))
 
 
 # Convert PIL to Tensor
 def pil2tensor(image):
+    """
+    Convert a PIL Image to a PyTorch tensor.
+
+    Args:
+        image (PIL.Image): Input image to be converted.
+
+    Returns:
+        torch.Tensor: The converted tensor in range [0, 1] with an added batch dimension.
+    """
     return torch.from_numpy(np.array(image).astype(np.float32) / 255.0).unsqueeze(0)
 
+
 def remove_background(image, torchscript_jit="default", mode="fast"):
+    """
+    Remove the background from an image using a pre-trained model.
+
+    Args:
+        image (PIL.Image): Input image with background to be removed.
+        torchscript_jit (str, optional): Whether to use TorchScript JIT. Defaults to "default".
+        mode (str, optional): Processing mode. Can be "fast" or other modes supported by the remover.
+                             Defaults to "fast".
+
+    Returns:
+        numpy.ndarray: Image with transparent background in RGBA format.
+    """
     if (torchscript_jit == "default"):
         remover = Remover()
     else:
@@ -31,15 +60,28 @@ def remove_background(image, torchscript_jit="default", mode="fast"):
     # mask = img_stack[:, :, :, 3]
     # return (img_stack, mask)
 
+
 def process_image(img_path, torchscript_jit="default", mode="fast"):
-    #TODO: Select outer background (biggest contour), remove it but retain the rest of the main image
-    #Make sure set alpha, build contours just on alpha channel
-    #Maybe set cutoff for bgrem alpha, if alpha below say 0.4 then set it to 0, then do countours
+    """
+    Process an image to remove its background and save the result.
+
+    This function loads an image, removes its background using the specified method,
+    and saves the result to a new file in a 'bg_removed' subdirectory.
+
+    Args:
+        img_path (str): Path to the input image file.
+        torchscript_jit (str, optional): Whether to use TorchScript JIT. Defaults to "default".
+        mode (str, optional): Processing mode for background removal. Defaults to "fast".
+
+    Note:
+        The processed image is saved in a 'bg_removed' subdirectory with 'bgrem_' prefix.
+    """
     img = Image.open(img_path)
     bgremoved = remove_background(img, torchscript_jit, mode)
     save_bg_removed_image(img_path, bgremoved)
 
-def save_bg_removed_image(orig_image_path, processed_image:Image):
+
+def save_bg_removed_image(orig_image_path, processed_image: Image):
     """
     Saves a processed image to a "bg_removed" subdirectory, creating it if necessary.
 
@@ -63,6 +105,3 @@ def save_bg_removed_image(orig_image_path, processed_image:Image):
     # Save the processed image
     processed_image.save(new_filepath)
     print(f"Saved processed image to: {new_filepath}")
-
-
-

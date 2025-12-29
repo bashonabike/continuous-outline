@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
 
+
 def lfo_dither(path, sigma=9, lfo_period=100, dither_magnitude=2.0):
     """
         Processes a path of y, x coordinates using vectorized operations.
