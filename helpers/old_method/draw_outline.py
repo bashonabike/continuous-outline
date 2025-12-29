@@ -84,7 +84,20 @@ def connect_paths(image, paths, obliteration_radius=5):
 
 
 def draw_path(image, path, color=(0, 0, 255), thickness=2, in_place=False):
-    """Draws a path on an image."""
+    """
+    Draws a series of open paths on an image.
+
+    Args:
+        image: The image (NumPy array) to draw on.
+        path: A list of NumPy arrays, where each array represents a path
+             and contains the (x, y) coordinates of the nodes.
+        color: The color of the paths (BGR tuple, default: red).
+        thickness: The thickness of the path lines (int, default: 2).
+        in_place: If True, draws directly on the input image, otherwise creates a copy.
+
+    Returns:
+        The image with the paths drawn.  (A copy is created if the input image is modified)
+    """
     if in_place: image_with_path = image
     else: image_with_path = image.copy()
     if path is not None and len(path) > 1:
@@ -95,7 +108,17 @@ def draw_path(image, path, color=(0, 0, 255), thickness=2, in_place=False):
     return image_with_path
 
 def draw_obliterated(image, mask, color=(0, 255, 0)):
-    """Draws the obliterated region."""
+    """
+    Draws obliterated regions on an image.
+
+    Args:
+        image: The image (NumPy array) to draw on.
+        mask: A NumPy array representing the obliterated regions (1 = obliterated, 0 = not obliterated).
+        color: The color of the obliterated regions (BGR tuple, default: green).
+
+    Returns:
+        The image with the obliterated regions drawn.  (A copy is created if the input image is modified)
+    """
     image_with_obliterated = image.copy()
     y_indices, x_indices = np.where(mask == 1)
     for x, y in zip(x_indices, y_indices):

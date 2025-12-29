@@ -52,10 +52,6 @@ def split_contour_by_accumulated_deflection(contour, angle_threshold=270):
                 else:
                     angle = 0
 
-                # #Reset if angle deviates
-                # if math.copysign(1, angle) != math.copysign(1, accumulated_angle):
-                #     accumulated_angle = 0
-
                 # Accumulate deflection
                 if angle < 0 or angle > 180:
                     angle_pos = True
@@ -236,40 +232,16 @@ def remove_short_edges(image, min_length=10):
 
   return result
 
-def vectorize_edgified_image(edges_path):
-    # #vtracer.convert_image_to_svg_py(inp,
-    # out,
-    # colormode = 'color',        # ["color"] or "binary"
-    # hierarchical = 'stacked',   # ["stacked"] or "cutout"
-    # mode = 'spline',            # ["spline"] "polygon", or "none"
-    # filter_speckle = 4,         # default: 4
-    # color_precision = 6,        # default: 6
-    # layer_difference = 16,      # default: 16
-    # corner_threshold = 60,      # default: 60
-    # length_threshold = 4.0,     # in [3.5, 10] default: 4.0
-    # max_iterations = 10,        # default: 10
-    # splice_threshold = 45,      # default: 45
-    # path_precision = 3          # default: 8
-    #                             )
-    # # cv2.imwrite('edges.jpg', edges)
-    # vt.convert_image_to_svg_py(edges_path, 'test.svg', colormode='binary')
-    temp = 1
-    # Load an image.
-    # image = np.asarray(Image.open("edges.jpg").convert("RGB"))
-    #
-    # # Create a bitmap.
-    # bitmap = Bitmap(image)
-    #
-    # # Trace the bitmap.
-    # vector = bitmap.trace(centerline=True)
-    #
-    # # Save the vector as an SVG.
-    # vector.save("autotrace.svg")
-    #
-    # # Get an SVG as a byte string.
-    # svg = vector.encode(VectorFormat.SVG)
-
 def detect_edges(image_path):
+    """
+    Detects edges in an image using Laplacian of Gaussian (LoG) algorithm.
+
+    Args:
+        image_path: The path to the input image file.
+
+    Returns:
+        A tuple containing two NumPy arrays. The first array represents the edges detected in the image, and the second array represents the contours of the edges.
+    """
     # Read image
     img = cv2.imread(image_path, cv2.IMREAD_COLOR)
 
@@ -385,6 +357,18 @@ def detect_edges(image_path):
     return postedge,split_contours
 
 def k_means_clustering(image_path):
+    """
+    Performs K-means clustering on an image.
+
+    Args:
+        image_path: The path to the image file to be clustered.
+
+    Returns:
+        None
+
+    Notes:
+        This function writes a clustered image to a file named 'clustered.png'.
+    """
     pic = plt.imread(image_path)
     pic_n = pic.reshape(pic.shape[0] * pic.shape[1], pic.shape[2])
     pic_n.shape

@@ -6,22 +6,17 @@ from PIL import Image, ImageDraw
 from io import BytesIO
 from lxml import etree
 import base64
-import helpers.edge_detection as edge
+import helpers.edge_detect.edge_detection as edge
 import copy as cp
 import numpy as np
 
 """
 Extension for InkScape 1.X
 Features
- - will vectorize your beautiful image into a more beautiful SVG trace with separated infills(break apart into single surfaces like a puzzle)
+ - Trace elegant artful continuous line drawing around your image, with highlights as specified, for nice contouring border
  
-Author: Mario Voigt / FabLab Chemnitz
-Mail: mario.voigt@stadtfabrikanten.org
-Date: 18.08.2020
-Last patch: 24.04.2021
-License: GNU GPL v3
-
-Used version of imagetracerjs: https://github.com/jankovicsandras/imagetracerjs/commit/4d0f429efbb936db1a43db80815007a2cb113b34
+Author: Liam Cline
+Mail: liamcline@gmail.com
 
 """
 
@@ -29,9 +24,20 @@ Used version of imagetracerjs: https://github.com/jankovicsandras/imagetracerjs/
 
 class Continuous_outline(inkex.EffectExtension):
 
-
-
     def checkImagePath(self, element):
+        """
+        Check if the image path is valid.
+
+        Parameters
+        ----------
+        element : inkex.Element
+            The element to check.
+
+        Returns
+        -------
+        str
+            The valid path of the image.
+        """
         xlink = element.get('xlink:href')
         if xlink and xlink[:5] == 'data:':
             # No need, data already embedded
@@ -55,6 +61,15 @@ class Continuous_outline(inkex.EffectExtension):
             return path
 
     def add_arguments(self, pars):
+        """
+        Add the command line arguments.
+
+        Parameters
+        ----------
+        pars : argparse.ArgumentParser
+            The parser to add arguments to.
+
+        """
         pars.add_argument("--tab")
         pars.add_argument("--keeporiginal", type=inkex.Boolean, default=False, help="Keep original image on canvas")
         pars.add_argument("--ltres", type=float, default=1.0, help="Error treshold straight lines")
@@ -77,6 +92,23 @@ class Continuous_outline(inkex.EffectExtension):
   
 
     def image_prep(self, image):
+        """
+        Prepare an image for use in the continuous outline algorithm.
+
+        Parameters
+        ----------
+        image : inkex.Element
+            The element containing the image to be prepared.
+
+        Returns
+        -------
+        str
+            The path to the prepared image.
+
+        This function checks if an image is embedded or linked, and if so, it extracts the image from the SVG element.
+        It then writes the image to a temporary directory, and returns the path to the image.
+
+        """
         self.path = self.checkImagePath(image)  # This also ensures the file exists
         if self.path is None:  # check if image is embedded or linked
             image_string = image.get('{http://www.w3.org/1999/xlink}href')
@@ -104,6 +136,24 @@ class Continuous_outline(inkex.EffectExtension):
 
     def get_image_offsets(self, svg_image):
         # Determine image offsets
+        """
+        Determine image offsets.
+
+        Parameters
+        ----------
+        svg_image : inkex.Element
+            The element containing the image to get offsets from.
+
+        Returns
+        -------
+        tuple
+            A tuple containing the x and y offsets of the image.
+
+        This function determines the offset of the image from the origin of the SVG.
+        It does this by traversing the SVG tree upwards from the image element, and summing
+        the x and y coordinates of each element. The result is the offset of the image
+        from the origin of the SVG.
+        """
         parent = svg_image.getparent()
         if parent is not None and parent != self.document.getroot():
             tpc = parent.composed_transform()
@@ -117,6 +167,26 @@ class Continuous_outline(inkex.EffectExtension):
 
     def fit_svg(self, exportfile, image):
         # Delete the temporary png file again because we do not need it anymore
+        """
+        Fit the SVG image back into the SVG document tree.
+
+        Parameters
+        ----------
+        exportfile : str
+            The path to the temporary SVG file containing the image.
+        image : inkex.Element
+            The element containing the image to be fitted back into the SVG document tree.
+
+        Returns
+        -------
+        inkex.Group
+            The element containing the fitted image.
+
+        This function deletes the temporary PNG file and parses the temporary SVG file.
+        It then inserts the parsed SVG as a new group into the current document tree.
+        The group is then transformed to fit the original XY coordinates and width/height of the image.
+        Finally, the function deletes the temporary SVG file and returns the new group element.
+        """
         if os.path.exists(exportfile):
             os.remove(exportfile)
 
@@ -180,6 +250,28 @@ class Continuous_outline(inkex.EffectExtension):
 
     def isolate_sub_images(self, detail_bounds, export_file, image_in_svg):
         #Determine image offsets
+        """
+        Isolate sub-images from a larger image.
+
+        Parameters
+        ----------
+        detail_bounds : list of inkex.Elements
+            A list of elements containing the bounding boxes of the sub-images to be isolated.
+        export_file : str
+            The path to the larger image file containing the sub-images.
+        image_in_svg : inkex.Element
+            The element containing the larger image to be isolated from.
+
+        Returns
+        -------
+        list of dict
+            A list of dictionaries, each containing the local origin of the sub-image in the larger image, the image object itself, and the path to the saved sub-image file.
+
+        This function takes a list of bounding boxes and an image file as input, and outputs a list of dictionaries, each containing the local origin of the sub-image in the larger image, the image object itself, and the path to the saved sub-image file.
+        The function first determines the offset of the larger image in the SVG document tree, and then scales the bounding box coordinates to match the size of the larger image.
+        It then crops the bounding box of each sub-image from the larger image, and saves the resulting image to a temporary file.
+        Finally, the function returns a list of dictionaries, each containing the local origin of the sub-image in the larger image, the image object itself, and the path to the saved sub-image file.
+        """
         (x_offset, y_offset) = self.get_image_offsets(image_in_svg)
 
         with Image.open(export_file) as image:
@@ -247,6 +339,41 @@ class Continuous_outline(inkex.EffectExtension):
         return bounds_dicts
 
     def effect(self):
+        """
+        Internal overwrite for scale: overwrite scale to 1.0
+
+        Effect for continuous outline algorithm
+
+        Parameters
+        ----------
+        self : object
+            The effect object.
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+        This function is the main entry point for the effect. It is called by Inkscape when
+        the effect is invoked by the user.
+
+        The function first checks if the selection is empty. If so, it displays a message to the user.
+        If the selection is not empty, it then checks if the selection contains any images. If not, it displays a message to the user.
+        If the selection does contain images, it then processes each image in the selection.
+
+        The function extracts the image from the SVG element, resizes it to the desired size, and then runs the image through the edge detection
+        algorithm. The resulting image is then saved to a temporary file.
+
+        The function then isolates sub-images from the main image by cropping the image to the bounding box of each selected detail.
+
+        The function then applies the edge detection algorithm to each sub-image and saves the resulting images to temporary files.
+
+        The function then builds the path commands for the resulting images.
+
+        Finally, the function creates the inkex.Path element and adds it to the SVG document tree.
+
+        """
         # internal overwrite for scale:
         self.options.scale = 1.0
     

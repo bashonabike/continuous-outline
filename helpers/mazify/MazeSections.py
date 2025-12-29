@@ -2,6 +2,17 @@ import numpy as np
 
 class MazeSections:
     def __init__(self, outer_edge, m, n):
+        """
+        Initializes a MazeSections object.
+
+        Args:
+            outer_edge (numpy.ndarray): A boolean image of the outer edge of the maze.
+            m (int): The number of rows of sections.
+            n (int): The number of columns of sections.
+
+        Returns:
+            None
+        """
         self.outer_edge = outer_edge
         self.sections, self.y_grade, self.x_grade = self.count_true_pixels_in_sections(outer_edge, m, n)
 
@@ -50,6 +61,16 @@ class MazeSections:
 
 class MazeSection:
     def __init__(self, bounds, edge_pixels):
+        """
+        Initializes a MazeSection object.
+
+        Args:
+            bounds (tuple): A tuple (ymin, ymax, xmin, xmax) representing the bounds of the section.
+            edge_pixels (int): The number of edge pixels in the section.
+
+        Returns:
+            None
+        """
         (self.ymin, self.ymax, self.xmin, self.xmax) = bounds
         self.edge_pixels = edge_pixels
         self.filled_pixels = 0
@@ -57,5 +78,18 @@ class MazeSection:
 
     def update_saturation(self, fill_count):
         #TODO: improve this so it doesn't double-count saturation
+        """
+        Updates the saturation of a section based on the number of filled pixels.
+
+        Args:
+            fill_count (int): The number of pixels filled in the section.
+
+        Returns:
+            None
+
+        Notes:
+            Currently, this method does not prevent double-counting of saturation.
+            This should be improved in the future to prevent inaccurate results.
+        """
         self.filled_pixels += fill_count
         self.saturation = float(self.filled_pixels) / self.edge_pixels

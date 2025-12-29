@@ -18,6 +18,16 @@ import math
 
 class DrawingAgent:
     def __init__(self, dims, node_set: NodeSet.NodeSet):
+        """
+        Initializes a DrawingAgent object.
+
+        Args:
+            dims (list): A list containing the dimensions of the image.
+            node_set (NodeSet): A NodeSet object representing the nodes of the image.
+
+        Returns:
+            None
+        """
         self.stats = stat.AgentStats()
         self.blank = np.zeros((dims[0], dims[1]), dtype=np.uint8)
         self.oblit_mask = self.blank.copy()
@@ -32,6 +42,20 @@ class DrawingAgent:
 
     def tour(self):
         #Pick random outer path to start on
+        """
+        Runs the tour algorithm on the image.
+
+        The tour algorithm starts at a random outer path and follows it until it reaches a node that has already been visited.
+        If the algorithm reaches a node that has already been visited, it tries to loop back to the previous node.
+        If the algorithm cannot loop back, it tries to extend the path in the opposite direction.
+        The algorithm stops when it reaches the maximum number of iterations.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         startbroad = time.perf_counter_ns() // 1000
         # cur_node = rd.choice(self.node_set.outer_bookends)
         cur_node = rd.choice(self.node_set.bookends)
@@ -96,6 +120,17 @@ class DrawingAgent:
 
 
     def run_path(self, cur_node, dir:enums.Direction, loopback=False):
+        """
+        Runs a path from the current node to the next node in the given direction.
+
+        Args:
+            cur_node: The current node.
+            dir: The direction to move (FORWARD or BACKWARD).
+            loopback: Whether to loop back to the starting node.
+
+        Returns:
+            The next node and the angle of the next turn.
+        """
         if not loopback:self.tour_path.append(cur_node)
         if dir == enums.Direction.FORWARD:
             while cur_node.next is not None:
@@ -125,6 +160,17 @@ class DrawingAgent:
             return cur_node, cur_node.next.prev_angle_rad
 
     def oblate_pixels_on_line(self, start_node, end_node):
+        """
+        Oblates the pixels on the line from start_node to end_node, updating
+        the node set and stats.
+
+        Args:
+            start_node (TourNode): The starting node of the line
+            end_node (TourNode): The ending node of the line
+
+        Returns:
+            None
+        """
         #SLOWWWWW MAYBE STICK WITH INLINE COPMP
         start = time.perf_counter_ns() // 1000
         cur_blank = self.blank.copy()
@@ -157,6 +203,19 @@ class DrawingAgent:
 
 
     def search_for_next_node(self, cur_node: TourNode.TourNode):
+        """
+        Searches for the next node in the tour.
+
+        Goes through the nodes in the current node's rings of nodes, checks if the nodes are not already oblated or crowded,
+        and if so, adds them to the list of candidates to be the next node. The next node is chosen randomly from this list,
+        with a bias towards nodes with higher scores and nodes that are not crowded.
+
+        Args:
+            cur_node (TourNode): The current node in the tour.
+
+        Returns:
+            tuple: A tuple containing the next node and the direction to move to the next node.
+        """
         for oblates, searches in zip(cur_node.nodes_in_rings_to_oblate, cur_node.nodes_in_rings):
             cand_to_check = [c for c in oblates if c.set
                           not in (enums.NodeSet.OUTEROBLIT, enums.NodeSet.DETAILOBLIT)]
@@ -236,6 +295,19 @@ class DrawingAgent:
 
     def count_crowdings(self):
 
+        """
+        Counts the number of crossovers in a path defined by a series of nodes.
+
+        Crossovers are defined as the number of small blocks of white space in the path and the number of parallel lines in the path.
+
+        The algorithm draws the path on a white background and then assesses the number of small blocks of white space and the number of parallel lines in the path.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         start = time.perf_counter_ns() // 1000
 
         #Draw on path

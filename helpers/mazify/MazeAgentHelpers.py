@@ -9,23 +9,54 @@ import helpers.mazify.temp_options as options
 class MazeAgentHelpers:
 
     def __init__(self):
+        """Initialize the MazeAgentHelpers class with sine and cosine lookup tables."""
         self.sin_lut = self.create_sin_lut()
         self.cos_lut = self.create_cos_lut()
 
     def create_sin_lut(self):
+        """
+        Create a lookup table for sine values.
+
+        Returns:
+            numpy.ndarray: Array of sine values for angles from 0 to 2π.
+        """
         angles = np.arange(0.0, 2 * math.pi - options.directions_incr + 0.001, options.directions_incr)
         sin_values = np.sin(angles)
         return sin_values
 
     def create_cos_lut(self):
+        """
+        Create a lookup table for cosine values.
+
+        Returns:
+            numpy.ndarray: Array of cosine values for angles from 0 to 2π.
+        """
         angles = np.arange(0.0, 2 * math.pi - options.directions_incr + 0.001, options.directions_incr)
         cos_values = np.cos(angles)
         return cos_values
 
     def approx_sin(self, angle_rad):
+        """
+        Approximate sine using a precomputed lookup table.
+
+        Args:
+            angle_rad (float): Angle in radians.
+
+        Returns:
+            float: Approximate sine of the angle.
+        """
         index = int(angle_rad * len(self.sin_lut) / (2 * np.pi)) % len(self.sin_lut)
         return self.sin_lut[index]
     def approx_cos(self, angle_rad):
+        """
+        Approximate cosine using a precomputed lookup table.
+
+        Args:
+            angle_rad (float): Angle in radians.
+
+        Returns:
+            float: Approximate cosine of the angle.
+        """
         index = int(angle_rad * len(self.cos_lut) / (2 * np.pi)) % len(self.cos_lut)
         return self.cos_lut[index]
 
@@ -119,8 +150,17 @@ class MazeAgentHelpers:
 
         return compass
 
-    def check_intersections(self,segment_proposed, segments_existing):
-        """Checks if segment1 intersects any of the segments in the list."""
+    def check_intersections(self, segment_proposed, segments_existing):
+        """
+        Check if a proposed segment intersects with any existing segments.
+
+        Args:
+            segment_proposed (list): List of points defining the proposed segment.
+            segments_existing (list): List of existing segments to check against.
+
+        Returns:
+            int: Number of intersections found.
+        """
         num_intersections = 0
         line1 = LineString(segment_proposed)
         for segment2 in segments_existing:
@@ -129,7 +169,17 @@ class MazeAgentHelpers:
                 num_intersections += 1
         return num_intersections
 
-    def check_intersects_by_direction(self,point, path):
+    def check_intersects_by_direction(self, point, path):
+        """
+        Check for intersections in different directions from a point.
+
+        Args:
+            point (tuple): (y, x) coordinates of the point.
+            path (list): List of existing path segments to check against.
+
+        Returns:
+            list: List of quadrant vectors with intersection information.
+        """
         quadrant_vectors = []
         cur_quadrant = {'quadrant': 1, 'vec_y': 0.0, 'vec_x': 0.0}
         for direction in np.arange(0.0, 2 * math.pi - options.directions_incr + 0.001, options.directions_incr):
@@ -152,6 +202,19 @@ class MazeAgentHelpers:
         return quadrant_vectors
 
     def count_edge_pixels_paralleled(self, edges, start_point, end_point, direction, sub_box=None):
+        """
+        Count edge pixels in a region parallel to a line segment.
+
+        Args:
+            edges (numpy.ndarray): Binary edge image.
+            start_point (tuple): Starting point (y, x) of the line segment.
+            end_point (tuple): Ending point (y, x) of the line segment.
+            direction (float): Direction of the line segment in radians.
+            sub_box (tuple, optional): Optional bounding box (min_y, max_y, min_x, max_x) to constrain the search area.
+
+        Returns:
+            tuple: (count, bbox) where count is the number of edge pixels and bbox is the bounding box (min_y, max_y, min_x, max_x).
+        """
         count = 0
         left_ortho = (direction - math.pi/2) % (2 * math.pi)
         right_ortho = (direction + math.pi/2) % (2 * math.pi)
@@ -181,6 +244,16 @@ class MazeAgentHelpers:
         return np.sum(sub_array), (min_y, max_y, min_x, max_x)
 
     def compute_paralells_quadrant_vectors(self, point, edges):
+        """
+        Compute quadrant vectors based on parallel edge pixels.
+
+        Args:
+            point (tuple): (y, x) coordinates of the point.
+            edges (numpy.ndarray): Binary edge image.
+
+        Returns:
+            list: List of quadrant vectors with parallel edge information.
+        """
         quadrant_vectors = []
         cur_quadrant = {'quadrant': 1, 'vec_y': 0.0, 'vec_x': 0.0}
         for direction in np.arange(0.0, 2 * math.pi - options.directions_incr + 0.001, options.directions_incr):
@@ -202,13 +275,28 @@ class MazeAgentHelpers:
         return quadrant_vectors
 
     def single_dir_parallels(self, point, edges, direction, maze_sections):
+        """
+        Compute parallel edge information in a single direction, considering maze sections.
+
+        Args:
+            point (tuple): (y, x) coordinates of the point.
+            edges (numpy.ndarray): Binary edge image.
+            direction (float): Direction to check in radians.
+            maze_sections (MazeSections): Object containing maze section information.
+
+        Returns:
+            tuple: (count, bbox, sub_counts) where:
+                - count: Total edge pixel count in the direction
+                - bbox: Bounding box (min_y, max_y, min_x, max_x)
+                - sub_counts: List of dictionaries with section-specific counts
+        """
         # NOTE: flip y since origin is top left
         new_tent_y = (-1) * (point[0] + options.segment_length * self.approx_cos(direction))
         new_tent_x = point[1] + options.segment_length * self.approx_sin(direction)
         count, (min_y, max_y, min_x, max_x) = self.count_edge_pixels_paralleled(edges, point, (new_tent_y,
-                                                                                               new_tent_x), direction)
+                                                                                             new_tent_x), direction)
 
-        # Check if crossing over into mult sections
+        # Check if crossing over into multiple sections
         min_y_sec, max_y_sec = min_y // maze_sections.y_grade, max_y // maze_sections.y_grade
         min_x_sec, max_x_sec = min_x // maze_sections.x_grade, max_x // maze_sections.x_grade
         sub_counts = []
@@ -221,7 +309,6 @@ class MazeAgentHelpers:
                                                                      (new_tent_y, new_tent_x),
                                                                      direction, bbox)
                     sub_counts.append({'y_sec': y_sec, 'x_sec': x_sec, 'sub_count': sub_count})
-
 
         return count, (min_y, max_y, min_x, max_x), sub_counts
 

@@ -51,6 +51,17 @@ def create_tour_nodes_from_paths(paths, set:enums.NodeSet):
     return all_tour_nodes
 
 def grid_nodes(parsed_nodes, m, n):
+    """
+    Creates a 2D grid of Node objects from a list of parsed nodes.
+
+    Args:
+        parsed_nodes (list): A list of TourNode objects.
+        m (int): The width of the grid.
+        n (int): The height of the grid.
+
+    Returns:
+        A 2D numpy array of Node objects, where each element is a Node object if it exists at that position in the grid, otherwise None.
+    """
     grid = np.empty((n, m), dtype=object)
     for node in parsed_nodes:
         if 0 <= node.x < m and 0 <= node.y < n:  # Check bounds! Important
@@ -59,6 +70,17 @@ def grid_nodes(parsed_nodes, m, n):
     return grid
 
 def search_for_cand_next_nodes(bookend_nodes, gridded_nodes):
+    """
+    Searches for candidate nodes to oblate within a given range of each node in `bookend_nodes`.
+
+    For each node in `bookend_nodes`, it iterates over a range of distances from `constr.startsearchdist` to `constr.maxsearchdist` in steps of `constr.startsearchdist`, and for each distance, it forms a bound box around the node with that distance. It then searches within this bound box for all nodes that are not already in `exclude`, and appends these nodes to `bookend.nodes_in_rings_to_oblate`.
+
+    For each of these nodes, it computes the deflection angles from the node to the candidate node, and the deflection angles from the candidate node back to the node. It then computes the accumulated deflection angle and the accumulated deflection score, as well as the distance squared between the node and the candidate node. It also computes the net score, which is the accumulated deflection score divided by the distance squared between the node and the candidate node, plus a constant to prevent division by zero. Finally, it appends a dictionary containing all of these values to `bookend.nodes_in_rings`.
+
+    Args:
+        bookend_nodes (list): A list of TourNode objects, representing the nodes to start the search from.
+        gridded_nodes (numpy array): A 2D numpy array of Node objects, where each element is a Node object if it exists at that position in the grid, otherwise None.
+    """
     for bookend in bookend_nodes:
         exclude = []
         for dist in range(constr.startsearchdist, constr.maxsearchdist + 1, constr.startsearchdist):

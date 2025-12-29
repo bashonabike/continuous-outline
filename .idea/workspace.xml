@@ -5,15 +5,20 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="start">
-      <change afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/continuous-outline.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/continuous-outline.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/edge_detection.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/edge_detection.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/ftlib.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/ftlib.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/maze_agent_helpers.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgentHelpers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/temp_options.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/temp_options.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgentHelpers.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgentHelpers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/old_method/AgentStats.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/AgentStats.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/old_method/DrawingAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/DrawingAgent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/old_method/NodeSet.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/NodeSet.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/old_method/ParsePathsIntoObjects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/ParsePathsIntoObjects.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/old_method/TourNode.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/TourNode.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/old_method/draw_outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/draw_outline.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -36,17 +41,16 @@
     &quot;assignee&quot;: &quot;bashonabike&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/bashonabike/continuous-outline",
-    "accountId": "5bb13a72-640e-4370-a31b-398c259cc1b1"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/bashonabike/continuous-outline&quot;,
+    &quot;accountId&quot;: &quot;5bb13a72-640e-4370-a31b-398c259cc1b1&quot;
   }
-}]]></component>
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 6
 }</component>
   <component name="ProjectId" id="2rHKswcRe0nRzaHTRaX0RsSTuLt" />
-  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -62,7 +66,7 @@
     "git-widget-placeholder": "master",
     "ignore.virus.scanning.warn.message": "true",
     "last_opened_file_path": "C:/Users/liamc/PycharmProjects/continuous-outline/Trial-AI-Base-Images",
-    "settings.editor.selected.configurable": "preferences.pluginManager"
+    "settings.editor.selected.configurable": "com.codeium.AppSettingsConfigurable"
   }
 }]]></component>
   <component name="RecentsManager">
@@ -91,6 +95,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="C:\Users\liamc\PycharmProjects\continuous-outline\helpers\edge-detect\SLIC_Segmentation.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -113,6 +118,7 @@
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Testing.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -136,7 +142,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-975db3bf15a3-31b6be0877a2-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-241.18034.82" />
+        <option value="bundled-python-sdk-f2b7a9f6281b-6e1f45a539f7-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-253.29346.142" />
       </set>
     </attachedChunks>
   </component>
@@ -287,23 +293,27 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/edge_detect/edge_detection.py</url>
-          <line>212</line>
+          <line>208</line>
           <option name="timeStamp" value="14" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py</url>
-          <line>215</line>
+          <line>275</line>
           <option name="timeStamp" value="73" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py</url>
-          <line>214</line>
+          <line>274</line>
           <option name="timeStamp" value="74" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py</url>
-          <line>68</line>
+          <line>100</line>
           <option name="timeStamp" value="78" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/helpers/edge_detect/ftlib.py</url>
+          <option name="timeStamp" value="79" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>

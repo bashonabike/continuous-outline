@@ -4,6 +4,22 @@ import numpy as np
 show_images = 1
 
 def fastThin(img_ori):
+  """
+  Fast thinning of a binary image.
+
+  This function applies a series of morphological operations to thin a binary image.
+
+  Parameters
+  ----------
+  img_ori : numpy array
+      The binary image to be thinned.
+
+  Returns
+  -------
+  numpy array
+      The thinned binary image.
+
+  """
   obj = 0
   bg = 255
   img = img_ori.copy()
@@ -23,7 +39,29 @@ def fastThin(img_ori):
 
 def morphology(img):
   # inverts the image to execute easier operations (sum and subtraction)
-  a, img = cv2.threshold(img,100,255,cv2.THRESH_BINARY_INV) 
+  """
+  Performs a series of morphological operations to thin a binary image.
+
+  Parameters
+  ----------
+  img : numpy array
+      The binary image to be thinned.
+
+  Returns
+  -------
+  numpy array
+      The thinned binary image.
+
+  Notes
+  -----
+  The algorithm works by subtracting the result of a dilation operation from the original image and then adding the result of an erosion operation to the original image. This process is repeated until the result from the previous iteration is the same as the current iteration.
+
+  The kernel used for the dilation and erosion operations is a 3x3 cross kernel.
+
+  The image is inverted at the start and end of the algorithm to make the operations easier to execute.
+
+  """
+  a, img = cv2.threshold(img,100,255,cv2.THRESH_BINARY_INV)
   # generates 3 by 3 cross kernel
   kernel = cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3)) 
   # iteration counter
@@ -48,6 +86,28 @@ def morphology(img):
 
 # came up with this one by myself, if anyone finds a better way of detecting/reducing interest areas please tell me
 def eraseTwoByTwos(img):
+  """
+  Erases 2x2 regions of interest in a binary image.
+
+  Parameters
+  ----------
+  img : numpy array
+      The binary image to be processed.
+
+  Returns
+  -------
+  numpy array
+      The processed binary image with 2x2 regions of interest erased.
+
+  Notes
+  -----
+  The algorithm works by iterating over the image and checking each 2x2 region if all the pixels are the same color (either object or background). If all the pixels are the same color, it erases the region.
+
+  The algorithm also checks the 12 surrounding pixels of each 2x2 region to see if they are of a different color. If any of the surrounding pixels are of a different color, it doesn't erase the region.
+
+  The image is not modified if no 2x2 regions of interest are found.
+
+  """
   altura = img.shape[0]
   largura = img.shape[1]
   obj = 0
@@ -89,6 +149,18 @@ def eraseTwoByTwos(img):
 
 # sets the borders of the image as bg
 def cleanCorners(img):
+  """
+  Sets the borders of the image as bg.
+
+  Parameters
+  ----------
+  img : numpy array
+    The image to set its borders as bg.
+
+  Returns
+  -------
+  None
+  """
   altura = img.shape[0]
   largura = img.shape[1]
   bg = 255
@@ -99,6 +171,21 @@ def cleanCorners(img):
 
 # used in Zhang Suen algorithms to eliminate undesired corners
 def eraseLadders(img):
+  """
+  Erases ladders from an image.
+
+  Ladders are patterns of 2x2 pixels where all pixels have the same value and are surrounded by pixels of a different value. This function erases these patterns from an image.
+
+  Parameters
+  ----------
+  img : numpy array
+      The image to erase ladders from.
+
+  Returns
+  -------
+  None
+
+  """
   altura = img.shape[0]
   largura = img.shape[1]
   obj = 0

@@ -1,10 +1,7 @@
-# import the necessary packages
 from skimage.segmentation import slic, mark_boundaries
 import numpy as np
 import cv2
 from typing import List
-# from shapely.geometry import LineString
-# from simplification.cutil import simplify_coords
 
 
 # testimg = "C:\\Users\\liamc\\PycharmProjects\\continuous-outline\\Trial-AI-Base-Images\\image_fx_(18).jpg"
@@ -25,6 +22,25 @@ from typing import List
 # plt.show()
 
 def mask_test_boundaries(img_path, split_contours):
+	"""
+	Tests boundaries of given contours against a mask image.
+
+	Given a path to an image and contours, this function will detect the boundaries of the contours against the mask image.
+	The mask image is expected to be a binary image where white pixels (255) represent valid regions and black pixels (0) represent invalid regions.
+	The contours are expected to be a list of contours where each contour is a list of points.
+
+	The function will return a tuple containing two elements. The first element is a list of contours that are near the boundaries of the mask image.
+	The second element is the mask image itself.
+
+	The tolerance parameter determines how close the contours must be to the boundaries of the mask image. A tolerance of 0 means the contours must touch the boundaries, while a tolerance of 1 means the contours can be one pixel away from the boundaries.
+
+	Parameters:
+		img_path (str): Path to the image that will be used as the mask.
+		split_contours (list): List of contours where each contour is a list of points.
+
+	Returns:
+		tuple: A tuple containing two elements. The first element is a list of contours that are near the boundaries of the mask image. The second element is the mask image itself.
+	"""
 	#NOTE: only work PNG with transparent bg, or where background is all white
 	img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
 	mask = None
@@ -41,6 +57,22 @@ def mask_test_boundaries(img_path, split_contours):
 	return find_contours_near_boundaries(split_contours, mask, tolerance=2), mask
 
 def mask_boundary_edges(img_path):
+	"""
+	Find edges of a mask image.
+
+	Given a PNG image path, it creates a binary mask by checking the alpha channel.
+	If the image has no alpha channel, it treats white as the background.
+	It then applies a Gaussian blur to the mask, and finds the edges of the blurred mask.
+	The edges are eroded to fill in holes in the mask.
+	The filled edges are then used to create a new mask with the same shape as the original image.
+
+	Args:
+		img_path (str): Path to the PNG image.
+
+	Returns:
+		edges_bool (bool): A boolean mask of the edges of the original image.
+		mask (bool): A boolean mask of the original image.
+	"""
 	#NOTE: only work PNG with transparent bg, or where background is all white
 	img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
 	mask = None
@@ -88,7 +120,23 @@ def mask_boundary_edges(img_path):
 
 	return edges_bool, mask
 
-def slic_image_boundary_edges(im_float, num_segments:int =2, enforce_connectivity:bool = True):
+def slic_image_boundary_edges(im_float, num_segments:int = 2, enforce_connectivity:bool = True):
+	"""
+	Apply SLIC segmentation to an image and extract boundary edges.
+
+	Args:
+		im_float (numpy.ndarray): Input image as a float array
+		num_segments (int, optional): Initial number of segments to try. Defaults to 2.
+		enforce_connectivity (bool, optional): Whether to enforce segment connectivity. Defaults to True.
+
+	Returns:
+		tuple: A tuple containing:
+			- Boolean mask of boundary edges
+			- Segmentation labels array
+
+	Raises:
+		Exception: If segmentation fails (image too disparate for outlining)
+	"""
 	segments = None
 	for num_segs in range(num_segments, num_segments+20):
 		segments_trial = slic(im_float, n_segments=num_segs, sigma=5, enforce_connectivity=enforce_connectivity)
@@ -107,7 +155,24 @@ def slic_image_boundary_edges(im_float, num_segments:int =2, enforce_connectivit
 	return edges_bool, segments
 
 
-def slic_image_test_boundaries(im_float, split_contours, num_segments:int =2, enforce_connectivity:bool = True):
+def slic_image_test_boundaries(im_float, split_contours, num_segments:int = 2, enforce_connectivity:bool = True):
+	"""
+	Apply SLIC segmentation and test contours against segment boundaries.
+
+	Args:
+		im_float (numpy.ndarray): Input image as a float array
+		split_contours: List of contour points to test against segment boundaries
+		num_segments (int, optional): Initial number of segments to try. Defaults to 2.
+		enforce_connectivity (bool, optional): Whether to enforce segment connectivity. Defaults to True.
+
+	Returns:
+		tuple: A tuple containing:
+			- List of contours near segment boundaries
+			- Segmentation labels array
+
+	Raises:
+		Exception: If segmentation fails (image too disparate for outlining)
+	"""
 	segments = None
 	for num_segs in range(num_segments, num_segments+20):
 		segments_trial = slic(im_float, n_segments=num_segs, sigma=5, enforce_connectivity=enforce_connectivity)
@@ -117,11 +182,6 @@ def slic_image_test_boundaries(im_float, split_contours, num_segments:int =2, en
 	if segments is None: raise Exception("Segmentation failed, image too disparate for outlining")
 
 	return find_contours_near_boundaries(split_contours, segments, tolerance=2), segments
-
-#
-# x_scale = image_size[0] / float(svg_image.get('width'))
-# y_scale = image_size[1] / float(svg_image.get('height'))
-
 
 
 def is_contour_near_segment_boundary(contour: np.ndarray, segments: np.ndarray, tolerance: int = 10,
