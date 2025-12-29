@@ -1,0 +1,29 @@
+# --- Core Scientific & Data Processing ---
+numpy>=2.4.0            # Verified Python 3.14 support (released Dec 2025)
+scipy>=1.16.3           # Latest stable release
+pandas>=2.2.3           # (Implicitly required by many data workflows)
+scikit-image>=0.25.2    # Latest stable version
+scikit-learn>=1.6.0     # (Standard companion for scipy/numpy)
+
+# --- Computer Vision & Image Processing ---
+opencv-python>=4.12.0.88 # Latest stable tracking
+Pillow>=12.0.0          # Verified Python 3.14 support (released Oct 2025)
+transparent-background>=1.3.4
+
+# --- Geometry & Graph Theory ---
+shapely>=2.1.2          # Explicit Python 3.14 wheel support
+networkx>=3.6.1         # Explicit Python 3.14 support (released Dec 2025)
+
+# --- SVG & Vector Graphics ---
+svgpathtools>=1.7.2
+svg.path>=7.0           # Major update July 2025
+cairosvg>=2.7.1         # Verified for Python 3.14 rebuilds
+inkex>=1.4.1            # Latest Inkscape extension core
+
+# --- Deep Learning & Optimization ---
+torch>=2.9.0            # Supports Python 3.10 through 3.14
+torchvision>=0.24.1     # Paired with Torch 2.9
+ortools>=9.11.0         # Google OR-Tools latest stable
+
+# --- Visualization ---
+matplotlib>=3.10.8      # Verified Python 3.14 wheels (released Nov 2025)
