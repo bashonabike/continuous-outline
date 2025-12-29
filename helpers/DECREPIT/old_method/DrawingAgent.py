@@ -3,11 +3,11 @@
 # minimize accum deflection angles
 # minimize crossovers
 # minimize length of connectors
-import helpers.old_method.TourConstraints as constr
+import helpers.DECREPIT.old_method.TourConstraints as constr
 import helpers.Enums as enums
-import helpers.old_method.AgentStats as stat
-import helpers.old_method.NodeSet as NodeSet
-import helpers.old_method.TourNode as TourNode
+import helpers.DECREPIT.old_method.AgentStats as stat
+import helpers.DECREPIT.old_method.NodeSet as NodeSet
+import helpers.DECREPIT.old_method.TourNode as TourNode
 
 import numpy as np
 import random as rd

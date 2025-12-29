@@ -1,20 +1,57 @@
-import helpers.edge_detect.edge_detection as edge
+import importlib
+import sys
+import time
+import logging
+import types
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+original_import = __import__
+
+imports_time = []
+
+def verbose_import(name, globals=None, locals=None, fromlist=(), level=0):
+    """
+    A verbose version of the built-in __import__ function.
+    """
+    # logging.info(f"Loading library: {name}")
+    start_time = time.time()
+    module = original_import(name, globals, locals, fromlist, level)
+    end_time = time.time()
+    # logging.info(f"Loaded library: {name} in {end_time - start_time:.4f} seconds")
+    imports_time.append({"name": name, "time": end_time - start_time})
+    return module
+
+# Replace the built-in __import__ with our verbose version
+__builtins__.__import__ = verbose_import
+
 import os
 import cv2
-import helpers.edge_detect.SLIC_Segmentation as slic
-from skimage.segmentation import mark_boundaries
+# from skimage.segmentation import mark_boundaries
 from skimage.util import img_as_float
 import numpy as np
-import time
-import svgwrite as svg
+# import svgwrite as svg
+import matplotlib.pyplot as plt
+from datetime import date
 
-import helpers.old_method.DrawingAgent as draw
-import helpers.Enums as Enums
-import helpers.old_method.ParsePathsIntoObjects as parse
-from helpers.old_method import TourConstraints as constr
-import helpers.old_method.NodeSet as NodeSet
 from helpers.mazify.MazeAgent import MazeAgent
+import helpers.edge_detect.SLIC_Segmentation as slic
+# import helpers.edge_detect.edge_detection as edge
+# import helpers.old_method.DrawingAgent as draw
+import helpers.Enums as Enums
+# import helpers.old_method.ParsePathsIntoObjects as parse
+# from helpers.old_method import TourConstraints as constr
+# import helpers.old_method.NodeSet as NodeSet
 from helpers.mazify.MazeSections import MazeSections, MazeSection
+import helpers.mazify.temp_options as options
+import helpers.post_proc.smooth_path as smooth
+import helpers.post_proc.path_cleanup as clean
+import helpers.post_proc.post_effects as fx
+
+import helpers.caching.build_objects_from_db as builddf
+import helpers.caching.set_data_by_level as setdf
+from helpers.caching.DataRetrieval import DataRetrieval
+
 
 def draw_open_paths(image, paths, color=(0, 0, 255), thickness=2):
   """
@@ -70,13 +107,27 @@ def draw_object_node_path(image, object_path, color=(0, 0, 255), thickness=2):
 # remover = spr.StrayPixelRemover(1, 10)
 
 
+imports_time.sort(key=lambda x: x["time"], reverse=True)
 
-for file in os.listdir("Trial-AI-Base-Images"):
+for i in range(min(len(imports_time), 20)):
+    logging.info(f"Loaded library: {imports_time[i]['name']} in {imports_time[i]['time']:.4f} seconds")
+
+  #TODO: Make sep ext for batch bgrem, return popup window "bgrem imgs located here" with button to open in explorer/finder etc
+
+  #TODO: Actual unit tests!  Log images done for project, log what tested, log if failed, log if passed, log fails!
+# Configure logging to output to console
+for file in os.listdir("Trial-AI-Base-Images\\bg_removed"):
     if file.endswith(".jpg") or file.endswith(".png"):
-      image_path = os.path.join("Trial-AI-Base-Images", file)
-      postedge, split_contours = edge.detect_edges(image_path)
+      start_pre = time.time_ns()
+      image_path = os.path.join("Trial-AI-Base-Images\\bg_removed", file)
+      # postedge, split_contours = edge.detect_edges(image_path)
 
-      #TODO: maybe just run edge detect on details regions spec by user
+      #TODO: maybe just run edge detect on details regions spec by user, see if can just call a given function wtihout importing
+
+
+      #TODO: train nn based on dumb req/opt gridding for fixed section grades, do buncha trial rough paths, log which ones have good stats
+      #If make into illust plugin, can collect user stats
+      #Dump cached info to temp files, import as needed
       #use SLIC  for tracing, maybe build agent so it follows line lke maze then jumps to next as needed
       #try to do this intelligently? prioritize maximizing coverage (length)
       #Think where place node, maybe track deflection once gets past certain amt then nodify
@@ -97,37 +148,259 @@ for file in os.listdir("Trial-AI-Base-Images"):
       #   im_float = img_as_float(clahe_image)  # If it does not have an alpha channel, just use the image directly.
 
 
-      im_unch = cv2.imread(image_path, cv2.IMREAD_COLOR)
+      im_unch = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+
+      # im_bgrem = bgrem.remove_background(im_unch, "jit")
+
       if im_unch.shape[2] == 4:  # Check if it has an alpha channel
-        im_float = img_as_float(cv2.cvtColor(im_unch, cv2.COLOR_BGRA2BGR)) # Convert from BGRA to BGR
+        im_float = img_as_float(cv2.cvtColor(im_unch, cv2.COLOR_BGRA2BGR))  # Convert from BGRA to BGR
+        alpha_mask = im_unch[:, :, 3] == 0
+        im_float[alpha_mask] = [0.0, 0.0, 0.0]
+      elif im_unch.shape[2] == 2:
+        im_float = img_as_float(cv2.cvtColor(im_unch, cv2.COLOR_GRAY2BGR)) #Greyscale PNG
+        alpha_mask = im_unch[:, :, 1] == 0
+        im_float[alpha_mask] = [0.0, 0.0, 0.0]
       else:
         im_float = img_as_float(im_unch)  # If it does not have an alpha channel, just use the image directly.
-
 
 
 
       # near_boudaries_contours, segments = slic.slic_image_test_boundaries(im_float, split_contours)
       # near_boudaries_contours, segments = slic.mask_test_boundaries(image_path, split_contours)
 
-      outer_edges, mask = slic.mask_boundary_edges(image_path)
-      inner_edges, segments = slic.slic_image_boundary_edges(im_float, num_segments=6, enforce_connectivity=False)
+      outer_edges, outer_contours_yx, mask, bounds_outer = slic.mask_boundary_edges(options, im_unch)
+      inner_edges, inner_contours_yx, segments, num_segs, bounds_inner = slic.slic_image_boundary_edges(None,
+                                                                                                      options, im_float,
+                                                                                                        mask,
+                                                                                        num_segments=options.slic_regions,
+                                                                                        enforce_connectivity=False)
+      start = time.time_ns()
+      crop = (tuple([min(o, c) for o, c in zip(bounds_outer[0], bounds_inner[0])]),
+              tuple([max(o, c) for o, c in zip(bounds_outer[1], bounds_inner[1])]))
+
+      outer_edges_cropped = outer_edges[crop[0][0]:crop[1][0] + 1, crop[0][1]:crop[1][1] + 1]
+      inner_edges_cropped = inner_edges[crop[0][0]:crop[1][0] + 1, crop[0][1]:crop[1][1] + 1]
+      outer_contours_yx_cropped = slic.shift_contours(outer_contours_yx, (-1)*crop[0][0], (-1)*crop[0][1])
+      inner_contours_yx_cropped = slic.shift_contours(inner_contours_yx, (-1)*crop[0][0], (-1)*crop[0][1])
+
       edges = outer_edges + inner_edges
 
+      # transition_nodes = slic.find_transition_nodes(segments)
+      #
       edges_show = edges.astype(np.uint8) * 255
+      end = time.time_ns()
+      print(str((end - start)/1e6) + " ms to do crop stuff")
+
+      end_pre = time.time_ns()
+      print(str((end_pre - start_pre)/1e6) + " ms to do all pre-processing")
       # cv2.imshow("outer", outer_edges.astype(np.uint8) * 255)
       # cv2.imshow("inner", inner_edges.astype(np.uint8) * 255)
-      # cv2.imshow("all", edges_show)
+      # cv2.imshow("outer", outer_edges.astype(np.uint8) * 255)
+      # cv2.imshow("nodes", transition_nodes.astype(np.uint8) * 255)
       # cv2.waitKey(0)
 
-      maze_sections = MazeSections(edges_show, 10, 10)
+      # plt.imshow(inner_edges, cmap='gray', interpolation='bicubic')
+      # plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
+      # plt.show()
 
-      maze_agent = MazeAgent(outer_edges, inner_edges, maze_sections)
-      prox_to_edge = maze_agent.proximity_to_edge((500, 400))
+      start = time.time_ns()
+      y_lower, y_upper, x_lower, x_upper = 400, 600, 500, 700
+      detail_req_mask = np.zeros_like(outer_edges_cropped, dtype=np.bool)
+      # Create boolean masks for y and x bounds
+      y_mask = (np.arange(detail_req_mask.shape[0]) >= y_lower) & (np.arange(detail_req_mask.shape[0]) <= y_upper)
+      x_mask = (np.arange(detail_req_mask.shape[1]) >= x_lower) & (np.arange(detail_req_mask.shape[1]) <= x_upper)
+
+      # Use meshgrid to create 2D masks
+      y_mask_2d, x_mask_2d = np.meshgrid(x_mask, y_mask)
+
+      # Apply the masks to set values to True
+      detail_req_mask[y_mask_2d & x_mask_2d] = True
+
+      end = time.time_ns()
+      print(str((end - start)/1e6) + " ms to do shifting")
+
+
+
+      start = time.time_ns()
+
+
+      input_data = {}
+      data_retr = DataRetrieval()
+      _, dataframes = data_retr.retrieve_and_wipe_data(0)
+
+
+      input_data["outer_contours"] = outer_contours_yx
+      input_data["outer_edges"] = outer_edges
+      input_data["inner_contours"] = inner_contours_yx
+      input_data["inner_edges"] = inner_edges
+      input_data["focus_masks"] = [detail_req_mask]
+
+      setdf.set_level_1_data(dataframes, input_data)
+
+
+
+      end = time.time_ns()
+      print(str((end - start) / 1e6) + " ms to do level 1 data setting")
+
+      start = time.time_ns()
+      maze_sections = MazeSections(outer_edges_cropped, options.maze_sections_across, options.maze_sections_across,
+                                   [detail_req_mask])
+
+      maze_agent = MazeAgent(outer_edges_cropped, outer_contours_yx_cropped, inner_edges_cropped,
+                             inner_contours_yx_cropped, maze_sections)
+
+      end = time.time_ns()
+      print(str((end - start) / 1e6) + " ms to do sectioning and agent setup")
+
+      start = time.time_ns()
+      input_data["sections"] = maze_sections
+      input_data["agent"] = maze_agent
+      setdf.set_level_2_data(dataframes, input_data)
+
+
+
+      end = time.time_ns()
+      print(str((end - start)/1e6) + " ms to do level 2 data setting")
+
+
+      start = time.time_ns()
+      # raw_path_coords = maze_agent.run_round_dumb(image_path)
+      raw_path_coords =  maze_agent.run_round_trace(Enums.TraceTechnique.back_forth)
+
+      raw_path_coords_centered = slic.shift_contours([raw_path_coords], crop[0][0], crop[0][1])[0]
+      end = time.time_ns()
+      print(str((end - start)/1e6) + " ms to do trace run")
+
+
+      start = time.time_ns()
+      input_data["raw_path"] = raw_path_coords_centered
+      setdf.set_level_3_data(dataframes, input_data)
+
+
+
+      end = time.time_ns()
+      print(str((end - start)/1e6) + " ms to do level 3 data setting")
+
+
+      # flipped_coords_nd = np.array(raw_path_coords_centered)
+      # flipped_coords_nd[:, 0] = outer_edges.shape[0] - 1 - flipped_coords_nd[:, 0]
+      # flipped_coords = flipped_coords_nd.tolist()  # Flip y-coordinates
+      start= time.time_ns()
+      remove_blips = clean.remove_inout(raw_path_coords_centered, 50, 100)
+      dithered = fx.lfo_dither(remove_blips, 20, 1000, 3.0)
+
+      simplified = smooth.simplify_line(dithered, tolerance=options.simplify_tolerance)
 
 
 
 
 
+      end = time.time_ns()
+      print(str((end - start)/1e6) + " ms to do post proc")
+
+
+      start = time.time_ns()
+      input_data["formed_path"] = raw_path_coords_centered
+      setdf.set_level_3_data(dataframes, input_data)
+
+
+
+      end = time.time_ns()
+      print(str((end - start)/1e6) + " ms to do level 3 data setting")
+
+
+      start = time.time_ns()
+      data_retr.set_data(dataframes)
+      # data_retr.close_connection()
+
+
+      end = time.time_ns()
+      print(str((end - start) / 1e6) + " ms to do data db setting")
+
+
+      start = time.time_ns()
+      retrieved, discarded = data_retr.retrieve_and_wipe_data(7)
+      data_retr.close_connection()
+
+
+      end = time.time_ns()
+      print(str((end - start) / 1e6) + " ms to retrieve all data into dataframes")
+
+
+      start = time.time_ns()
+      lev_1_data = {}
+      builddf.build_level_1_data(retrieved, lev_1_data)
+
+
+      end = time.time_ns()
+      print(str((end - start) / 1e6) + " ms to build level 1 objects")
+
+
+      start = time.time_ns()
+      lev_2_data = {}
+      builddf.build_level_2_data(retrieved, lev_1_data, lev_2_data)
+
+
+      end = time.time_ns()
+      print(str((end - start) / 1e6) + " ms to build level 2 objects")
+
+
+      start = time.time_ns()
+      lev_3_data = {}
+      builddf.build_level_3_data(retrieved, lev_3_data)
+
+
+      end = time.time_ns()
+      print(str((end - start) / 1e6) + " ms to build level 3 objects")
+
+
+      start = time.time_ns()
+      lev_4_data = {}
+      builddf.build_level_4_data(retrieved, lev_4_data)
+
+
+      end = time.time_ns()
+      print(str((end - start) / 1e6) + " ms to build level 4 objects")
+
+      #
+      # start = time.time_ns()
+      # lev_1_data = {}
+      # builddf.build_level_1_data(retrieved, lev_1_data)
+      # data_retr.close_connection()
+      #
+      #
+      # end = time.time_ns()
+      # print(str((end - start) / 1e6) + " ms to build level 3 objects")
+      #
+      #
+      # start = time.time_ns()
+      # lev_1_data = {}
+      # builddf.build_level_1_data(retrieved, lev_1_data)
+      # data_retr.close_connection()
+      #
+      #
+      # end = time.time_ns()
+      # print(str((end - start) / 1e6) + " ms to build level 4 objects")
+
+
+
+      y_coords, x_coords = zip(*simplified)  # Unzip the coordinates
+      plt.plot(x_coords, y_coords, marker='o', markersize=1)  # Plot the line with markers
+      plt.gca().invert_yaxis()
+      plt.xlabel("X-coordinate")
+      plt.ylabel("Y-coordinate")
+      plt.title("Line Plot of Coordinates")
+      plt.grid(True)
+      plt.savefig(str(date.today()) + ".png" , dpi=600)
+      plt.show()
+
+
+
+
+      #TODO: Pass in vector segs, use compass pick dir, lock onto seg, criteria for losing seg, use dir just for between segs
+      #TODO: pre-walk each edge forward, set smoothed direction for each node maybe do as kernal so backward and forward predictyion
+      #Have it walk-dir invariant, but relative to forward walk, have smoothing as func of angle and displacement with next node
+      #While walking, parse each node into a quadrant for easy retrieval, maybe make quadrant object, so can do refs to nodes
 
       testtt = 0
 

@@ -4,21 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="start">
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Built in default to outer if possible">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/continuous-outline.inx" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.inx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/build_objects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/build_objects.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/caching/ContinuousOutlineCache.db" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/edge_detection.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/edge_detection.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/ftlib.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/ftlib.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgentHelpers.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgentHelpers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/old_method/AgentStats.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/AgentStats.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/old_method/DrawingAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/DrawingAgent.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/old_method/NodeSet.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/NodeSet.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/old_method/ParsePathsIntoObjects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/ParsePathsIntoObjects.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/old_method/TourNode.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/TourNode.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/old_method/draw_outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/old_method/draw_outline.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,45 +35,72 @@
 }</component>
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/bashonabike/continuous-outline&quot;,
-    &quot;accountId&quot;: &quot;5bb13a72-640e-4370-a31b-398c259cc1b1&quot;
+    &quot;url&quot;: &quot;https://github.com/bashonabike/continuous-outline.git&quot;,
+    &quot;accountId&quot;: &quot;58e94c20-7d39-4b4a-93e7-7d4618e59941&quot;
   }
 }</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 6
 }</component>
   <component name="ProjectId" id="2rHKswcRe0nRzaHTRaX0RsSTuLt" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.SLIC-Segmentation.executor": "Debug",
-    "Python.Testing.executor": "Run",
-    "Python.edge_detection.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "com.codeium.enabled": "true",
-    "git-widget-placeholder": "master",
-    "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "C:/Users/liamc/PycharmProjects/continuous-outline/Trial-AI-Base-Images",
-    "settings.editor.selected.configurable": "com.codeium.AppSettingsConfigurable"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.ProcessTestImages.executor&quot;: &quot;Run&quot;,
+    &quot;Python.SLIC-Segmentation.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.Testing.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.edge_detection.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test_find_contours_raw.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test_path_cleanup.executor&quot;: &quot;Debug&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;com.codeium.enabled&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/liamc/Downloads/strawberry-pycharm-plugin.zip&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\Trial-AI-Base-Images\bg_removed" />
       <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\Trial-AI-Base-Images" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
-      <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\helpers\edge-detect" />
       <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\helpers\DECREPIT" />
+      <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\helpers\DECREPIT\old_method" />
+      <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\helpers\edge-detect" />
       <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\helpers\old-method" />
       <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\Trial-AI-Base-Images\_TEMPPPP" />
-      <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\helpers" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.Testing">
+  <component name="RunManager" selected="Python.ProcessTestImages">
+    <configuration name="ProcessTestImages" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="continuous-outline" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/ProcessTestImages.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="SLIC_Segmentation" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="continuous-outline" />
       <option name="ENV_FILES" value="" />
@@ -95,7 +114,6 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="C:\Users\liamc\PycharmProjects\continuous-outline\helpers\edge-detect\SLIC_Segmentation.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -118,7 +136,6 @@
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Testing.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -128,12 +145,62 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="test_find_contours_raw" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="continuous-outline" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test_find_contours_raw.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="test_path_cleanup" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="continuous-outline" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test_path_cleanup.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <list>
+      <item itemvalue="Python.ProcessTestImages" />
       <item itemvalue="Python.SLIC_Segmentation" />
       <item itemvalue="Python.Testing" />
+      <item itemvalue="Python.test_find_contours_raw" />
+      <item itemvalue="Python.test_path_cleanup" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.ProcessTestImages" />
+        <item itemvalue="Python.test_path_cleanup" />
+        <item itemvalue="Python.test_find_contours_raw" />
         <item itemvalue="Python.Testing" />
         <item itemvalue="Python.SLIC_Segmentation" />
       </list>
@@ -142,7 +209,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-f2b7a9f6281b-6e1f45a539f7-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-253.29346.142" />
+        <option value="bundled-python-sdk-495700d161d3-aa17d162503b-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-243.22562.220" />
       </set>
     </attachedChunks>
   </component>
@@ -155,111 +222,399 @@
       <option name="presentableId" value="Default" />
       <updated>1736210770875</updated>
     </task>
-    <task id="LOCAL-00001" summary="Initial create">
+    <task id="LOCAL-00032" summary="Working on getting better fiddling with settings">
       <option name="closed" value="true" />
-      <created>1736285602633</created>
-      <option name="number" value="00001" />
-      <option name="presentableId" value="LOCAL-00001" />
+      <created>1741483730342</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
       <option name="project" value="LOCAL" />
-      <updated>1736285602633</updated>
+      <updated>1741483730342</updated>
     </task>
-    <task id="LOCAL-00002" summary="Initial sub image gen function, working but dimensioning all off">
+    <task id="LOCAL-00033" summary="Working on making edge map for new technique">
       <option name="closed" value="true" />
-      <created>1736289189289</created>
-      <option name="number" value="00002" />
-      <option name="presentableId" value="LOCAL-00002" />
+      <created>1741552138269</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
       <option name="project" value="LOCAL" />
-      <updated>1736289189289</updated>
+      <updated>1741552138269</updated>
     </task>
-    <task id="LOCAL-00003" summary="Scaling &amp; shifting working for rect &amp; ellipse crop">
+    <task id="LOCAL-00034" summary="Got ssssnake path coded!  need to test tho">
       <option name="closed" value="true" />
-      <created>1736363701740</created>
-      <option name="number" value="00003" />
-      <option name="presentableId" value="LOCAL-00003" />
+      <created>1741579747513</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
       <option name="project" value="LOCAL" />
-      <updated>1736363701740</updated>
+      <updated>1741579747513</updated>
     </task>
-    <task id="LOCAL-00004" summary="Got isolated edge detection working, sorta working, scaling is off, crashing unsure why">
+    <task id="LOCAL-00035" summary="Snake working!! Super fast woohoo">
       <option name="closed" value="true" />
-      <created>1736389585260</created>
-      <option name="number" value="00004" />
-      <option name="presentableId" value="LOCAL-00004" />
+      <created>1741630927425</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
       <option name="project" value="LOCAL" />
-      <updated>1736389585260</updated>
+      <updated>1741630927425</updated>
     </task>
-    <task id="LOCAL-00005" summary="Scaling working for sub-contours!">
+    <task id="LOCAL-00036" summary="Improved snake, better poly fill, perf trimming down to &lt;2 seconds woo!">
       <option name="closed" value="true" />
-      <created>1736540161522</created>
-      <option name="number" value="00005" />
-      <option name="presentableId" value="LOCAL-00005" />
+      <created>1741638170527</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
       <option name="project" value="LOCAL" />
-      <updated>1736540161522</updated>
+      <updated>1741638170527</updated>
     </task>
-    <task id="LOCAL-00006" summary="Not sure">
+    <task id="LOCAL-00037" summary="Typewriter working!!  Configured discard phantom edges, non-closed contours working">
       <option name="closed" value="true" />
-      <created>1737048733640</created>
-      <option name="number" value="00006" />
-      <option name="presentableId" value="LOCAL-00006" />
+      <created>1741652774763</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
       <option name="project" value="LOCAL" />
-      <updated>1737048733640</updated>
+      <updated>1741652774763</updated>
     </task>
-    <task id="LOCAL-00007" summary="ACtually getting stuff going!  comparing various algorithms etc">
+    <task id="LOCAL-00038" summary="Set up variable inner weights">
       <option name="closed" value="true" />
-      <created>1737077627983</created>
-      <option name="number" value="00007" />
-      <option name="presentableId" value="LOCAL-00007" />
+      <created>1741655155039</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
       <option name="project" value="LOCAL" />
-      <updated>1737077627983</updated>
+      <updated>1741655155039</updated>
     </task>
-    <task id="LOCAL-00008" summary="Add SLIC starter">
+    <task id="LOCAL-00039" summary="Zigzag typewriter n scorched earth func going woooo gettin stooookd">
       <option name="closed" value="true" />
-      <created>1738884586880</created>
-      <option name="number" value="00008" />
-      <option name="presentableId" value="LOCAL-00008" />
+      <created>1741657091942</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
       <option name="project" value="LOCAL" />
-      <updated>1738884586880</updated>
+      <updated>1741657091942</updated>
     </task>
-    <task id="LOCAL-00009" summary="Working on slic, drawing alg">
+    <task id="LOCAL-00040" summary="Back forth going, bg rem working as sep test func">
       <option name="closed" value="true" />
-      <created>1739241835143</created>
-      <option name="number" value="00009" />
-      <option name="presentableId" value="LOCAL-00009" />
+      <created>1741731870912</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
       <option name="project" value="LOCAL" />
-      <updated>1739241835143</updated>
+      <updated>1741731870912</updated>
     </task>
-    <task id="LOCAL-00010" summary="Working on slic, drawing alg">
+    <task id="LOCAL-00041" summary="Trimming blips funct going">
       <option name="closed" value="true" />
-      <created>1739306342136</created>
-      <option name="number" value="00010" />
-      <option name="presentableId" value="LOCAL-00010" />
+      <created>1741736073588</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
       <option name="project" value="LOCAL" />
-      <updated>1739306342136</updated>
+      <updated>1741736073588</updated>
     </task>
-    <task id="LOCAL-00011" summary="Basic working agentic alg going woohoo!">
+    <task id="LOCAL-00042" summary="Images for website article">
       <option name="closed" value="true" />
-      <created>1739326580901</created>
-      <option name="number" value="00011" />
-      <option name="presentableId" value="LOCAL-00011" />
+      <created>1741736124433</created>
+      <option name="number" value="00042" />
+      <option name="presentableId" value="LOCAL-00042" />
       <option name="project" value="LOCAL" />
-      <updated>1739326580901</updated>
+      <updated>1741736124433</updated>
     </task>
-    <task id="LOCAL-00012" summary="WOrking on it, probably need to switch to diff method grr">
+    <task id="LOCAL-00043" summary="Configured lfo dither">
       <option name="closed" value="true" />
-      <created>1739404438228</created>
-      <option name="number" value="00012" />
-      <option name="presentableId" value="LOCAL-00012" />
+      <created>1741797839192</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
       <option name="project" value="LOCAL" />
-      <updated>1739404438228</updated>
+      <updated>1741797839192</updated>
     </task>
-    <task id="LOCAL-00013" summary="start">
+    <task id="LOCAL-00044" summary="Working on db caching, created data layer and db">
       <option name="closed" value="true" />
-      <created>1739472295167</created>
-      <option name="number" value="00013" />
-      <option name="presentableId" value="LOCAL-00013" />
+      <created>1741807692542</created>
+      <option name="number" value="00044" />
+      <option name="presentableId" value="LOCAL-00044" />
       <option name="project" value="LOCAL" />
-      <updated>1739472295167</updated>
+      <updated>1741807692542</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00045" summary="Setting Level 1 data configured">
+      <option name="closed" value="true" />
+      <created>1741812598356</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1741812598356</updated>
+    </task>
+    <task id="LOCAL-00046" summary="Got setting data by level configured">
+      <option name="closed" value="true" />
+      <created>1741839344703</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1741839344703</updated>
+    </task>
+    <task id="LOCAL-00047" summary="Midway thru build from df working">
+      <option name="closed" value="true" />
+      <created>1741844147863</created>
+      <option name="number" value="00047" />
+      <option name="presentableId" value="LOCAL-00047" />
+      <option name="project" value="LOCAL" />
+      <updated>1741844147863</updated>
+    </task>
+    <task id="LOCAL-00048" summary="COnfigured building back from df all objects">
+      <option name="closed" value="true" />
+      <created>1741892257126</created>
+      <option name="number" value="00048" />
+      <option name="presentableId" value="LOCAL-00048" />
+      <option name="project" value="LOCAL" />
+      <updated>1741892257126</updated>
+    </task>
+    <task id="LOCAL-00049" summary="WOrking on DAL,  class funcitons fixed up">
+      <option name="closed" value="true" />
+      <created>1741932007740</created>
+      <option name="number" value="00049" />
+      <option name="presentableId" value="LOCAL-00049" />
+      <option name="project" value="LOCAL" />
+      <updated>1741932007740</updated>
+    </task>
+    <task id="LOCAL-00050" summary="Object rebuilding from db all working woo!  Except raw &amp; formed">
+      <option name="closed" value="true" />
+      <created>1741980385471</created>
+      <option name="number" value="00050" />
+      <option name="presentableId" value="LOCAL-00050" />
+      <option name="project" value="LOCAL" />
+      <updated>1741980385472</updated>
+    </task>
+    <task id="LOCAL-00051" summary="Object building all done">
+      <option name="closed" value="true" />
+      <created>1741981306747</created>
+      <option name="number" value="00051" />
+      <option name="presentableId" value="LOCAL-00051" />
+      <option name="project" value="LOCAL" />
+      <updated>1741981306747</updated>
+    </task>
+    <task id="LOCAL-00052" summary="Workingon extension, got build objects from scratch func going">
+      <option name="closed" value="true" />
+      <created>1741999647565</created>
+      <option name="number" value="00052" />
+      <option name="presentableId" value="LOCAL-00052" />
+      <option name="project" value="LOCAL" />
+      <updated>1741999647565</updated>
+    </task>
+    <task id="LOCAL-00053" summary="Finished coding extension wooo!!! now debug time, also params etc">
+      <option name="closed" value="true" />
+      <created>1742002590177</created>
+      <option name="number" value="00053" />
+      <option name="presentableId" value="LOCAL-00053" />
+      <option name="project" value="LOCAL" />
+      <updated>1742002590178</updated>
+    </task>
+    <task id="LOCAL-00054" summary="Now actually i think got it done, test time next week">
+      <option name="closed" value="true" />
+      <created>1742006498244</created>
+      <option name="number" value="00054" />
+      <option name="presentableId" value="LOCAL-00054" />
+      <option name="project" value="LOCAL" />
+      <updated>1742006498244</updated>
+    </task>
+    <task id="LOCAL-00055" summary="Interface is base working woo!">
+      <option name="closed" value="true" />
+      <created>1742232100574</created>
+      <option name="number" value="00055" />
+      <option name="presentableId" value="LOCAL-00055" />
+      <option name="project" value="LOCAL" />
+      <updated>1742232100574</updated>
+    </task>
+    <task id="LOCAL-00056" summary="DB stuff working except objects recreate, not sure mad gains on that one tho">
+      <option name="closed" value="true" />
+      <created>1742237979729</created>
+      <option name="number" value="00056" />
+      <option name="presentableId" value="LOCAL-00056" />
+      <option name="project" value="LOCAL" />
+      <updated>1742237979729</updated>
+    </task>
+    <task id="LOCAL-00057" summary="Rough path trace working!!">
+      <option name="closed" value="true" />
+      <created>1742252763531</created>
+      <option name="number" value="00057" />
+      <option name="presentableId" value="LOCAL-00057" />
+      <option name="project" value="LOCAL" />
+      <updated>1742252763531</updated>
+    </task>
+    <task id="LOCAL-00058" summary="Better rough path trace, inner detail trace mode">
+      <option name="closed" value="true" />
+      <created>1742322843495</created>
+      <option name="number" value="00058" />
+      <option name="presentableId" value="LOCAL-00058" />
+      <option name="project" value="LOCAL" />
+      <updated>1742322843495</updated>
+    </task>
+    <task id="LOCAL-00059" summary="CUDA SLIC going super slow tho">
+      <option name="closed" value="true" />
+      <created>1742338751214</created>
+      <option name="number" value="00059" />
+      <option name="presentableId" value="LOCAL-00059" />
+      <option name="project" value="LOCAL" />
+      <updated>1742338751214</updated>
+    </task>
+    <task id="LOCAL-00060" summary="Downsampling going! Also greyscale">
+      <option name="closed" value="true" />
+      <created>1742404303637</created>
+      <option name="number" value="00060" />
+      <option name="presentableId" value="LOCAL-00060" />
+      <option name="project" value="LOCAL" />
+      <updated>1742404303637</updated>
+    </task>
+    <task id="LOCAL-00061" summary="Edge snapping, not really lining up tho">
+      <option name="closed" value="true" />
+      <created>1742409333673</created>
+      <option name="number" value="00061" />
+      <option name="presentableId" value="LOCAL-00061" />
+      <option name="project" value="LOCAL" />
+      <updated>1742409333673</updated>
+    </task>
+    <task id="LOCAL-00062" summary="Multi image working almost just need to crop line approx">
+      <option name="closed" value="true" />
+      <created>1742508535481</created>
+      <option name="number" value="00062" />
+      <option name="presentableId" value="LOCAL-00062" />
+      <option name="project" value="LOCAL" />
+      <updated>1742508535481</updated>
+    </task>
+    <task id="LOCAL-00063" summary="Working on better path alg, making sure hit prescribed points">
+      <option name="closed" value="true" />
+      <created>1742585785810</created>
+      <option name="number" value="00063" />
+      <option name="presentableId" value="LOCAL-00063" />
+      <option name="project" value="LOCAL" />
+      <updated>1742585785810</updated>
+    </task>
+    <task id="LOCAL-00064" summary="Built better blip removal using linear alg">
+      <option name="closed" value="true" />
+      <created>1742592364968</created>
+      <option name="number" value="00064" />
+      <option name="presentableId" value="LOCAL-00064" />
+      <option name="project" value="LOCAL" />
+      <updated>1742592364968</updated>
+    </task>
+    <task id="LOCAL-00065" summary="Built better blip removal using linear alg">
+      <option name="closed" value="true" />
+      <created>1742593923326</created>
+      <option name="number" value="00065" />
+      <option name="presentableId" value="LOCAL-00065" />
+      <option name="project" value="LOCAL" />
+      <updated>1742593923326</updated>
+    </task>
+    <task id="LOCAL-00066" summary="Intellisimplify working, a few more options">
+      <option name="closed" value="true" />
+      <created>1742843162409</created>
+      <option name="number" value="00066" />
+      <option name="presentableId" value="LOCAL-00066" />
+      <option name="project" value="LOCAL" />
+      <updated>1742843162409</updated>
+    </task>
+    <task id="LOCAL-00067" summary="Line cleanup all looking good!  Intersections, oblong blips, sharpnesses, all removed well with minimal params inputted.  Great job Liam!!">
+      <option name="closed" value="true" />
+      <created>1742858570951</created>
+      <option name="number" value="00067" />
+      <option name="presentableId" value="LOCAL-00067" />
+      <option name="project" value="LOCAL" />
+      <updated>1742858570951</updated>
+    </task>
+    <task id="LOCAL-00068" summary="Working on why still blipping nailed down weird djiksta, workaround ish">
+      <option name="closed" value="true" />
+      <created>1742871000832</created>
+      <option name="number" value="00068" />
+      <option name="presentableId" value="LOCAL-00068" />
+      <option name="project" value="LOCAL" />
+      <updated>1742871000832</updated>
+    </task>
+    <task id="LOCAL-00069" summary="Got paths going good, fresh edges can jump btwn interchangable sectionized contours, intersection checking working">
+      <option name="closed" value="true" />
+      <created>1742939575056</created>
+      <option name="number" value="00069" />
+      <option name="presentableId" value="LOCAL-00069" />
+      <option name="project" value="LOCAL" />
+      <updated>1742939575056</updated>
+    </task>
+    <task id="LOCAL-00070" summary="Added Canny-Hull inner lines support">
+      <option name="closed" value="true" />
+      <created>1742944548786</created>
+      <option name="number" value="00070" />
+      <option name="presentableId" value="LOCAL-00070" />
+      <option name="project" value="LOCAL" />
+      <updated>1742944548786</updated>
+    </task>
+    <task id="LOCAL-00071" summary="Canny working with segment breakup, finessing various aspects">
+      <option name="closed" value="true" />
+      <created>1743017700592</created>
+      <option name="number" value="00071" />
+      <option name="presentableId" value="LOCAL-00071" />
+      <option name="project" value="LOCAL" />
+      <updated>1743017700592</updated>
+    </task>
+    <task id="LOCAL-00072" summary="Added perimeter max check for blips">
+      <option name="closed" value="true" />
+      <created>1743020187619</created>
+      <option name="number" value="00072" />
+      <option name="presentableId" value="LOCAL-00072" />
+      <option name="project" value="LOCAL" />
+      <updated>1743020187619</updated>
+    </task>
+    <task id="LOCAL-00073" summary="Efficiency boost for intersection checking">
+      <option name="closed" value="true" />
+      <created>1743020624517</created>
+      <option name="number" value="00073" />
+      <option name="presentableId" value="LOCAL-00073" />
+      <option name="project" value="LOCAL" />
+      <updated>1743020624517</updated>
+    </task>
+    <task id="LOCAL-00074" summary="Efficiency boost for intersection checking">
+      <option name="closed" value="true" />
+      <created>1743020718555</created>
+      <option name="number" value="00074" />
+      <option name="presentableId" value="LOCAL-00074" />
+      <option name="project" value="LOCAL" />
+      <updated>1743020718555</updated>
+    </task>
+    <task id="LOCAL-00075" summary="Various fixups">
+      <option name="closed" value="true" />
+      <created>1743042562486</created>
+      <option name="number" value="00075" />
+      <option name="presentableId" value="LOCAL-00075" />
+      <option name="project" value="LOCAL" />
+      <updated>1743042562486</updated>
+    </task>
+    <task id="LOCAL-00076" summary="Added double-burn support avoid weird double back loops, added 0 weight jumps for likely interesections">
+      <option name="closed" value="true" />
+      <created>1743095967571</created>
+      <option name="number" value="00076" />
+      <option name="presentableId" value="LOCAL-00076" />
+      <option name="project" value="LOCAL" />
+      <updated>1743095967571</updated>
+    </task>
+    <task id="LOCAL-00077" summary="Misc fix-ups">
+      <option name="closed" value="true" />
+      <created>1743208300542</created>
+      <option name="number" value="00077" />
+      <option name="presentableId" value="LOCAL-00077" />
+      <option name="project" value="LOCAL" />
+      <updated>1743208300542</updated>
+    </task>
+    <task id="LOCAL-00078" summary="Fix None crop box PARIAL">
+      <option name="closed" value="true" />
+      <created>1743640829960</created>
+      <option name="number" value="00078" />
+      <option name="presentableId" value="LOCAL-00078" />
+      <option name="project" value="LOCAL" />
+      <updated>1743640829960</updated>
+    </task>
+    <task id="LOCAL-00079" summary="Built in default to outer if possible">
+      <option name="closed" value="true" />
+      <created>1743949717364</created>
+      <option name="number" value="00079" />
+      <option name="presentableId" value="LOCAL-00079" />
+      <option name="project" value="LOCAL" />
+      <updated>1743949717364</updated>
+    </task>
+    <task id="LOCAL-00080" summary="Built in default to outer if possible">
+      <option name="closed" value="true" />
+      <created>1743949866638</created>
+      <option name="number" value="00080" />
+      <option name="presentableId" value="LOCAL-00080" />
+      <option name="project" value="LOCAL" />
+      <updated>1743949866638</updated>
+    </task>
+    <option name="localTasksCounter" value="81" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -274,55 +629,57 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Initial create" />
-    <MESSAGE value="Initial sub image gen function, working but dimensioning all off" />
-    <MESSAGE value="Scaling &amp; shifting working for rect &amp; ellipse crop" />
-    <MESSAGE value="Got isolated edge detection working, sorta working, scaling is off, crashing unsure why" />
-    <MESSAGE value="Scaling working for sub-contours!" />
-    <MESSAGE value="Not sure" />
-    <MESSAGE value="ACtually getting stuff going!  comparing various algorithms etc" />
-    <MESSAGE value="Add SLIC starter" />
-    <MESSAGE value="Working on slic, drawing alg" />
-    <MESSAGE value="Basic working agentic alg going woohoo!" />
-    <MESSAGE value="WOrking on it, probably need to switch to diff method grr" />
-    <MESSAGE value="start" />
-    <option name="LAST_COMMIT_MESSAGE" value="start" />
+    <MESSAGE value="Finished coding extension wooo!!! now debug time, also params etc" />
+    <MESSAGE value="Now actually i think got it done, test time next week" />
+    <MESSAGE value="Interface is base working woo!" />
+    <MESSAGE value="DB stuff working except objects recreate, not sure mad gains on that one tho" />
+    <MESSAGE value="Rough path trace working!!" />
+    <MESSAGE value="Better rough path trace, inner detail trace mode" />
+    <MESSAGE value="CUDA SLIC going super slow tho" />
+    <MESSAGE value="Downsampling going! Also greyscale" />
+    <MESSAGE value="Edge snapping, not really lining up tho" />
+    <MESSAGE value="Multi image working almost just need to crop line approx" />
+    <MESSAGE value="Working on better path alg, making sure hit prescribed points" />
+    <MESSAGE value="Built better blip removal using linear alg" />
+    <MESSAGE value="Intellisimplify working, a few more options" />
+    <MESSAGE value="Line cleanup all looking good!  Intersections, oblong blips, sharpnesses, all removed well with minimal params inputted.  Great job Liam!!" />
+    <MESSAGE value="Working on why still blipping nailed down weird djiksta, workaround ish" />
+    <MESSAGE value="Got paths going good, fresh edges can jump btwn interchangable sectionized contours, intersection checking working" />
+    <MESSAGE value="Added Canny-Hull inner lines support" />
+    <MESSAGE value="Canny working with segment breakup, finessing various aspects" />
+    <MESSAGE value="Added perimeter max check for blips" />
+    <MESSAGE value="Efficiency boost for intersection checking" />
+    <MESSAGE value="Various fixups" />
+    <MESSAGE value="Added double-burn support avoid weird double back loops, added 0 weight jumps for likely interesections" />
+    <MESSAGE value="Misc fix-ups" />
+    <MESSAGE value="Fix None crop box PARIAL" />
+    <MESSAGE value="Built in default to outer if possible" />
+    <option name="LAST_COMMIT_MESSAGE" value="Built in default to outer if possible" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/helpers/edge_detect/edge_detection.py</url>
-          <line>208</line>
+          <line>212</line>
           <option name="timeStamp" value="14" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py</url>
-          <line>275</line>
-          <option name="timeStamp" value="73" />
+          <url>file://$PROJECT_DIR$/Testing.py</url>
+          <line>404</line>
+          <option name="timeStamp" value="268" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py</url>
-          <line>274</line>
-          <option name="timeStamp" value="74" />
+          <url>file://$PROJECT_DIR$/ProcessTestImages.py</url>
+          <line>25</line>
+          <option name="timeStamp" value="335" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py</url>
-          <line>100</line>
-          <option name="timeStamp" value="78" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/helpers/edge_detect/ftlib.py</url>
-          <option name="timeStamp" value="79" />
+          <url>file://$PROJECT_DIR$/test_path_cleanup.py</url>
+          <line>73</line>
+          <option name="timeStamp" value="365" />
         </line-breakpoint>
       </breakpoints>
-      <default-breakpoints>
-        <breakpoint type="python-exception">
-          <properties notifyOnTerminate="true" exception="BaseException">
-            <option name="notifyOnTerminate" value="true" />
-          </properties>
-        </breakpoint>
-      </default-breakpoints>
     </breakpoint-manager>
   </component>
 </project>

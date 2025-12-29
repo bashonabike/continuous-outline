@@ -1,57 +1,186 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
-    <name>continuous-outline.js</name>
-    <id>fablabchemnitz.de.continuous-outline</id>
+    <name>continuous-outline</name>
+    <id>continuous-outline</id>
+    <label>NOTE: Linked images must be on same drive as this file!!</label>
     <param name="tab" type="notebook">
-        <page name="tab_general" gui-text="continuous-outline.js">
+        <page name="tab_general" gui-text="continuous-outline">
             <hbox>
                 <vbox>
-                    <label appearance="header">Tracing</label>
+                    <label appearance="header">Continuous Outline</label>
                     <separator/>
-                    <param name="keeporiginal" type="bool" gui-text="Keep original image on canvas">false</param>
-                    <param name="ltres" type="float" min="0.0" gui-text="Error treshold straight lines">1.0</param>
-                    <param name="qtres" type="float" min="0.0" gui-text="Error treshold quadratic splines">1.0</param>
-                    <param name="pathomit" type="int" min="0" max="9999" gui-text="Noise reduction - discard edge node paths shorter than">8</param>           
-                    <param name="rightangleenhance" type="bool" gui-text="Enhance right angle corners">true</param>
-                    <spacer/>
-                    <label appearance="header">Color Quantization and Layering</label>
-                    <separator/>
-                    <param name="colorsampling" appearance="combo" type="optiongroup" gui-text="Color sampling">
-                       <option value="0">disabled, generating a palette</option>
-                       <option value="1">random sampling</option>
-                       <option value="2">deterministic sampling</option>
-                    </param>           
-                    <param name="numberofcolors" type="int" min="1" max="9999" gui-text="Number of colors to use on palette">16</param>
-                    <param name="mincolorratio" type="int" gui-text="Color randomization ratio">0</param>
-                    <param name="colorquantcycles" type="int" min="1" max="20" gui-text="Color quantization will be repeated this many times">3</param>   
-                    <param name="layering" appearance="combo" type="optiongroup" gui-text="Layering">
-                       <option value="0">sequential</option>
-                       <option value="1">parallel</option>
-                    </param>   
+
+                    <param name="transparancy_cutoff" type="float" min="0.0" max="1.0"
+                           gui-text="Max transparency % considered background">0.1
+                    </param>
+                     <param name="attempt_mask_jpeg" type="bool"
+                            gui-text="Attempt to mask outline of any JPEG (use Max transparency % considered background)">False
+                    </param>
+                     <param name="mask_from_line_colour" type="int" min="0" max="255"
+                            gui-text="Mask out colours x values close to colour of approx trace line">0
+                    </param>
+                    <param name="maze_sections_across" type="int" min="1" max="9999"
+                           gui-text="Gridding density for approx path formation">70
+                    </param>
+                    <param name="mask_only" type="bool" gui-text="No inner SLIC">False
+                            <script><![CDATA[
+      function changed(event) {
+        var cuda_slic = document.getElementById('cuda_slic');
+        if (event.target.value == 'false') {
+          advanced_param.style.display = 'block';
+        } else {
+          advanced_param.style.display = 'none';
+        }
+      }
+    ]]></script>
+                    </param>
+                    <param name="mask_only_when_complicated_background" type="bool"
+                           gui-text="No inner SLIC/Canny if background of mask is complicated (i.e. lots of holes)">False
+                    </param>
+                        <param name="canny_hull" type="bool"
+                           gui-text="Use Canny instead of SLIC (works best when many sharp edges with minimal colour differences between regions)">False
+                    </param>
+
+                        <param name="straight_contours" type="bool"
+                           gui-text="Run contouring directly on base image (must have nice defined edges with minimal colour deviations)">False
+                    </param>
+
+
+                    <param name="canny_quantize_bins" type="int" min="0" max="50"
+                           gui-text="Colour quantization bins for Canny (0 is natural)">5
+                    </param>
+                    <param name="canny_min_contour_length" type="int" min="1" max="9999"
+                           gui-text="Min edge length for Canny">200
+                    </param>
+
+
+
+                    <param name="cuda_slic" type="bool" gui-text="Use CUDA SLIC">True
+                            <script><![CDATA[
+      function load(event) {
+        var mask_only = document.getElementById('mask_only');
+        if (mask_only.value == 'false') {
+          event.target.style.display = 'block';
+        } else {
+          event.target.style.display = 'none';
+        }
+      }
+    ]]></script>
+  </param>
+                    <param name="slic_regions" type="int" min="1" max="9999" gui-text="Number of SLIC regions">12
+                    </param>
+                    <param name="slic_max_image_resolution" type="int" min="500" max="4000"
+                           gui-text="Max resolution in either dimension for SLIC image processing (will downsample if needed)">
+                        1000</param>
+                    <param name="slic_lanczos" type="bool" gui-text="Use Lanczos interpolation for SLIC downscaling (sharper)">
+                        False</param>
+                    <param name="slic_snap_edges" type="bool" gui-text="Snap SLIC to edges">False
+                    </param>
+                    <param name="slic_lab" type="bool" gui-text="LAB for SLIC">True
+                    </param>
+                    <param name="slic_greyscale" type="bool" gui-text="Greyscale for SLIC">False
+                    </param>
+                    <param name="slic_multi_image_conjoin_processing" type="bool"
+                           gui-text="Conjoin processing of images">False
+                    </param>
+
+                      <param name="slic_multi_image_blend_mode" type="enum" appearance="combo"
+                             _gui-text="Blend mode for multi image conjoined processing">
+                        <item value="Overlay">Overlay</item>
+                      </param>
+                    <param name="mask_retain_inner_transparencies" type="bool"
+                           gui-text="Retain inner transparency contours from mask (distinct from SLIC/Canny edges)">False
+                    </param>
+                    <param name="mask_retain_inner_erosion" type="int" min="0" max="50"
+                           gui-text="Retaining inner transparency erosion (in pixels)">0
+                    </param>
+                    <param name="constrain_slic_within_mask" type="bool" gui-text="Omit lines outside of mask">false
+                    </param>
+
+                    <param name="prefer_outer_contours_locking" type="bool"
+                           gui-text="Prefer outer contours for locking onto edges">True
+                    </param>
+                    <param name="max_magnet_lock_dist" type="int" min="0" max="2000"
+                           gui-text="Max distance for magnet locking onto edges">100
+                    </param>
+
+
+
+
+                    <param name="dumb_node_optional_weight" type="int" min="0" max="9999"
+                           gui-text="Weight for optional dumb nodes">1
+                    </param>
+                    <param name="dumb_node_optional_max_variable_weight" type="int" min="0" max="9999"
+                           gui-text="Max variable weight for optional dumb nodes">6
+                    </param>
+                    <param name="dumb_node_blank_weight" type="int" min="0" max="9999"
+                           gui-text="Weight for blank dumb nodes">200
+                    </param>
+                    <param name="dumb_node_opt_jump_weight" type="int" min="0" max="9999"
+                           gui-text="Weight for optional dumb node jumps">1
+                    </param>
+                    <param name="dumb_node_req_jump_weight" type="int" min="0" max="9999"
+                           gui-text="Weight for required dumb node jumps">1
+                    </param>
+                    <param name="dumb_node_required_weight" type="int" min="0" max="9999"
+                           gui-text="Weight for required dumb nodes">1
+                    </param>
+                    <param name="max_inner_path_seg_manhatten_length" type="int" min="0" max="9999"
+                           gui-text="Perimeter ghosting threshold (max pixels in straight line before removal)">50
+                    </param>
+                    <param name="outer_contour_length_cutoff" type="int" min="0" max="9999"
+                           gui-text="Length cutoff for outer contours">200
+                    </param>
+                    <param name="inner_contour_length_cutoff" type="int" min="0" max="9999"
+                           gui-text="Length cutoff for inner contours">10
+                    </param>
+                    <param name="inner_contour_variable_weights" type="bool"
+                           gui-text="Enable variable weights for inner contours">true
+                    </param>
+                    <param name="trace_inner_too" type="bool"
+                           gui-text="Enable tracing of inner contours (dep on rough trace input)">false
+                    </param>
+                    <param name="scorched_earth" type="bool" gui-text="Enable scorched earth mode">true</param>
+                    <param name="scorched_earth_weight_multiplier" type="int" min="2" max="9999"
+                           gui-text="Weight multiplier for scorched earth mode">2
+                    </param>
+                    <param name="simplify_intelligent_straighting_cutoff" type="int" min="0" max="200"
+                           gui-text="Preserve desired details but simplify long sections greater than length">200
+                    </param>
+                    <param name="simplify_tolerance" type="float" min="0.0" max="1.0" gui-text="Simplify tolerance (lower is sharper)">
+                        0.7
+                    </param>
+                    <param name="simplify_preserve_topology" type="bool" gui-text="Preserve topology on simplify">true</param>
+
+                    <param name="blip_max_thickness" type="int" min="0" max="200"
+                           gui-text="Max thickness of blip for removal">0
+                    </param>
+                    <param name="blip_max_perimeter" type="int" min="0" max="1000"
+                           gui-text="Max perimeter of blip for removal">0
+                    </param>
+                    <param name="blip_acuteness_threshold" type="float" min="0.0" max="1.0"
+                           gui-text="Acuteness threshold for blip removal (lower is sharper)">0.15
+                    </param>
+                    <param name="dither" type="int" min="0" max="30"
+                           gui-text="Add periodic dither to line for texture">0
+                    </param>
+
+                    <param name="preview" type="bool" indent="4"
+                           gui-text="Preview mode">true
+                    </param>
                 </vbox>
                 <spacer/>
                 <separator/>
                 <spacer/>
-                <vbox>
-                    <label appearance="header">SVG Rendering</label>
-                    <separator/>
-                    <param name="strokewidth" type="float" min="0.0" max="9999" gui-text="SVG stroke-width">1.0</param>
-                    <param name="linefilter" type="bool" gui-text="Noise reduction line filter">false</param>
-                    <!--<param name="scale" type="float" min="0.0" max="9999" gui-text="Coordinate scale factor">1.0</param> disabled because we resize to the size of the original image-->
-                    <param name="roundcoords" type="int" min="0" max="10" gui-text="Decimal places for rounding">1</param>
-                    <param name="viewbox" type="bool" gui-text="Resize to SVG viewBox">false</param>
-                    <param name="desc" type="bool" gui-text="SVG descriptions">false</param> 
-                    <spacer/>
-                    <label appearance="header">Blur Preprocessing</label>
-                    <separator/>
-                    <param name="blurradius" type="int" min="1" max="5" gui-text="Selective Gaussian blur preprocessing">0</param>
-                    <param name="blurdelta" type="float" min="0.0" max="9999" gui-text="RGBA delta treshold for selective Gaussian blur preprocessing">20.0</param>
-                </vbox>
+
             </hbox>
         </page>
         <page name="tab_about" gui-text="About">
             <label appearance="header">Imagetracer.js</label>
-            <label>imagetracerjs - Simple raster image tracer and vectorizer written in JavaScript, ported to Inkscape. It will vectorize your beautiful image into a more beautiful SVG trace with separated infills(break apart into single surfaces like a puzzle).</label>
+            <label>imagetracerjs - Simple raster image tracer and vectorizer written in JavaScript, ported to Inkscape.
+                It will vectorize your beautiful image into a more beautiful SVG trace with separated infills(break
+                apart into single surfaces like a puzzle).
+            </label>
             <label>2020 - 2023 / written by Mario Voigt (Stadtfabrikanten e.V. / FabLab Chemnitz)</label>
             <spacer/>
             <label appearance="header">Online Documentation</label>
@@ -65,27 +194,19 @@
             <label appearance="url">https://github.com/jankovicsandras/continuous-outline</label>
             <spacer/>
             <label appearance="header">MightyScape Extension Collection</label>
-            <label>This piece of software is part of the MightyScape for Inkscape Extension Collection and is licensed under GNU GPL v3</label>
+            <label>This piece of software is part of the MightyScape for Inkscape Extension Collection and is licensed
+                under GNU GPL v3
+            </label>
             <label appearance="url">https://y.stadtfabrikanten.org/mightyscape-overview</label>
         </page>
-        <page name="tab_donate" gui-text="Donate">
-            <label appearance="header">Coffee + Pizza</label>
-            <label>We are the Stadtfabrikanten, running the FabLab Chemnitz since 2016. A FabLab is an open workshop that gives people access to machines and digital tools like 3D printers, laser cutters and CNC milling machines.</label>
-            <spacer/>           
-            <label>You like our work and want to support us? You can donate to our non-profit organization by different ways:</label>
-            <label appearance="url">https://y.stadtfabrikanten.org/donate</label>
-            <spacer/>
-            <label>Thanks for using our extension and helping us!</label>
-            <image>../000_about_fablabchemnitz.svg</image>
-        </page>
     </param>
-    <effect needs-live-preview="true">
+    <effect needs-live-preview="false">
         <object-type>all</object-type>
-		<effects-menu>
-         <submenu name="FabLab Chemnitz">
-            <submenu name="Tracing/Images/Edge Detection"/>
-         </submenu>
-		</effects-menu>
+        <effects-menu>
+            <submenu name="clinetime">
+                <submenu name="Tracing/Images/Edge Detection"/>
+            </submenu>
+        </effects-menu>
     </effect>
     <script>
         <command location="inx" interpreter="python">continuous-outline.py</command>
