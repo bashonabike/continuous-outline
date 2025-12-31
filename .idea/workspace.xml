@@ -4,51 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Built in default to outer if possible">
-      <change beforePath="$PROJECT_DIR$/.idea/continuous-outline.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/continuous-outline.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+    <list default="true" id="f7712d21-7a28-4b24-b656-51ad44476c25" name="Changes" comment="Added requirements.txt">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/112CB3DB.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/169F3319.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/2B0980E4.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/3F516420.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/3FF956C2.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/4D6AD893.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/57921A85.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/633E36AF.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/784B1C1F.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/7DB84729.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/81916C92.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/882D636C.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/8CBA4957.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/8F1A6395.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/91E28E46.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/A4481C8.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/A7129178.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/A96AD85A.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/AA0E8A70.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/AD20B5E7.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/B577147D.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/C1B6F316.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/D3CFFF2E.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/D5F309FE.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/EA55A82A.tmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/continuous-outline.py" beforeDir="false" afterPath="$PROJECT_DIR$/continuous-outline.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/Enums.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/Enums.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/build_objects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/build_objects.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/SLIC_Segmentation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/StrayPixelRemover.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/StrayPixelRemover.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/bg_rem.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/bg_rem.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/edge_detection.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/edge_detection.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/edge_detect/ftlib.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/edge_detect/ftlib.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgeNode.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgeNode.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/EdgePath.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeAgent.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/MazeSections.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/mazify/NetworkxExtension.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/mazify/NetworkxExtension.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/post_proc/path_cleanup.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/post_proc/post_effects.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/post_proc/post_effects.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helpers/post_proc/smooth_path.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/post_proc/smooth_path.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -73,8 +31,8 @@
 }</component>
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/bashonabike/continuous-outline.git&quot;,
-    &quot;accountId&quot;: &quot;58e94c20-7d39-4b4a-93e7-7d4618e59941&quot;
+    &quot;url&quot;: &quot;https://github.com/bashonabike/continuous-outline&quot;,
+    &quot;accountId&quot;: &quot;5bb13a72-640e-4370-a31b-398c259cc1b1&quot;
   }
 }</component>
   <component name="ProjectColorInfo">{
@@ -98,12 +56,13 @@
     &quot;com.codeium.enabled&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;master&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/liamc/Downloads/strawberry-pycharm-plugin.zip&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Dell 5290/AppData/Roaming/inkscape/extensions/continuous-outline&quot;,
     &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
   }
 }</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\Dell 5290\AppData\Roaming\inkscape\extensions\continuous-outline" />
       <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\Trial-AI-Base-Images\bg_removed" />
       <recent name="C:\Users\liamc\PycharmProjects\continuous-outline\Trial-AI-Base-Images" />
     </key>
@@ -251,7 +210,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-495700d161d3-aa17d162503b-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-243.22562.220" />
+        <option value="bundled-python-sdk-f2b7a9f6281b-6e1f45a539f7-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-253.29346.142" />
       </set>
     </attachedChunks>
   </component>
@@ -263,22 +222,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1736210770875</updated>
-    </task>
-    <task id="LOCAL-00032" summary="Working on getting better fiddling with settings">
-      <option name="closed" value="true" />
-      <created>1741483730342</created>
-      <option name="number" value="00032" />
-      <option name="presentableId" value="LOCAL-00032" />
-      <option name="project" value="LOCAL" />
-      <updated>1741483730342</updated>
-    </task>
-    <task id="LOCAL-00033" summary="Working on making edge map for new technique">
-      <option name="closed" value="true" />
-      <created>1741552138269</created>
-      <option name="number" value="00033" />
-      <option name="presentableId" value="LOCAL-00033" />
-      <option name="project" value="LOCAL" />
-      <updated>1741552138269</updated>
     </task>
     <task id="LOCAL-00034" summary="Got ssssnake path coded!  need to test tho">
       <option name="closed" value="true" />
@@ -656,7 +599,23 @@
       <option name="project" value="LOCAL" />
       <updated>1743949866638</updated>
     </task>
-    <option name="localTasksCounter" value="81" />
+    <task id="LOCAL-00081" summary="Docstrings &amp; formatting cleanup">
+      <option name="closed" value="true" />
+      <created>1766986595669</created>
+      <option name="number" value="00081" />
+      <option name="presentableId" value="LOCAL-00081" />
+      <option name="project" value="LOCAL" />
+      <updated>1766986595669</updated>
+    </task>
+    <task id="LOCAL-00082" summary="Added requirements.txt">
+      <option name="closed" value="true" />
+      <created>1766987088058</created>
+      <option name="number" value="00082" />
+      <option name="presentableId" value="LOCAL-00082" />
+      <option name="project" value="LOCAL" />
+      <updated>1766987088058</updated>
+    </task>
+    <option name="localTasksCounter" value="83" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -671,8 +630,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Finished coding extension wooo!!! now debug time, also params etc" />
-    <MESSAGE value="Now actually i think got it done, test time next week" />
     <MESSAGE value="Interface is base working woo!" />
     <MESSAGE value="DB stuff working except objects recreate, not sure mad gains on that one tho" />
     <MESSAGE value="Rough path trace working!!" />
@@ -696,7 +653,9 @@
     <MESSAGE value="Misc fix-ups" />
     <MESSAGE value="Fix None crop box PARIAL" />
     <MESSAGE value="Built in default to outer if possible" />
-    <option name="LAST_COMMIT_MESSAGE" value="Built in default to outer if possible" />
+    <MESSAGE value="Docstrings &amp; formatting cleanup" />
+    <MESSAGE value="Added requirements.txt" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added requirements.txt" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
