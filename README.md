@@ -48,7 +48,7 @@
 
 ## Overview
 
-Continuous outLine traces your image in a unique, artistic fashion by utilizing a continuous line drawing technique.  This allows for elegant contouring, ideal to add definition too your graphic design project either as an underlay or border.
+Continuous outLine traces your image in a unique, artistic fashion by utilizing a continuous line drawing technique.  This allows for elegant contouring, ideal to add definition to your graphic design project either as an underlay or border.
 
 Currently requires manual control points and manual parameter manipulation.  Automatic mode is in progress.
 
